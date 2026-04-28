@@ -73,46 +73,46 @@ const categories: Category[] = [
 const characters: Character[] = [
   {
     id: "bro",
-    title: "운세형의 현실 사주",
+    title: "운세형",
     badge: "BEST",
     image: "/characters/bro.png",
     emoji: "🧑‍💼",
-    subtitle: "돈 · 일 · 방향 전문",
-    quote: "야, 지금 네가 막힌 이유부터 까보자.",
-    chips: ["재물운", "직업운", "인생 방향"],
+    subtitle: "돈·사업·현실 분석",
+    quote: "야, 돈 안 되는 구조부터 끊어라",
+    chips: ["재물운", "직업운", "현실 조언"],
     categoryId: "career",
   },
   {
     id: "grandma",
-    title: "초옥 할매의 인생 대운",
+    title: "춘옥할매",
     badge: "NEW",
     image: "/characters/grandma.png",
     emoji: "👵",
-    subtitle: "인생흐름 · 대운 · 가족",
-    quote: "니 인생 왜 돌아왔는지 내가 딱 짚어줄게.",
+    subtitle: "인생흐름·대운",
+    quote: "니 인생 왜 꼬였는지 내가 다 안다",
     chips: ["인생흐름", "대운", "가족운"],
     categoryId: "lifeFlow",
   },
   {
-    id: "love",
-    title: "민지의 연애 상담소",
+    id: "seoyeon",
+    title: "서연",
     badge: "HOT",
-    image: "/characters/love.png",
+    image: "/characters/seoyeon.png",
     emoji: "💘",
-    subtitle: "연애 · 재회 · 궁합 전문",
-    quote: "그 사람 마음보다 네가 왜 흔들리는지가 먼저야.",
+    subtitle: "연애·심리 분석",
+    quote: "그 사람 문제가 아니라 네 패턴이다",
     chips: ["연애운", "재회", "궁합"],
     categoryId: "love",
   },
   {
-    id: "money",
-    title: "돈맥 보는 재물 상담",
+    id: "dohoon",
+    title: "도훈",
     badge: "RICH",
-    image: "/characters/money.png",
+    image: "/characters/dohoon.png",
     emoji: "💰",
-    subtitle: "재물운 · 부업 · 사업 감각",
-    quote: "돈이 없는 게 아니라 새는 구멍이 먼저다.",
-    chips: ["돈운", "부업운", "사업운"],
+    subtitle: "재물·투자 흐름",
+    quote: "돈은 감이 아니라 흐름이다",
+    chips: ["돈운", "투자", "사업운"],
     categoryId: "money",
   },
 ];
@@ -408,31 +408,33 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
       className="w-full overflow-hidden rounded-[24px] border border-[#d8a86f]/25 bg-black shadow-xl transition hover:-translate-y-1 hover:border-[#d8a86f]/80"
     >
       <div className="relative aspect-[3/5.6] w-full overflow-hidden bg-black">
+        <div className="absolute inset-0 z-0 grid place-items-center bg-gradient-to-br from-[#2b1b10] via-[#151018] to-black p-4 text-center">
+          <div className="text-5xl">{card.emoji}</div>
+          <div className="mt-3 text-xl font-black leading-tight text-white">{card.title}</div>
+          <div className="mt-2 text-xs font-bold text-[#d8a86f]">{card.subtitle}</div>
+          <p className="mt-3 text-xs leading-5 text-white/60">{card.quote}</p>
+        </div>
+
         <img
           src={card.image}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-10 blur-sm"
+          className="absolute inset-0 z-10 h-full w-full scale-110 object-cover opacity-10 blur-sm"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
 
-        <div className="absolute inset-0 bg-black/25" />
+        <div className="absolute inset-0 z-20 bg-black/20" />
 
         <img
           src={card.image}
           alt={card.title}
-          className="relative z-10 h-full w-full scale-[1.15] object-contain"
+          className="relative z-30 h-full w-full scale-[1.08] object-contain"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
-
-        <div className="absolute inset-0 -z-10 grid place-items-center bg-gradient-to-br from-[#2b1b10] via-[#151018] to-black p-5 text-center">
-          <div className="text-5xl">{card.emoji}</div>
-          <div className="mt-3 text-sm font-black leading-tight text-white">{card.title}</div>
-        </div>
       </div>
 
       <div className="border-t border-[#d8a86f]/20 bg-[#d8a86f] px-2 py-1 text-center text-xs font-black text-black">
