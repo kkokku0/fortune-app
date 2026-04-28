@@ -412,18 +412,18 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
           src={card.image}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-20 blur-md"
+          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-10 blur-sm"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
 
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/25" />
 
         <img
           src={card.image}
           alt={card.title}
-          className="relative z-10 h-full w-full scale-105 object-contain"
+          className="relative z-10 h-full w-full scale-[1.15] object-contain"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
