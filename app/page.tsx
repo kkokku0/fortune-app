@@ -407,18 +407,15 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
       onClick={onSelect}
       className="w-full overflow-hidden rounded-[24px] border border-[#d8a86f]/25 bg-black shadow-xl transition hover:-translate-y-1 hover:border-[#d8a86f]/80"
     >
-      <div className="relative aspect-[3/5.6] w-full overflow-hidden bg-black">
-        <div className="absolute inset-0 bg-black" />
-
+      <div className="relative aspect-[3/5.8] w-full overflow-hidden bg-black">
         <img
           src={card.image}
           alt={card.title}
-          className="relative z-10 h-full w-full scale-110 object-contain"
+          className="h-full w-full object-cover object-top"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
-
         <div className="absolute inset-0 -z-10 grid place-items-center bg-gradient-to-br from-[#2b1b10] via-[#151018] to-black p-5 text-center">
           <div className="text-5xl">{card.emoji}</div>
           <div className="mt-3 text-sm font-black leading-tight text-white">{card.title}</div>
