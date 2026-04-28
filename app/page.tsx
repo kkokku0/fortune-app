@@ -405,27 +405,43 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
     <button
       type="button"
       onClick={onSelect}
-      className="relative h-[355px] min-w-[240px] shrink-0 snap-start overflow-hidden rounded-[28px] border border-[#d8a86f]/30 bg-black shadow-xl transition hover:-translate-y-1 hover:border-[#d8a86f]"
+      className="relative h-[350px] min-w-[220px] max-w-[220px] shrink-0 snap-start overflow-hidden rounded-[26px] border border-[#d8a86f]/25 bg-black text-left shadow-xl transition hover:-translate-y-1 hover:border-[#d8a86f]/80"
     >
-      {/* 이미지 풀로 사용 */}
+      <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-[#2b1b10] via-[#151018] to-black p-5 text-center">
+        <div className="text-6xl">{card.emoji}</div>
+        <div className="mt-4 text-lg font-black leading-tight text-white">{card.title}</div>
+        <p className="mt-2 text-xs leading-5 text-white/55">{card.quote}</p>
+      </div>
+
       <img
         src={card.image}
         alt={card.title}
         className="absolute inset-0 h-full w-full object-cover"
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+        }}
       />
 
-      {/* 어두운 오버레이 */}
-      <div className="absolute inset-0 bg-black/20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10" />
 
-      {/* 상단 뱃지 */}
-      <div className="absolute left-4 top-4 z-20 rounded-full bg-[#d8a86f] px-3 py-1 text-xs font-black text-black">
+      <div className="absolute left-3 top-3 rounded-full bg-[#d8a86f] px-3 py-1 text-xs font-black text-black shadow-lg">
         {card.badge}
       </div>
 
-      {/* 클릭 영역 (텍스트 최소화) */}
-      <div className="absolute inset-0 z-30 flex items-end justify-center pb-4">
-        <div className="rounded-full bg-[#d8a86f] px-5 py-2 text-sm font-black text-black shadow-lg">
-          이 사람한테 물어보기 →
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <div className="rounded-2xl border border-[#d8a86f]/30 bg-black/75 p-3 backdrop-blur-md">
+          <div className="text-[11px] font-bold text-[#d8a86f]">{card.subtitle}</div>
+          <div className="mt-1 line-clamp-2 text-base font-black leading-tight text-white">{card.title}</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {card.chips.slice(0, 2).map((chip) => (
+              <span key={chip} className="rounded-full bg-white/10 px-2 py-1 text-[10px] text-white/65">
+                {chip}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 rounded-full bg-[#d8a86f] px-3 py-2 text-center text-sm font-black text-black">
+            물어보기 →
+          </div>
         </div>
       </div>
     </button>
@@ -600,7 +616,7 @@ export default function Page() {
                 </div>
                 <span className="shrink-0 rounded-full border border-[#d8a86f]/30 bg-[#d8a86f]/10 px-3 py-2 text-xs font-black text-[#d8a86f]">AI 상담 캐릭터</span>
               </div>
-              <div className="flex snap-x gap-4 overflow-x-auto pb-3">
+              <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 [-ms-overflow-style:none] [scrollbar-width:none]">
                 {characters.map((card) => (
                   <CharacterCardView key={card.id} card={card} onSelect={() => goInput(card.categoryId)} />
                 ))}
