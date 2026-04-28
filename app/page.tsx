@@ -407,11 +407,11 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
       onClick={onSelect}
       className="w-full overflow-hidden rounded-[24px] border border-[#d8a86f]/25 bg-black shadow-xl transition hover:-translate-y-1 hover:border-[#d8a86f]/80"
     >
-      <div className="relative aspect-[3/5.8] w-full overflow-hidden bg-black">
+      <div className="relative aspect-[3/5.6] w-full overflow-hidden bg-black">
         <img
           src={card.image}
           alt={card.title}
-          className="h-full w-full object-cover object-top"
+          className="h-full w-full object-contain"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
@@ -422,7 +422,7 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
         </div>
       </div>
 
-      <div className="border-t border-[#d8a86f]/20 bg-[#d8a86f] px-2 py-1.5 text-center text-xs font-black text-black">
+      <div className="border-t border-[#d8a86f]/20 bg-[#d8a86f] px-2 py-1 text-center text-xs font-black text-black">
         물어보기 →
       </div>
     </button>
