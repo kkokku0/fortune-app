@@ -410,12 +410,25 @@ function CharacterCardView({ card, onSelect }: { card: Character; onSelect: () =
       <div className="relative aspect-[3/5.6] w-full overflow-hidden bg-black">
         <img
           src={card.image}
-          alt={card.title}
-          className="h-full w-full object-contain"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full scale-125 object-cover opacity-35 blur-xl"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
+
+        <div className="absolute inset-0 bg-black/35" />
+
+        <img
+          src={card.image}
+          alt={card.title}
+          className="relative z-10 h-full w-full object-contain"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+
         <div className="absolute inset-0 -z-10 grid place-items-center bg-gradient-to-br from-[#2b1b10] via-[#151018] to-black p-5 text-center">
           <div className="text-5xl">{card.emoji}</div>
           <div className="mt-3 text-sm font-black leading-tight text-white">{card.title}</div>
