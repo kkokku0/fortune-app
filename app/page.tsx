@@ -4,7 +4,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
 
 type Step = "home" | "input" | "result" | "consult";
-
 type CategoryId =
   | "today"
   | "worry"
@@ -32,6 +31,7 @@ type UserInfo = {
   partnerYear: string;
   partnerMonth: string;
   partnerDay: string;
+  partnerCalendar: "양력" | "음력";
   partnerBirthTime: string;
   partnerGender: "남성" | "여성";
 };
@@ -53,17 +53,17 @@ type Character = {
   categoryId: CategoryId;
 };
 
+type Review = {
+  name: string;
+  category: string;
+  text: string;
+};
+
 type ConsultPlan = {
   id: string;
   title: string;
   price: number;
   desc: string;
-};
-
-type Review = {
-  name: string;
-  category: string;
-  text: string;
 };
 
 const emptyUser: UserInfo = {
@@ -79,130 +79,31 @@ const emptyUser: UserInfo = {
   partnerYear: "",
   partnerMonth: "",
   partnerDay: "",
+  partnerCalendar: "양력",
   partnerBirthTime: "",
   partnerGender: "여성",
 };
 
 const categories: Category[] = [
-  {
-    id: "money",
-    title: "재물운",
-    subtitle: "돈이 왜 안 남는지",
-    emoji: "💰",
-    price: 6900,
-    featured: true,
-  },
-  {
-    id: "career",
-    title: "직업/사업운",
-    subtitle: "지금 하는 일 계속해도 되는지",
-    emoji: "💼",
-    price: 6900,
-    featured: true,
-  },
-  {
-    id: "love",
-    title: "연애운",
-    subtitle: "그 사람 마음과 내 패턴",
-    emoji: "❤️",
-    price: 6900,
-    featured: true,
-  },
-  {
-    id: "lifeFlow",
-    title: "인생흐름",
-    subtitle: "앞으로 큰 흐름과 전환점",
-    emoji: "👑",
-    price: 12900,
-    featured: true,
-  },
-  {
-    id: "today",
-    title: "오늘운세",
-    subtitle: "오늘 조심할 선택",
-    emoji: "🌙",
-    price: 1900,
-  },
-  {
-    id: "worry",
-    title: "고민풀이",
-    subtitle: "계속 맴도는 문제",
-    emoji: "✨",
-    price: 3900,
-  },
-  {
-    id: "marriage",
-    title: "결혼운",
-    subtitle: "배우자운과 생활 기준",
-    emoji: "💍",
-    price: 6900,
-  },
-  {
-    id: "compatibility",
-    title: "궁합풀이",
-    subtitle: "왜 끌리고 부딪히는지",
-    emoji: "👥",
-    price: 6900,
-  },
-  {
-    id: "family",
-    title: "가족관계",
-    subtitle: "가까워서 어려운 관계",
-    emoji: "🏠",
-    price: 6900,
-  },
-  {
-    id: "partner",
-    title: "사업파트너",
-    subtitle: "같이 돈 벌 사람인지",
-    emoji: "🤝",
-    price: 12900,
-  },
-  {
-    id: "monthly",
-    title: "12개월운세",
-    subtitle: "움직일 달과 참을 달",
-    emoji: "🗓️",
-    price: 12900,
-  },
-  {
-    id: "premium",
-    title: "프리미엄상담",
-    subtitle: "질문 하나를 깊게",
-    emoji: "🔮",
-    price: 29000,
-  },
+  { id: "money", title: "재물운", subtitle: "돈이 왜 안 남는지", emoji: "💰", price: 6900, featured: true },
+  { id: "career", title: "직업/사업운", subtitle: "지금 하는 일 계속해도 되는지", emoji: "💼", price: 6900, featured: true },
+  { id: "love", title: "연애운", subtitle: "그 사람 마음과 내 패턴", emoji: "❤️", price: 6900, featured: true },
+  { id: "lifeFlow", title: "인생흐름", subtitle: "앞으로 큰 흐름과 전환점", emoji: "👑", price: 12900, featured: true },
+  { id: "today", title: "오늘운세", subtitle: "오늘 조심할 선택", emoji: "🌙", price: 1900 },
+  { id: "worry", title: "고민풀이", subtitle: "계속 맴도는 문제", emoji: "✨", price: 3900 },
+  { id: "marriage", title: "결혼운", subtitle: "배우자운과 생활 기준", emoji: "💍", price: 6900 },
+  { id: "compatibility", title: "궁합풀이", subtitle: "왜 끌리고 부딪히는지", emoji: "👥", price: 6900 },
+  { id: "family", title: "가족관계", subtitle: "가까워서 어려운 관계", emoji: "🏠", price: 6900 },
+  { id: "partner", title: "사업파트너", subtitle: "같이 돈 벌 사람인지", emoji: "🤝", price: 12900 },
+  { id: "monthly", title: "12개월운세", subtitle: "움직일 달과 참을 달", emoji: "🗓️", price: 12900 },
+  { id: "premium", title: "프리미엄상담", subtitle: "질문 하나를 깊게", emoji: "🔮", price: 29000 },
 ];
 
 const characters: Character[] = [
-  {
-    id: "bro",
-    title: "운세형",
-    image: "/characters/bro.png",
-    emoji: "🧑‍💼",
-    categoryId: "career",
-  },
-  {
-    id: "grandma",
-    title: "춘옥할매",
-    image: "/characters/grandma.png",
-    emoji: "👵",
-    categoryId: "lifeFlow",
-  },
-  {
-    id: "seoyeon",
-    title: "서연",
-    image: "/characters/seoyeon.png",
-    emoji: "💘",
-    categoryId: "love",
-  },
-  {
-    id: "teacher",
-    title: "도훈",
-    image: "/characters/teacher.png",
-    emoji: "💰",
-    categoryId: "money",
-  },
+  { id: "bro", title: "운세형", image: "/characters/bro.png", emoji: "🧑‍💼", categoryId: "career" },
+  { id: "grandma", title: "춘옥할매", image: "/characters/grandma.png", emoji: "👵", categoryId: "lifeFlow" },
+  { id: "seoyeon", title: "서연", image: "/characters/seoyeon.png", emoji: "💘", categoryId: "love" },
+  { id: "teacher", title: "도훈", image: "/characters/teacher.png", emoji: "💰", categoryId: "money" },
 ];
 
 const reviews: Review[] = [
@@ -248,24 +149,6 @@ const reviews: Review[] = [
   { name: "파xx", category: "재물운", text: "부업을 막 시작하려던 참인데 검증부터 하라는 말이 도움됐어요." },
   { name: "늘xx", category: "인생흐름", text: "늦었다는 생각이 많았는데 전환점이라는 말이 힘이 됐어요." },
   { name: "정xx", category: "직업/사업운", text: "내가 에너지를 어디에 낭비하는지 보게 됐어요." },
-  { name: "율xx", category: "연애운", text: "기다릴지 말지보다 내 마음이 왜 흔들리는지 알게 됐어요." },
-  { name: "산xx", category: "가족관계", text: "가까울수록 선이 필요하다는 말이 제일 좋았어요." },
-  { name: "담xx", category: "프리미엄상담", text: "짧은 문장 몇 개가 아니라 긴 흐름으로 설명돼서 만족했어요." },
-  { name: "서xx", category: "결혼운", text: "결혼을 너무 감정으로만 봤다는 걸 알게 됐어요." },
-  { name: "로xx", category: "사업파트너", text: "같이 돈 벌 사람인지 보는 기준이 생겼어요." },
-  { name: "지xx", category: "궁합풀이", text: "상대랑 왜 끌리는지, 왜 피곤한지 둘 다 설명돼서 신기했어요." },
-  { name: "윤xx", category: "고민풀이", text: "내가 답을 모르는 게 아니라 겁내고 있었다는 말이 맞았어요." },
-  { name: "희xx", category: "오늘운세", text: "간단하게 봤는데도 오늘의 기준이 생겨서 좋았어요." },
-  { name: "노xx", category: "재물운", text: "돈이 들어오는 운보다 돈이 머무는 구조를 말해줘서 신뢰가 갔어요." },
-  { name: "마xx", category: "직업/사업운", text: "다 벌리기보다 하나로 좁히라는 말이 지금 제일 필요했어요." },
-  { name: "다xx", category: "연애운", text: "상대 연락보다 내 하루가 무너지는지 보라는 말이 기억나요." },
-  { name: "필xx", category: "인생흐름", text: "과거를 후회하기보다 재료로 보라는 말이 좋았어요." },
-  { name: "초xx", category: "12개월운세", text: "언제 움직이고 언제 기다릴지 감이 잡혔어요." },
-  { name: "비xx", category: "가족관계", text: "책임감과 죄책감을 구분해줘서 마음이 좀 가벼워졌어요." },
-  { name: "건xx", category: "프리미엄상담", text: "내 질문을 현실적인 행동으로 바꿔줘서 좋았어요." },
-  { name: "소xx", category: "결혼운", text: "감정보다 생활 기준이라는 말이 계속 생각났어요." },
-  { name: "단xx", category: "사업파트너", text: "처음에 불편한 얘기를 해야 나중에 덜 다친다는 말이 맞는 것 같아요." },
-  { name: "원xx", category: "궁합풀이", text: "잘 맞는 부분과 부딪히는 부분을 같이 말해줘서 좋았어요." },
 ];
 
 const birthTimes = [
@@ -285,25 +168,25 @@ const birthTimes = [
 ];
 
 const consultPlans: ConsultPlan[] = [
-  {
-    id: "basic",
-    title: "일반 상담권",
-    price: 19000,
-    desc: "고민 1개 · 현실적인 선택 방향",
-  },
-  {
-    id: "premium",
-    title: "프리미엄 상담권",
-    price: 29000,
-    desc: "깊은 고민 1개 · 긴 상담 리포트",
-  },
-  {
-    id: "couple",
-    title: "궁합 상담권",
-    price: 39000,
-    desc: "두 사람 관계/궁합 집중 풀이",
-  },
+  { id: "basic", title: "일반 상담권", price: 19000, desc: "고민 1개 · 현실적인 선택 방향" },
+  { id: "premium", title: "프리미엄 상담권", price: 29000, desc: "깊은 고민 1개 · 긴 상담 리포트" },
+  { id: "couple", title: "궁합 상담권", price: 39000, desc: "두 사람 관계/궁합 집중 풀이" },
 ];
+
+const questionExamples: Record<CategoryId, string[]> = {
+  today: ["오늘 가장 조심해야 할 선택은 뭔가요?", "오늘 연락이나 돈 쓰는 일에서 조심할 게 있을까요?", "오늘 하루를 잘 넘기려면 무엇을 피해야 하나요?"],
+  worry: ["지금 이 고민을 계속 붙잡고 있어도 될까요?", "선택을 못 하는 진짜 이유가 뭘까요?", "지금 당장 하나만 정리한다면 무엇부터 해야 할까요?"],
+  money: ["돈이 왜 들어와도 남지 않을까요?", "지금 부업이나 투자를 시작해도 괜찮을까요?", "재물운을 막는 습관이나 선택이 있을까요?"],
+  career: ["지금 하는 일을 계속해도 될까요?", "직업을 바꾸는 게 맞을까요, 버티는 게 맞을까요?", "사업이나 부업으로 돈이 될 방향이 있을까요?"],
+  love: ["그 사람을 계속 기다려도 될까요?", "상대 마음보다 제가 왜 이렇게 흔들릴까요?", "지금 이 관계가 저에게 좋은 흐름일까요?"],
+  marriage: ["이 사람과 결혼까지 생각해도 괜찮을까요?", "결혼운에서 지금 가장 봐야 할 기준은 뭔가요?", "감정 말고 현실적으로 맞는 부분이 있을까요?"],
+  compatibility: ["우리는 왜 끌리면서도 자꾸 부딪힐까요?", "이 관계를 계속 이어가도 괜찮을까요?", "서로 맞는 부분과 조심할 부분은 뭔가요?"],
+  family: ["가족 문제에서 제가 어디까지 감당해야 할까요?", "가족에게 선을 긋는 게 맞을까요?", "가까운 관계인데 왜 이렇게 힘들까요?"],
+  partner: ["이 사람과 같이 돈을 벌어도 괜찮을까요?", "사업파트너로 맞는 사람인지 보고 싶어요.", "같이 시작하기 전에 조심할 기준은 뭔가요?"],
+  lifeFlow: ["제 인생 흐름에서 지금은 어떤 시기인가요?", "왜 계속 돌아가는 느낌이 들까요?", "앞으로 큰 전환점은 어디서 올까요?"],
+  monthly: ["앞으로 12개월 중 언제 움직이면 좋을까요?", "올해 돈과 일에서 조심할 달은 언제인가요?", "연애나 관계 흐름이 좋아지는 시기가 있을까요?"],
+  premium: ["지금 제일 답답한 문제를 깊게 풀어주세요.", "제가 지금 무엇을 붙잡고 무엇을 내려놔야 할까요?", "현재 상황에서 현실적으로 가장 좋은 선택은 뭘까요?"],
+};
 
 function cx(...items: Array<string | false | undefined>) {
   return items.filter(Boolean).join(" ");
@@ -317,121 +200,17 @@ function nameOf(user: UserInfo) {
   return user.name.trim() || "너";
 }
 
-function fallbackPreview(categoryId: CategoryId, user: UserInfo) {
-  const name = nameOf(user);
-
-  const map: Record<CategoryId, string> = {
-    today: `야 ${name}, 오늘은 작은 선택 하나가 하루 흐름을 바꾸는 날이다. 말 한마디, 연락 하나, 돈 쓰는 순간 하나가 생각보다 크게 이어질 수 있어. 오늘은 감정 올라온 상태에서 바로 결정하면 손해 보기 쉽다. 그래서 중요한 연락, 돈 쓰는 일, 누군가에게 확답하는 일은 한 번 숨 고르고 가는 게 좋다.`,
-    worry: `야 ${name}, 지금 고민은 단순히 선택을 못 해서가 아니다. 이미 답은 어느 정도 알고 있는데 실패하거나 잃을까 봐 멈춘 상태에 가깝다. 생각이 부족한 게 아니라, 기준이 흐려져서 계속 제자리에서 맴도는 흐름이다.`,
-    money: `야 ${name}, 돈이 안 들어오는 게 문제가 아니라 남지 않는 구조가 더 커 보인다. 지금은 더 벌려고 무리하기보다 새는 구멍부터 막아야 돈운이 열린다. 특히 감정적으로 돈을 쓰거나, 확신 없는 일에 돈을 넣는 선택은 조심해야 한다.`,
-    career: `야 ${name}, 지금 일 흐름은 더 열심히가 아니라 어디에 힘을 몰아야 하는지가 핵심이다. 방향이 흩어지면 결과도 흩어진다. 지금은 이것저것 다 잡으려는 것보다 돈이 될 수 있는 한 가지 흐름을 먼저 좁혀야 한다.`,
-    love: `야 ${name}, 지금 연애운은 상대 마음보다 네가 왜 흔들리는지를 먼저 봐야 한다. 설렘과 불안을 헷갈리면 비슷한 관계가 반복될 수 있다. 지금은 상대가 나를 좋아하느냐보다, 그 관계가 나를 안정시키는지 봐야 한다.`,
-    marriage: `야 ${name}, 결혼운은 설렘보다 생활, 돈, 가족, 습관을 봐야 한다. 같이 살아도 무너지지 않을 기준이 있는지가 중요하다. 좋아하는 마음만으로는 버티기 어려운 현실 조건들이 들어오는 흐름이다.`,
-    compatibility: `야 ${name}, 이 관계는 좋다 나쁘다로 자르기 어렵다. 끌리는 이유도 있고 부딪히는 이유도 분명하다. 서로 다르게 반응하는 지점을 봐야 한다. 궁합은 안 싸우는 관계가 아니라, 싸워도 회복할 수 있는 구조가 있는지를 보는 거다.`,
-    family: `야 ${name}, 가족관계는 가까워서 더 어렵다. 책임감과 서운함 사이에서 선을 다시 잡아야 한다. 가족이라고 해서 모든 걸 감당해야 하는 건 아니고, 가까울수록 기준이 있어야 오래 간다.`,
-    partner: `야 ${name}, 사업파트너는 사람 좋다고 같이 가면 위험하다. 역할, 돈 기준, 책임 범위가 먼저다. 좋은 사람이어도 돈이 섞이면 다른 모습이 나올 수 있어서 처음부터 기준을 잡아야 한다.`,
-    lifeFlow: `야 ${name}, 네 인생흐름은 직선보다 돌아가며 길이 만들어지는 쪽에 가깝다. 늦은 게 아니라 쌓인 경험을 구조로 바꿀 때다. 지금 답답한 건 멈춘 게 아니라 방향을 다시 잡으라는 신호에 가깝다.`,
-    monthly: `야 ${name}, 앞으로 12개월은 움직일 달과 참아야 할 달이 다르다. 타이밍을 알아야 힘을 덜 쓰고 결과를 잡는다. 무조건 밀어붙이는 방식보다, 정리할 달과 실행할 달을 나눠야 한다.`,
-    premium: `야 ${name}, 이건 그냥 운세가 아니라 네 질문 하나를 깊게 파는 상담이다. 감정과 현실을 같이 봐야 답이 나온다. 지금 네가 붙잡고 있는 고민은 표면보다 안쪽 이유가 더 중요하다.`,
-  };
-
-  return `${map[categoryId]}
-
-조금 더 길게 보면, 지금 네 흐름은 단순히 운이 좋다 나쁘다로 끝낼 문제가 아니다. 같은 고민이 반복됐다면 거기에는 반드시 패턴이 있고, 그 패턴을 먼저 봐야 방향이 잡힌다.
-
-무료 분석에서는 네가 지금 왜 막혀 있는지, 어떤 선택을 조심하면 좋은지, 어디서부터 흐름을 정리해야 하는지 먼저 짚어준다. 여기까지만 봐도 지금 상황을 이해하는 데는 충분하다.
-
-다만 앞으로 30일에서 3개월 사이에 어떤 흐름이 바뀌는지, 돈·일·관계에서 무엇을 먼저 정리해야 하는지까지 보고 싶다면 전체 리포트에서 이어서 보면 된다.`;
-}
-
-function fallbackFull(categoryId: CategoryId, user: UserInfo) {
-  const name = nameOf(user);
-  const category = getCategory(categoryId);
-
-  const intro = `야 ${name}, 지금부터는 조금 길게 풀어볼게.
-
-지금 네 흐름은 단순히 운이 좋다 나쁘다로 자를 수 있는 구간이 아니다. 겉으로 보기에는 막힌 것처럼 보여도, 실제로는 방향을 다시 잡으라는 신호가 강하게 들어와 있다. 이럴 때 제일 위험한 건 조급해서 아무거나 붙잡는 거다. 사람도, 일도, 돈도 마찬가지다.
-
-지금은 더 많이 벌고, 더 열심히 하고, 더 붙잡는 게 답이 아닐 수 있다. 오히려 어디에서 힘이 새고 있는지, 어떤 선택이 계속 같은 결과를 만들고 있는지 먼저 봐야 한다. 좋은 흐름이 들어와도 받을 준비가 안 되어 있으면 결국 다시 흘려보내게 된다.`;
-
-  const categoryText: Record<CategoryId, string> = {
-    today: `오늘은 말과 선택을 조심해야 한다. 크게 움직이는 것보다 작은 실수를 막는 게 더 중요하다. 특히 감정이 올라온 상태에서 바로 답하거나 결정하면 나중에 후회할 수 있다. 오늘은 한 번 멈추고, 확인하고, 그 다음에 움직이는 게 좋다. 오늘 들어오는 기회는 거창한 모양이 아니라 작은 연락, 작은 제안, 작은 정리에서 시작될 가능성이 높다.`,
-    worry: `지금 고민의 핵심은 선택 자체보다 선택 이후를 감당할 수 있을지에 대한 불안이다. 네가 답을 모르는 게 아니라, 답을 선택했을 때 잃을 것이 있을까 봐 멈춘 상태에 가깝다. 이럴 때는 큰 결론보다 작은 테스트가 먼저다. 작게 해보고 반응을 봐야 머릿속 고민이 현실 판단으로 바뀐다.`,
-    money: `돈 흐름에서는 새는 구멍이 먼저 보인다. 돈이 없어서 문제가 아니라, 들어온 돈이 머무는 구조가 약하다. 지출 기준, 충동 구매, 검증 안 된 부업이나 투자에 대한 끌림을 조심해야 한다. 앞으로 3개월은 더 버는 것보다 남기는 구조를 만드는 게 먼저다. 돈은 한 번 크게 들어오는 것보다 반복해서 남는 구조가 만들어질 때 진짜 힘이 생긴다.`,
-    career: `일 흐름에서는 방향 분산이 가장 크게 보인다. 하고 싶은 것도 많고 살 길을 찾고 싶은 마음도 강한데, 하나로 묶이는 구조가 약하다. 지금은 직업을 바꾸는 것보다 돈이 되는 능력과 반복 가능한 서비스를 먼저 정리해야 한다. 이것저것 다 벌리면 에너지만 빠지고 결과는 흐려질 수 있다.`,
-    love: `연애 흐름에서는 상대보다 네 반응 패턴이 더 중요하다. 누가 나를 좋아하느냐보다, 내가 누구 앞에서 불안해지고 흔들리는지를 봐야 한다. 설렘과 불안을 헷갈리면 같은 관계를 반복할 수 있다. 좋은 인연은 마음을 계속 불안하게 만드는 사람이 아니라, 내 일상까지 무너지지 않게 해주는 사람이다.`,
-    marriage: `결혼운은 연애운과 다르게 봐야 한다. 같이 웃는 사람보다 같이 생활을 버틸 수 있는 사람이 중요하다. 돈, 가족, 습관, 책임감에서 기준이 맞지 않으면 감정이 좋아도 오래가기 어렵다. 결혼운을 볼 때는 언제 만나는지도 중요하지만, 어떤 사람과 생활 기준이 맞는지가 더 중요하다.`,
-    compatibility: `궁합은 좋다 나쁘다가 아니다. 서로 끌리는 이유와 부딪히는 이유가 동시에 있다. 처음에는 다름이 매력으로 보이지만, 시간이 지나면 그 차이가 피로가 될 수 있다. 그래서 관계를 살리려면 표현 방식과 갈등 해결 기준을 맞춰야 한다. 회복 방식이 맞으면 오래 가고, 회복 방식이 안 맞으면 사소한 일도 크게 번진다.`,
-    family: `가족관계는 가까워서 더 어렵다. 책임감 때문에 거절하기 어렵고, 서운함이 쌓여도 쉽게 끊어내기 어렵다. 하지만 가족이라고 해서 모든 부탁을 받아야 하는 건 아니다. 가까울수록 선이 있어야 오래 간다. 지금은 정이 없는 게 아니라, 내 감정이 무너지지 않는 선을 만드는 게 필요하다.`,
-    partner: `사업파트너 궁합에서는 정과 친분보다 역할과 돈 기준이 먼저다. 좋은 사람이어도 돈을 같이 벌면 다른 얼굴이 나온다. 누가 결정하고, 누가 실행하고, 돈은 어떻게 나눌지 명확해야 한다. 시작 전에 불편한 얘기를 피하면 나중에 더 큰 갈등으로 돌아올 수 있다.`,
-    lifeFlow: `인생흐름은 돌아온 시간이 헛된 게 아니라 재료가 되는 흐름이다. 네 인생은 직선형보다 경험을 쌓고 방향을 틀면서 길이 만들어지는 구조에 가깝다. 지금은 과거를 후회하기보다 그것을 돈이 되는 구조로 바꿔야 한다. 늦었다고 느끼는 시점이 오히려 방향을 바꾸기 좋은 전환점일 수 있다.`,
-    monthly: `앞으로 12개월은 한 번에 달리는 흐름이 아니다. 움직일 달과 쉬어야 할 달이 나뉜다. 초반에는 정리와 테스트가 중요하고, 중반에는 사람 반응을 봐야 하며, 후반에는 반복 가능한 구조를 만들어야 한다. 좋은 달에 무리하고, 쉬어야 할 달에 억지로 밀면 흐름이 꼬일 수 있다.`,
-    premium: `프리미엄 상담은 한 가지 질문을 깊게 파는 흐름이다. 감정만 보면 답이 흐리고, 현실만 보면 마음이 따라오지 않는다. 그래서 네가 지금 왜 흔들리는지, 무엇을 줄이고 무엇을 붙잡아야 하는지를 같이 봐야 한다. 지금 질문의 핵심은 표면의 답보다 반복되는 구조를 확인하는 데 있다.`,
-  };
-
-  return `${intro}
-
-[${category.title} 핵심]
-${categoryText[categoryId]}
-
-[지금 네가 막히는 진짜 이유]
-지금 막힘은 한 가지 이유로만 생긴 게 아니다. 마음은 급한데 기준이 흐리고, 기준이 흐리니까 선택이 자꾸 늦어지고, 선택이 늦어지니까 다시 불안해지는 흐름이 반복된다. 이럴 때는 운이 없는 게 아니라 운을 받을 그릇이 정리되지 않은 상태에 가깝다. 그래서 지금은 뭘 더 추가하기보다 불필요한 것부터 걷어내야 한다.
-
-[조심해야 할 선택]
-지금 가장 조심해야 할 건 불안해서 급하게 결정하는 거다. 급하게 시작한 일, 애매하게 붙잡은 사람, 검증 안 된 돈벌이 방식은 처음엔 뭔가 하는 것 같아도 결국 다시 지치게 만들 수 있다. 지금은 큰 선택보다 작은 검증이 먼저다. 특히 남들이 좋다고 하는 방향을 그대로 따라가면 네 흐름과 맞지 않아 오래 버티기 어렵다.
-
-[돈·일·관계에서 먼저 봐야 할 것]
-돈은 들어오는 양보다 남는 구조를 봐야 하고, 일은 오래 반복할 수 있는 형태인지 봐야 한다. 관계는 나를 안정시키는 사람인지, 계속 불안하게 만드는 사람인지 구분해야 한다. 이 세 가지가 정리되지 않으면 아무리 좋은 기회가 와도 다시 흔들릴 수 있다.
-
-[앞으로 30일]
-앞으로 30일은 정리하는 시간으로 써라. 지출, 관계, 일 방향 중에서 가장 자주 흔들리는 지점을 하나만 고르고 그 부분부터 정리해라. 전부 다 바꾸려고 하면 아무것도 못 바꾼다. 하루에 하나씩만 줄이고, 하나씩만 확인해라. 작은 정리가 쌓이면 흐름이 달라진다.
-
-[앞으로 3개월]
-3개월 흐름은 작게 보여주고 반응을 확인하는 쪽이 좋다. 사람에게 보여주고, 돈을 받아보고, 반복 가능한지 확인해야 한다. 머릿속에서만 고민하면 운이 움직이지 않는다. 처음부터 크게 벌리기보다 작은 테스트를 여러 번 하면서 반응이 오는 쪽으로 힘을 모아라.
-
-[실제로 해볼 행동]
-첫째, 이번 주 안에 지금 제일 불안한 문제를 종이에 하나만 적어라. 둘째, 그 문제를 해결하기 위해 오늘 할 수 있는 가장 작은 행동을 정해라. 셋째, 돈이든 관계든 일이든 결과가 바로 안 나와도 최소 7일은 같은 방향으로 관찰해라. 운은 갑자기 터지는 것처럼 보여도 사실은 작은 반복이 쌓여서 움직인다.
-
-[운세형 한마디]
-${name}, 지금 네가 필요한 건 대단한 확신이 아니다. 오늘 바로 줄일 것 하나, 오늘 바로 시작할 것 하나를 정하는 거다. 운은 생각 속에서 열리는 게 아니라 움직이는 순간부터 반응한다. 그러니까 너무 큰 답을 찾으려고 멈추지 말고, 작게라도 네 흐름을 다시 움직여라.`;
-}
-
-function SafeImage({
-  src,
-  alt,
-  fallback,
-}: {
-  src: string;
-  alt: string;
-  fallback: string;
-}) {
+function SafeImage({ src, alt, fallback }: { src: string; alt: string; fallback: string }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
-    return (
-      <div className="grid h-full w-full place-items-center text-6xl text-white">
-        {fallback}
-      </div>
-    );
+    return <div className="grid h-full w-full place-items-center text-6xl text-white">{fallback}</div>;
   }
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className="h-full w-full object-contain"
-      onError={() => setFailed(true)}
-    />
-  );
+  return <img src={src} alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} />;
 }
 
-function CharacterCard({
-  card,
-  onSelect,
-}: {
-  card: Character;
-  onSelect: () => void;
-}) {
+function CharacterCard({ card, onSelect }: { card: Character; onSelect: () => void }) {
   return (
     <div className="space-y-2">
       <button
@@ -440,14 +219,9 @@ function CharacterCard({
         className="block w-full overflow-hidden rounded-[30px] border border-[#7a5b37] bg-black shadow-[0_18px_45px_rgba(0,0,0,0.42)] transition hover:-translate-y-1 hover:border-[#e0b36d]"
       >
         <div className="relative aspect-[3/4.6] w-full overflow-hidden bg-black">
-          <SafeImage
-            src={card.image}
-            alt={card.title}
-            fallback={card.emoji}
-          />
+          <SafeImage src={card.image} alt={card.title} fallback={card.emoji} />
         </div>
       </button>
-
       <button
         type="button"
         onClick={onSelect}
@@ -471,29 +245,31 @@ export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [fullLoading, setFullLoading] = useState(false);
   const [aiPreview, setAiPreview] = useState("");
   const [aiFull, setAiFull] = useState("");
   const [consultQuestion, setConsultQuestion] = useState("");
   const [consultAiResult, setConsultAiResult] = useState("");
-  const [user, setUser] = useState<UserInfo>(emptyUser);
   const [reviewPage, setReviewPage] = useState(1);
+  const [user, setUser] = useState<UserInfo>(emptyUser);
 
   const category = useMemo(() => getCategory(categoryId), [categoryId]);
   const selectedPlanInfo = consultPlans.find((plan) => plan.id === selectedPlan) || consultPlans[1];
   const showPartnerFields = categoryId === "compatibility" || categoryId === "partner" || categoryId === "family";
   const showQuestion = categoryId === "premium" || categoryId === "worry";
-  const birthMeta = `${user.year || "----"}년 ${user.month || "--"}월 ${user.day || "--"}일 · ${user.calendar} · ${user.gender}`;
   const featuredCategories = categories.filter((item) => item.featured);
   const normalCategories = categories.filter((item) => !item.featured);
   const reviewPages = 14;
   const reviewsPerPage = 3;
   const visibleReviews = reviews.slice((reviewPage - 1) * reviewsPerPage, reviewPage * reviewsPerPage);
+  const birthMeta = `${user.year || "----"}년 ${user.month || "--"}월 ${user.day || "--"}일 · ${user.calendar} · ${user.gender}`;
 
   const goInput = (id: CategoryId) => {
     setCategoryId(id);
     setPaid(false);
     setAiPreview("");
     setAiFull("");
+    setConsultAiResult("");
     setMenuOpen(false);
     setStep("input");
   };
@@ -539,23 +315,61 @@ export default function Page() {
       const response = await fetch("/api/fortune", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user, categoryTitle: category.title, question: user.question }),
+        body: JSON.stringify({
+          mode: "preview",
+          user,
+          categoryId,
+          categoryTitle: category.title,
+          question: user.question,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "AI 생성 실패");
+        throw new Error(data.error || "무료 결과 생성 실패");
       }
 
-      setAiPreview(data.preview || fallbackPreview(categoryId, user));
-      setAiFull(data.full || data.result || fallbackFull(categoryId, user));
+      setAiPreview(data.preview || "[API 응답 없음] 무료 운세 결과를 불러오지 못했습니다.");
+      setAiFull("");
     } catch (error) {
       console.error(error);
-      setAiPreview(fallbackPreview(categoryId, user));
-      setAiFull(fallbackFull(categoryId, user));
+      setAiPreview("운세 결과를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setAiFull("");
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const generateFullResult = async () => {
+    setFullLoading(true);
+    setAiFull("");
+
+    try {
+      const response = await fetch("/api/fortune", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "full",
+          user,
+          categoryId,
+          categoryTitle: category.title,
+          question: user.question,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "전체 리포트 생성 실패");
+      }
+
+      setAiFull(data.full || data.result || "[API 응답 없음] 전체 리포트를 불러오지 못했습니다.");
+    } catch (error) {
+      console.error(error);
+      setAiFull("전체 리포트를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setFullLoading(false);
     }
   };
 
@@ -568,7 +382,9 @@ export default function Page() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode: "full",
           user: { ...user, question: consultQuestion },
+          categoryId: "premium",
           categoryTitle: selectedPlanInfo.title,
           question: consultQuestion,
         }),
@@ -639,7 +455,6 @@ export default function Page() {
             <div className="text-2xl font-black tracking-[-0.05em] text-[#d8a86f]">운명서재</div>
             <div className="text-[11px] font-black tracking-[0.12em] text-[#b98a52]">듣기 좋은 말보다 지금 필요한 말</div>
           </button>
-
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -665,7 +480,6 @@ export default function Page() {
                 ×
               </button>
             </div>
-
             <div className="space-y-3">
               {categories.map((item) => (
                 <button
@@ -729,10 +543,8 @@ export default function Page() {
               <p className="mt-3 break-keep text-[15px] font-medium leading-7 text-[#c8beb0]">
                 음양오행의 균형과 사주의 흐름을 바탕으로,
                 <span className="font-bold text-[#f5efe6]"> 타고난 기질</span>,
-                <span className="font-bold text-[#d8a86f]"> 현재 막히는 지점</span>,
-                그리고 현실에서 바꿀 수 있는 선택을 함께 풀어드립니다.
+                <span className="font-bold text-[#d8a86f]"> 현재 막히는 지점</span>, 그리고 현실에서 바꿀 수 있는 선택을 함께 풀어드립니다.
               </p>
-
               <div className="mt-5 grid gap-3">
                 {[
                   ["타고난 기질", "내가 어떤 흐름에 강하고 약한지 봅니다."],
@@ -752,17 +564,24 @@ export default function Page() {
               <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
                 부담 없이 먼저 읽어보고, 내 얘기 같다고 느껴지는 지점부터 더 깊게 확인하면 됩니다.
               </p>
-
               <div className="mt-5 space-y-3">
-                {[
-                  "지금 왜 흐름이 막혔는지",
-                  "같은 선택이 반복되는 이유",
-                  "오늘 조심해야 할 포인트",
-                  "지금 바로 바꿀 수 있는 행동 하나",
-                ].map((item) => (
+                {["지금 왜 흐름이 막혔는지", "같은 선택이 반복되는 이유", "오늘 조심해야 할 포인트", "지금 바로 바꿀 수 있는 행동 하나"].map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4">
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-[#d8a86f] text-sm font-black text-black">✓</span>
                     <span className="text-sm font-bold text-[#f5efe6]">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
+              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">이런 분께 추천해요</h2>
+              <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">아래 중 하나라도 해당된다면 무료 분석부터 먼저 확인해보세요.</p>
+              <div className="mt-5 space-y-3">
+                {["같은 고민이 계속 반복되는 분", "돈은 버는데 이상하게 남지 않는 분", "연애에서 자꾸 불안해지는 분", "지금 일을 계속해야 할지 고민되는 분"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4">
+                    <span className="grid h-7 w-7 place-items-center rounded-full border border-[#d8a86f] bg-black/35 text-sm font-black text-[#d8a86f]">✓</span>
+                    <span className="break-keep text-sm font-bold text-[#f5efe6]">{item}</span>
                   </div>
                 ))}
               </div>
@@ -773,21 +592,12 @@ export default function Page() {
                 <div className="inline-flex rounded-full border border-[#d8a86f] bg-black/35 px-4 py-2 text-xs font-black tracking-[0.08em] text-[#e0b36d]">
                   부담은 낮게, 해석은 깊게
                 </div>
-
-                <h2 className="mt-5 text-2xl font-black leading-tight tracking-[-0.045em] text-white">
-                  처음부터 큰돈 쓰지 않아도 됩니다
-                </h2>
-
+                <h2 className="mt-5 text-2xl font-black leading-tight tracking-[-0.045em] text-white">처음부터 큰돈 쓰지 않아도 됩니다</h2>
                 <p className="mt-4 break-keep text-[15px] font-medium leading-7 text-[#c8beb0]">
-                  <span className="font-black text-[#d8a86f]">오늘의 흐름은 1,900원부터</span>,
-                  재물·연애·직업/사업운처럼 더 깊은 리포트는
+                  <span className="font-black text-[#d8a86f]">오늘의 흐름은 1,900원부터</span>, 재물·연애·직업/사업운처럼 더 깊은 리포트는
                   <span className="font-black text-[#f5efe6]"> 6,900원</span>으로 확인할 수 있습니다.
                 </p>
-
-                <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-                  무료 분석으로 먼저 흐름을 보고, 필요한 경우에만 전체 리포트로 이어서 보세요.
-                </p>
-
+                <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">무료 분석으로 먼저 흐름을 보고, 필요한 경우에만 전체 리포트로 이어서 보세요.</p>
                 <button
                   type="button"
                   onClick={() => goInput("today")}
@@ -801,21 +611,13 @@ export default function Page() {
             <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <h2
-                    className="text-3xl font-black tracking-[-0.055em]"
-                    style={{ color: "#d8a86f" }}
-                  >
-                    누구에게 물어볼까요?
-                  </h2>
-                  <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
-                    고민에 따라 보는 관점이 달라집니다. 지금 상황에 맞는 전문가를 선택해보세요.
-                  </p>
+                  <h2 className="text-3xl font-black tracking-[-0.055em] text-[#d8a86f]">누구에게 물어볼까요?</h2>
+                  <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">고민에 따라 보는 관점이 달라집니다. 지금 상황에 맞는 전문가를 선택해보세요.</p>
                 </div>
                 <span className="shrink-0 rounded-full border border-[#d8a86f] bg-[#241e18] px-2 py-4 text-[11px] font-black leading-tight text-[#e0b36d] [writing-mode:vertical-rl] [text-orientation:upright]">
                   전문가
                 </span>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 {characters.map((card) => (
                   <CharacterCard key={card.id} card={card} onSelect={() => goInput(card.categoryId)} />
@@ -825,10 +627,7 @@ export default function Page() {
 
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">지금 많이 보는 상담</h2>
-              <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
-                처음이라면 아래 4개 중 하나부터 보는 걸 추천해요.
-              </p>
-
+              <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">처음이라면 아래 4개 중 하나부터 보는 걸 추천해요.</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {featuredCategories.map((item) => (
                   <button
@@ -843,7 +642,6 @@ export default function Page() {
                   </button>
                 ))}
               </div>
-
               <div className="mt-5 rounded-[24px] border border-[#7a5b37] bg-black/25 p-4">
                 <div className="mb-3 text-sm font-black text-[#e0b36d]">더 보기</div>
                 <div className="grid grid-cols-2 gap-2">
@@ -863,14 +661,16 @@ export default function Page() {
             </section>
 
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
+              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">확인 전에 알아두세요</h2>
+              <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">운명서재의 해석은 입력한 정보와 사주적 흐름을 바탕으로 한 참고용 분석입니다. 중요한 결정은 현실 상황과 함께 판단해 주세요.</p>
+            </section>
+
+            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <div className="mb-4">
                 <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">먼저 본 사람들은 이렇게 느꼈어요</h2>
-                <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
-                  과하게 포장하지 않고, 지금 필요한 말을 들었다는 후기가 많습니다.
-                </p>
+                <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">과하게 포장하지 않고, 지금 필요한 말을 들었다는 후기가 많습니다.</p>
                 <div className="mt-2 text-sm text-[#e0b36d]">★★★★★ 4.8</div>
               </div>
-
               <div className="space-y-3">
                 {visibleReviews.map((review) => (
                   <div key={`${review.name}-${review.category}-${review.text}`} className="rounded-3xl border border-[#7a5b37] bg-black/35 p-4">
@@ -882,8 +682,7 @@ export default function Page() {
                   </div>
                 ))}
               </div>
-
-              <div className="mt-5 flex justify-center gap-2">
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {Array.from({ length: reviewPages }, (_, index) => index + 1).map((page) => (
                   <button
                     key={page}
@@ -891,9 +690,7 @@ export default function Page() {
                     onClick={() => setReviewPage(page)}
                     className={cx(
                       "grid h-9 w-9 place-items-center rounded-full border text-sm font-black",
-                      reviewPage === page
-                        ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                        : "border-[#7a5b37] bg-black/35 text-[#c8beb0]"
+                      reviewPage === page ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-black/35 text-[#c8beb0]"
                     )}
                   >
                     {page}
@@ -907,13 +704,28 @@ export default function Page() {
         {step === "input" && (
           <div className="space-y-5">
             <button type="button" onClick={() => setStep("home")} className="text-sm font-bold text-[#c8beb0]">← 홈으로</button>
-
             <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
               <div className="mb-5 flex items-center gap-4">
                 <div className="grid h-16 w-16 place-items-center rounded-3xl border border-[#7a5b37] bg-[#1b1612] text-3xl">{category.emoji}</div>
                 <div>
                   <h1 className="text-2xl font-black text-[#d8a86f]">{category.title}</h1>
                   <p className="text-sm text-[#c8beb0]">{category.subtitle}</p>
+                </div>
+              </div>
+
+              <div className="mb-5 rounded-3xl border border-[#7a5b37] bg-[#1b1612] p-4">
+                <div className="text-sm font-black text-[#d8a86f]">이런 질문을 해볼 수 있어요</div>
+                <div className="mt-3 space-y-2">
+                  {questionExamples[categoryId].map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      onClick={() => setUser({ ...user, question: example })}
+                      className="w-full rounded-2xl border border-[#7a5b37] bg-black/35 px-4 py-3 text-left text-sm font-semibold leading-5 text-[#f5efe6]"
+                    >
+                      {example}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -940,10 +752,7 @@ export default function Page() {
                     key={value}
                     type="button"
                     onClick={() => setUser({ ...user, calendar: value })}
-                    className={cx(
-                      "rounded-2xl border p-4 font-black",
-                      user.calendar === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white"
-                    )}
+                    className={cx("rounded-2xl border p-4 font-black", user.calendar === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white")}
                   >
                     {value}
                   </button>
@@ -964,10 +773,7 @@ export default function Page() {
                     key={value}
                     type="button"
                     onClick={() => setUser({ ...user, gender: value })}
-                    className={cx(
-                      "rounded-2xl border p-4 font-black",
-                      user.gender === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white"
-                    )}
+                    className={cx("rounded-2xl border p-4 font-black", user.gender === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white")}
                   >
                     {value}
                   </button>
@@ -982,6 +788,50 @@ export default function Page() {
                     <input value={user.partnerYear} onChange={(event) => setUser({ ...user, partnerYear: event.target.value })} placeholder="년도" className="p-4 text-center" />
                     <input value={user.partnerMonth} onChange={(event) => setUser({ ...user, partnerMonth: event.target.value })} placeholder="월" className="p-4 text-center" />
                     <input value={user.partnerDay} onChange={(event) => setUser({ ...user, partnerDay: event.target.value })} placeholder="일" className="p-4 text-center" />
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-2 gap-2">
+                    {(["양력", "음력"] as const).map((value) => (
+                      <button
+                        key={`partner-${value}`}
+                        type="button"
+                        onClick={() => setUser({ ...user, partnerCalendar: value })}
+                        className={cx(
+                          "rounded-2xl border p-4 font-black",
+                          user.partnerCalendar === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white"
+                        )}
+                      >
+                        상대 {value}
+                      </button>
+                    ))}
+                  </div>
+
+                  <FieldLabel>상대방 출생 시간</FieldLabel>
+                  <select
+                    value={user.partnerBirthTime}
+                    onChange={(event) => setUser({ ...user, partnerBirthTime: event.target.value })}
+                    className="mb-3 w-full p-4"
+                  >
+                    {birthTimes.map((time) => (
+                      <option key={`partner-${time}`} value={time === "모름 / 선택 안 함" ? "" : time}>{time}</option>
+                    ))}
+                  </select>
+
+                  <FieldLabel>상대방 성별</FieldLabel>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["남성", "여성"] as const).map((value) => (
+                      <button
+                        key={`partner-gender-${value}`}
+                        type="button"
+                        onClick={() => setUser({ ...user, partnerGender: value })}
+                        className={cx(
+                          "rounded-2xl border p-4 font-black",
+                          user.partnerGender === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white"
+                        )}
+                      >
+                        {value}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1003,6 +853,9 @@ export default function Page() {
                     return;
                   }
                   setPaid(false);
+                  setAiLoading(true);
+                  setAiPreview("");
+                  setAiFull("");
                   setStep("result");
                   setTimeout(() => generateAIResult(), 100);
                 }}
@@ -1018,20 +871,30 @@ export default function Page() {
         {step === "result" && (
           <div className="space-y-5">
             <button type="button" onClick={() => setStep("input")} className="text-sm font-bold text-[#c8beb0]">← 다시 입력하기</button>
-
             <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
               <div className="mb-4 rounded-full border border-[#7a5b37] bg-[#241e18] px-4 py-2 text-xs font-black text-[#e0b36d]">무료 분석 결과</div>
               <h1 className="text-3xl font-black leading-tight text-white">{nameOf(user)}의 <span className="text-[#d8a86f]">{category.title}</span> 리포트</h1>
               <p className="mt-2 whitespace-pre-line text-sm text-[#c8beb0]">{birthMeta}</p>
-              <p className="mt-5 whitespace-pre-line text-lg leading-8 text-white">{aiPreview || fallbackPreview(categoryId, user)}</p>
 
-              {!paid && (
+              {aiLoading ? (
+                <div className="mt-5 rounded-3xl border border-[#7a5b37] bg-[#1b1612] p-5">
+                  <div className="text-lg font-black text-[#d8a86f]">만세력 계산과 사주풀이를 생성 중입니다</div>
+                  <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
+                    생년월일, 출생시간, 오행 흐름을 바탕으로 먼저 사주적 기질을 풀어보고 있어요. 잠시만 기다려주세요.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-5 whitespace-pre-line text-lg leading-8 text-white">{aiPreview || "[API 응답 없음] 운세 결과를 불러오지 못했습니다."}</p>
+              )}
+
+              {!paid && !aiLoading && (
                 <div className="mt-6 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
                   <div className="mb-3 text-xl font-black text-[#d8a86f]">여기까지가 무료 분석입니다</div>
                   <p className="text-sm leading-6 text-[#c8beb0]">
                     지금 흐름은 확인됐고, 다음 리포트에서는 앞으로 30일 흐름과 돈·일·관계에서 조심할 선택까지 이어서 봅니다.
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/45 p-4">
+                    <div className="mb-2 text-sm font-black text-[#f5efe6]">무료 분석에서 끊긴 다음 흐름을 이어서 봅니다.</div>
                     <div className="text-sm font-black text-[#e0b36d]">전체 리포트에서 더 보는 내용</div>
                     <div className="mt-3 space-y-2 text-sm font-semibold text-white">
                       <div>✓ 앞으로 30일 흐름</div>
@@ -1040,7 +903,6 @@ export default function Page() {
                       <div>✓ 3개월 안에 달라질 포인트</div>
                     </div>
                   </div>
-
                   <button
                     type="button"
                     onClick={() => requestTossPayment(`${category.title} 전체 리포트`, category.price)}
@@ -1048,8 +910,14 @@ export default function Page() {
                   >
                     전체 리포트 열기 {category.price.toLocaleString()}원
                   </button>
-
-                  <button type="button" onClick={() => setPaid(true)} className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-sm font-black text-black">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaid(true);
+                      setTimeout(() => generateFullResult(), 100);
+                    }}
+                    className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-sm font-black text-black"
+                  >
                     테스트용 전체 보기
                   </button>
                 </div>
@@ -1059,12 +927,35 @@ export default function Page() {
             {paid && (
               <section className="space-y-4">
                 <article className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-                  <div className="mb-3 rounded-full border border-[#7a5b37] bg-[#241e18] px-4 py-2 text-center text-xs font-black text-[#e0b36d]">전체 리포트 오픈</div>
-                  <h2 className="mb-3 text-xl font-black text-[#d8a86f]">운세형의 전체 맞춤 리포트</h2>
-                  <p className="whitespace-pre-line text-[17px] leading-8 text-white">{aiFull || fallbackFull(categoryId, user)}</p>
+                  <div className="mb-3 rounded-full border border-[#7a5b37] bg-[#241e18] px-4 py-2 text-center text-xs font-black text-[#e0b36d]">
+                    전체 리포트 오픈
+                  </div>
+
+                  <h2 className="mb-3 text-xl font-black text-[#d8a86f]">
+                    운세형의 전체 맞춤 리포트
+                  </h2>
+
+                  {fullLoading ? (
+                    <div className="rounded-3xl border border-[#7a5b37] bg-[#1b1612] p-5">
+                      <div className="text-lg font-black text-[#d8a86f]">
+                        전체 리포트를 깊게 생성 중입니다
+                      </div>
+                      <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
+                        무료 분석보다 더 길게, 맞는 방향과 피해야 할 흐름, 앞으로 30일과 3개월 흐름까지 풀어보고 있어요.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-line text-[17px] leading-8 text-white">
+                      {aiFull || "[API 응답 없음] 전체 리포트를 불러오지 못했습니다."}
+                    </p>
+                  )}
                 </article>
 
-                <button type="button" onClick={() => setStep("consult")} className="w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 font-black text-black">
+                <button
+                  type="button"
+                  onClick={() => setStep("consult")}
+                  className="w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 font-black text-black"
+                >
                   1:1로 더 깊게 물어보기
                 </button>
               </section>
@@ -1075,22 +966,17 @@ export default function Page() {
         {step === "consult" && (
           <div className="space-y-5">
             <button type="button" onClick={() => setStep("home")} className="text-sm font-bold text-[#c8beb0]">← 홈으로</button>
-
             <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-6">
               <h1 className="text-3xl font-black leading-tight text-white">혼자 오래 고민한 문제,<br /><span className="text-[#d8a86f]">운세형이 길게 풀어준다</span></h1>
               <p className="mt-4 text-base leading-7 text-[#c8beb0]">질문 중심으로 감정, 현실, 선택지를 같이 풀어주는 상담형 리포트입니다.</p>
             </section>
-
             <section className="space-y-3">
               {consultPlans.map((plan) => (
                 <button
                   key={plan.id}
                   type="button"
                   onClick={() => setSelectedPlan(plan.id)}
-                  className={cx(
-                    "w-full rounded-[28px] border p-5 text-left",
-                    selectedPlan === plan.id ? "border-[#d8a86f] bg-[#241e18]" : "border-[#7a5b37] bg-[#111111]"
-                  )}
+                  className={cx("w-full rounded-[28px] border p-5 text-left", selectedPlan === plan.id ? "border-[#d8a86f] bg-[#241e18]" : "border-[#7a5b37] bg-[#111111]")}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -1102,12 +988,10 @@ export default function Page() {
                 </button>
               ))}
             </section>
-
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <h2 className="text-xl font-black text-[#d8a86f]">상담 질문 작성</h2>
               <textarea value={consultQuestion} onChange={(event) => setConsultQuestion(event.target.value)} placeholder="지금 가장 답답한 고민을 적어주세요." className="mt-4 min-h-36 w-full p-4" />
               <div className="mt-4"><PrivacyBox /></div>
-
               <button
                 type="button"
                 onClick={() => {
@@ -1122,14 +1006,12 @@ export default function Page() {
               >
                 {aiLoading ? "상담 생성 중..." : "상담 결과 미리보기"}
               </button>
-
               {consultAiResult && (
                 <article className="mt-5 rounded-[26px] border border-[#7a5b37] bg-black/45 p-5">
                   <h3 className="text-lg font-black text-[#d8a86f]">상담 미리보기</h3>
                   <p className="mt-3 whitespace-pre-line text-[15px] leading-7 text-white">{consultAiResult}</p>
                 </article>
               )}
-
               <button type="button" onClick={() => requestTossPayment(selectedPlanInfo.title, selectedPlanInfo.price)} className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black">
                 토스 결제창 테스트
               </button>
