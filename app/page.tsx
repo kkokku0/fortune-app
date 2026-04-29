@@ -768,10 +768,45 @@ export default function Page() {
               </div>
             </section>
 
+            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.32)]">
+              <div className="rounded-[26px] border border-[#7a5b37] bg-[#1b1612] p-5">
+                <div className="inline-flex rounded-full border border-[#d8a86f] bg-black/35 px-4 py-2 text-xs font-black tracking-[0.08em] text-[#e0b36d]">
+                  부담은 낮게, 해석은 깊게
+                </div>
+
+                <h2 className="mt-5 text-2xl font-black leading-tight tracking-[-0.045em] text-white">
+                  처음부터 큰돈 쓰지 않아도 됩니다
+                </h2>
+
+                <p className="mt-4 break-keep text-[15px] font-medium leading-7 text-[#c8beb0]">
+                  <span className="font-black text-[#d8a86f]">오늘의 흐름은 1,900원부터</span>,
+                  재물·연애·직업/사업운처럼 더 깊은 리포트는
+                  <span className="font-black text-[#f5efe6]"> 6,900원</span>으로 확인할 수 있습니다.
+                </p>
+
+                <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
+                  무료 분석으로 먼저 흐름을 보고, 필요한 경우에만 전체 리포트로 이어서 보세요.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => goInput("today")}
+                  className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white shadow-[0_16px_38px_rgba(216,168,111,0.18)]"
+                >
+                  1,900원부터 확인하기 →
+                </button>
+              </div>
+            </section>
+
             <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-3xl font-black tracking-[-0.055em] text-[#d8a86f]">누구에게 물어볼까요?</h2>
+                  <h2
+                    className="text-3xl font-black tracking-[-0.055em]"
+                    style={{ color: "#d8a86f" }}
+                  >
+                    누구에게 물어볼까요?
+                  </h2>
                   <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
                     고민에 따라 보는 관점이 달라집니다. 지금 상황에 맞는 전문가를 선택해보세요.
                   </p>
