@@ -485,7 +485,7 @@ export default function Page() {
   const birthMeta = `${user.year || "----"}년 ${user.month || "--"}월 ${user.day || "--"}일 · ${user.calendar} · ${user.gender}`;
   const featuredCategories = categories.filter((item) => item.featured);
   const normalCategories = categories.filter((item) => !item.featured);
-  const reviewPages = 18;
+  const reviewPages = 14;
   const reviewsPerPage = 3;
   const visibleReviews = reviews.slice((reviewPage - 1) * reviewsPerPage, reviewPage * reviewsPerPage);
 
