@@ -841,6 +841,17 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <h2 className="mt-5 text-2xl font-black leading-tight tracking-[-0.045em] text-white">
                   평생종합사주
                 </h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-[#d8a86f] bg-black/35 px-3 py-1 text-xs font-black text-[#e0b36d]">
+                    프리미엄
+                  </span>
+                  <span className="rounded-full border border-[#d8a86f] bg-black/35 px-3 py-1 text-xs font-black text-white">
+                    29,900원
+                  </span>
+                  <span className="rounded-full border border-[#d8a86f] bg-black/35 px-3 py-1 text-xs font-black text-[#e0b36d]">
+                    런칭특가
+                  </span>
+                </div>
                 <p className="mt-4 break-keep text-[15px] font-medium leading-7 text-[#c8beb0]">
                   초년운부터 말년운까지, 재물·직업·인복·건강·배우자·가족 흐름을
                   <span className="font-black text-[#d8a86f]"> 한 번에 종합 분석</span>합니다.
@@ -856,7 +867,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   onClick={() => goInput("traditional")}
                   className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white shadow-[0_16px_38px_rgba(216,168,111,0.18)]"
                 >
-                  런칭특가 29,900원 평생종합사주 보기 →
+                  프리미엄 29,900원 평생종합사주 보기 →
                 </button>
               </div>
             </section>
@@ -898,7 +909,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <p className="mt-4 break-keep text-[15px] font-medium leading-7 text-[#c8beb0]">
                   <span className="font-black text-[#d8a86f]">오늘의 흐름은 1,900원부터</span>, 재물·연애·직업/사업운은
                   <span className="font-black text-[#f5efe6]"> 6,900원</span>, 평생종합사주는
-                  <span className="font-black text-[#d8a86f]"> 런칭특가 29,900원</span>으로 확인할 수 있습니다.
+                  <span className="font-black text-[#d8a86f]"> 프리미엄 29,900원</span>으로 깊게 확인할 수 있습니다.
                 </p>
                 <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">무료 분석으로 먼저 흐름을 보고, 필요한 경우에만 전체 리포트로 이어서 보세요.</p>
                 <button
@@ -947,9 +958,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
                       {item.id === "traditional" ? (
                         <span className="rounded-2xl border border-[#d8a86f] px-2 py-1 text-center text-[10px] font-black leading-tight text-[#e0b36d]">
-                          <span className="block">평생종합사주</span>
-                          <span className="block text-white">29,900원</span>
-                          <span className="block text-[#e0b36d]">런칭특가</span>
+                          <span className="block">런칭특가</span>
                         </span>
                       ) : item.badge ? (
                         <span className="rounded-full border border-[#d8a86f] px-2 py-1 text-[10px] font-black text-[#e0b36d]">
