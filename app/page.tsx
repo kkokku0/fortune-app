@@ -352,6 +352,220 @@ function CharacterCard({ card, onSelect }: { card: Character; onSelect: () => vo
   );
 }
 
+function splitReportSections(text: string) {
+  const source = text.trim();
+
+  if (!source) {
+    return [] as Array<{ title: string; body: string }>;
+  }
+
+  const sections: Array<{ title: string; body: string }> = [];
+  const chunks = source.split("[");
+
+  const intro = chunks[0]?.trim();
+
+  if (intro) {
+    sections.push({
+      title: "소름사주 풀이",
+      body: intro,
+    });
+  }
+
+  chunks.slice(1).forEach((chunk) => {
+    const closeIndex = chunk.indexOf("]");
+
+    if (closeIndex === -1) return;
+
+    const title = chunk.slice(0, closeIndex).trim() || "소름사주 풀이";
+    const body = chunk.slice(closeIndex + 1).trim();
+
+    if (!body) return;
+
+    sections.push({ title, body });
+  });
+
+  if (sections.length === 0) {
+    return [
+      {
+        title: "소름사주 풀이",
+        body: source,
+      },
+    ];
+  }
+
+  return sections;
+}
+
+function getSectionLabel(index: number) {
+  const chapterNumber = String(index + 1).padStart(2, "0");
+  return `CHAPTER ${chapterNumber}`;
+}
+
+function getSectionAccent(title: string) {
+  if (
+    title.includes("막히") ||
+    title.includes("안 맞") ||
+    title.includes("피해야") ||
+    title.includes("주의") ||
+    title.includes("새는")
+  ) {
+    return "text-[#ef4444]";
+  }
+
+  if (
+    title.includes("3개월") ||
+    title.includes("1년") ||
+    title.includes("흐름") ||
+    title.includes("강해지는")
+  ) {
+    return "text-[#e0b36d]";
+  }
+
+  return "text-white";
+}
+
+function getSoreumBadge(title: string) {
+  if (title.includes("사주적으로")) return "네 팔자의 첫 단서";
+  if (title.includes("타고난")) return "태어날 때부터 잡힌 기운";
+  if (title.includes("강해지는")) return "운이 살아나는 조건";
+  if (title.includes("막히")) return "여기서 자꾸 꼬인다";
+  if (title.includes("3개월")) return "가까운 변화";
+  if (title.includes("1년")) return "큰 흐름";
+  if (title.includes("행동")) return "바로 할 것";
+  return "소름 포인트";
+}
+
+function isNumberedLine(line: string) {
+  const first = line.charAt(0);
+  const second = line.charAt(1);
+  return first >= "0" && first <= "9" && second === ".";
+}
+
+function isQuoteLine(line: string) {
+  const first = line.charAt(0);
+  return first === "\"" || first === "“" || first === "'";
+}
+
+function ReportSection({
+  title,
+  body,
+  index,
+  paid,
+}: {
+  title: string;
+  body: string;
+  index: number;
+  paid?: boolean;
+}) {
+  const lines = body
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const firstLine = lines[0] || "";
+  const restLines = lines.slice(1);
+  const accent = getSectionAccent(title);
+  const isEarlyPaidChapter = Boolean(paid && index <= 2);
+  const isDeepPaidChapter = Boolean(paid && index >= 3);
+
+  return (
+    <article
+      className={cx(
+        "relative overflow-hidden border border-[#7a5b37] bg-[#121217] shadow-[0_20px_55px_rgba(0,0,0,0.28)]",
+        isEarlyPaidChapter ? "rounded-[34px] p-5" : "rounded-[30px] p-5",
+        isDeepPaidChapter ? "bg-[#141419]" : undefined
+      )}
+    >
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#d8a86f]/10 blur-3xl" />
+
+      <div className="mb-5 text-center">
+        <div className="text-[10px] font-black tracking-[0.48em] text-[#d8a86f]">
+          {getSectionLabel(index)}
+        </div>
+        <h3 className={cx("mt-2 break-keep text-[28px] font-black leading-tight tracking-[-0.06em]", accent)}>
+          {title}
+        </h3>
+        <div className="mx-auto mt-3 h-[2px] w-14 bg-[#d8a86f]" />
+        <div className="mt-3 text-xs font-black tracking-[0.08em] text-[#9d9388]">
+          {getSoreumBadge(title)}
+        </div>
+      </div>
+
+      {firstLine ? (
+        <div className="rounded-[24px] border border-[#7a5b37] bg-black/45 p-4">
+          <p className="break-keep text-[22px] font-black leading-[1.5] tracking-[-0.055em] text-white">
+            {firstLine}
+          </p>
+        </div>
+      ) : null}
+
+      {restLines.length > 0 ? (
+        <div
+          className={cx(
+            "mt-4 break-keep font-medium text-[#d8d0c6]",
+            isEarlyPaidChapter ? "space-y-2 text-[14px] leading-6" : "space-y-4 text-[15px] leading-8",
+            isDeepPaidChapter ? "text-[16px] leading-8" : undefined
+          )}
+        >
+          {restLines.map((line, lineIndex) => (
+            <p
+              key={`${title}-${index}-${lineIndex}`}
+              className={cx(
+                isNumberedLine(line) ? "rounded-2xl border border-[#7a5b37] bg-black/30 p-3 text-white" : undefined,
+                isQuoteLine(line) ? "border-l-2 border-[#d8a86f] pl-3 text-[#f5efe6]" : undefined
+              )}
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
+      {paid && index === 0 ? (
+        <div className="mt-4 rounded-full border border-[#d8a86f] bg-[#241e18] px-4 py-2 text-center text-xs font-black text-[#e0b36d]">
+          전체 리포트 열람 중
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) {
+  const sections = splitReportSections(text);
+
+  if (sections.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-5 space-y-5">
+      {paid ? (
+        <div className="rounded-[30px] border border-[#7a5b37] bg-black/35 p-5 text-center">
+          <div className="text-[10px] font-black tracking-[0.45em] text-[#d8a86f]">
+            SOREUM REPORT
+          </div>
+          <div className="mt-2 text-2xl font-black tracking-[-0.055em] text-white">
+            처음 3장은 짧게, 뒤로 갈수록 깊게 봅니다
+          </div>
+          <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
+            핵심 판정은 빠르게 짚고, 실제로 바뀌는 흐름과 행동 방향은 뒤에서 더 길게 풀어드립니다.
+          </p>
+        </div>
+      ) : null}
+
+      {sections.map((section, index) => (
+        <ReportSection
+          key={`${section.title}-${index}`}
+          title={section.title}
+          body={section.body}
+          index={index}
+          paid={paid}
+        />
+      ))}
+    </div>
+  );
+}
+
 function FieldLabel({ children }: { children: ReactNode }) {
   return <label className="mb-2 block text-sm font-black text-white">{children}</label>;
 }
@@ -1226,7 +1440,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 </div>
               ) : (
                 <>
-                  <p className="mt-5 whitespace-pre-line text-lg leading-8 text-white">{aiPreview || "[API 응답 없음] 운세 결과를 불러오지 못했습니다."}</p>
+                  <ResultReport text={aiPreview || "[API 응답 없음] 운세 결과를 불러오지 못했습니다."} />
                   <ResultActionButtons />
                 </>
               )}
@@ -1284,7 +1498,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     </div>
                   ) : (
                     <>
-                      <p className="whitespace-pre-line text-[17px] leading-8 text-white">{aiFull || "[API 응답 없음] 전체 리포트를 불러오지 못했습니다."}</p>
+                      <ResultReport text={aiFull || "[API 응답 없음] 전체 리포트를 불러오지 못했습니다."} paid />
                       <ResultActionButtons />
                     </>
                   )}
@@ -1353,6 +1567,189 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             </section>
           </div>
         )}
+        <footer className="mt-10 rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5 text-[#c8beb0]">
+          <div className="mb-4">
+            <div className="text-xl font-black text-[#d8a86f]">소름사주 안내</div>
+            <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">
+              소름사주는 입력한 생년월일, 출생시간, 성별, 상담 카테고리를 바탕으로 AI가 생성하는 사주·운세 디지털 리포트 서비스입니다.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <details className="rounded-2xl border border-[#7a5b37] bg-black/30 p-4">
+              <summary className="cursor-pointer text-sm font-black text-[#e0b36d]">이용약관</summary>
+              <div className="mt-4 space-y-4 text-xs leading-6 text-[#d8d0c6]">
+                <div>
+                  <div className="font-black text-white">제1조 목적</div>
+                  <p>
+                    본 약관은 소름사주가 제공하는 AI 기반 사주·운세 디지털 리포트 서비스의 이용 조건, 절차, 이용자와 운영자의 권리·의무 및 책임사항을 정하는 것을 목적으로 합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제2조 서비스 내용</div>
+                  <p>
+                    소름사주는 이용자가 입력한 생년월일, 출생시간, 성별, 선택 카테고리 및 질문을 바탕으로 재물운, 연애운, 직업/사업운, 궁합, 가족관계, 평생종합사주 등 디지털 리포트를 제공합니다. 본 서비스는 오락·참고용 콘텐츠이며, 의학적 진단, 법률 자문, 투자 자문, 심리치료, 종교·무속 행위를 대체하지 않습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제3조 이용자의 의무</div>
+                  <p>
+                    이용자는 정확한 정보 입력을 위해 노력해야 하며, 타인의 개인정보를 무단으로 입력하거나 서비스 결과를 불법적 목적, 타인의 권리 침해, 명예훼손, 사기성 영업 등에 이용해서는 안 됩니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제4조 결과의 성격</div>
+                  <p>
+                    소름사주의 리포트는 입력 정보와 AI 분석을 바탕으로 생성되는 참고용 콘텐츠입니다. 결과의 정확성, 특정 사건 발생, 금전적 이익, 관계 회복, 합격, 건강 회복 등을 보장하지 않습니다. 중요한 결정은 이용자의 현실 상황과 전문가 상담 등을 함께 고려해 판단해야 합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제5조 유료 서비스</div>
+                  <p>
+                    유료 리포트는 상품별 고정 금액으로 제공되며, 결제 전 상품명, 가격, 제공 내용, 환불 조건을 확인할 수 있습니다. 결제 완료 후 리포트 생성이 시작되면 디지털 콘텐츠 특성상 환불이 제한될 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제6조 서비스 변경 및 중단</div>
+                  <p>
+                    운영자는 안정적인 서비스 제공을 위해 점검, 오류 수정, 기능 개선을 진행할 수 있으며, 불가피한 사유가 있는 경우 서비스의 전부 또는 일부를 일시 중단할 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제7조 책임 제한</div>
+                  <p>
+                    운영자는 이용자가 서비스 결과를 근거로 내린 개인적, 금전적, 법률적, 건강 관련 판단에 대해 직접적인 책임을 지지 않습니다. 단, 관계 법령상 운영자의 책임이 인정되는 경우에는 해당 법령에 따릅니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">제8조 문의</div>
+                  <p>
+                    서비스 이용, 결제, 환불, 개인정보 관련 문의는 운영자가 별도로 안내하는 이메일 또는 고객 문의 채널을 통해 접수할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+            </details>
+
+            <details className="rounded-2xl border border-[#7a5b37] bg-black/30 p-4">
+              <summary className="cursor-pointer text-sm font-black text-[#e0b36d]">개인정보처리방침</summary>
+              <div className="mt-4 space-y-4 text-xs leading-6 text-[#d8d0c6]">
+                <div>
+                  <div className="font-black text-white">1. 개인정보 처리 목적</div>
+                  <p>
+                    소름사주는 사주·운세 리포트 생성, 결제 및 주문 확인, 고객 문의 응대, 서비스 개선, 부정 이용 방지를 위해 개인정보를 처리합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">2. 처리하는 개인정보 항목</div>
+                  <p>
+                    필수 항목: 이름 또는 별명, 생년월일, 양력/음력 여부, 출생시간, 성별, 선택 카테고리, 상담 질문, 결제 및 주문 정보. 궁합·가족관계·사업파트너 분석 시 상대방의 이름 또는 별명, 생년월일, 양력/음력 여부, 출생시간, 성별을 입력받을 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">3. 개인정보 보유 및 이용 기간</div>
+                  <p>
+                    리포트 생성에 필요한 정보는 서비스 제공 목적 달성 후 지체 없이 파기하는 것을 원칙으로 합니다. 다만 결제·환불·분쟁 대응 및 관계 법령에 따른 보관이 필요한 정보는 관련 법령에서 정한 기간 동안 보관할 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">4. 개인정보 제3자 제공</div>
+                  <p>
+                    소름사주는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 다만 결제 처리, 법령상 요청, 이용자의 별도 동의가 있는 경우에는 필요한 범위에서 제공될 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">5. 개인정보 처리 위탁</div>
+                  <p>
+                    서비스 운영 과정에서 결제 처리, 서버 호스팅, AI 리포트 생성 등 일부 업무를 외부 서비스에 위탁할 수 있습니다. 위탁이 발생하는 경우 개인정보가 안전하게 처리되도록 관리·감독합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">6. 개인정보의 파기</div>
+                  <p>
+                    보유 기간이 경과하거나 처리 목적이 달성된 개인정보는 복구 또는 재생이 어렵도록 안전하게 파기합니다. 전자적 파일은 기술적 방법으로 삭제하고, 출력물은 분쇄 또는 이에 준하는 방법으로 파기합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">7. 이용자의 권리</div>
+                  <p>
+                    이용자는 본인의 개인정보에 대해 열람, 정정, 삭제, 처리정지를 요청할 수 있습니다. 요청은 고객 문의 채널을 통해 접수할 수 있으며, 운영자는 관계 법령에 따라 지체 없이 조치합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">8. 안전성 확보조치</div>
+                  <p>
+                    소름사주는 개인정보 보호를 위해 접근 권한 관리, 보안 설정, 불필요한 정보 최소 수집, 보관 기간 제한 등 필요한 안전성 확보조치를 시행합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">9. 개인정보 보호책임자</div>
+                  <p>
+                    개인정보 관련 문의는 아래 연락처로 접수할 수 있습니다. 운영자명, 이메일, 연락처는 실제 사업자 정보에 맞게 기재해 주세요.
+                  </p>
+                  <p className="mt-2 rounded-xl border border-[#7a5b37] bg-[#11100f] p-3">
+                    개인정보 보호책임자: 이성국<br />
+                    이메일: kkokku0@naver.com<br />
+                    연락처: 고객문의 이메일로 접수
+                  </p>
+                </div>
+              </div>
+            </details>
+
+            <details className="rounded-2xl border border-[#7a5b37] bg-black/30 p-4">
+              <summary className="cursor-pointer text-sm font-black text-[#e0b36d]">환불 및 취소 규정</summary>
+              <div className="mt-4 space-y-4 text-xs leading-6 text-[#d8d0c6]">
+                <div>
+                  <div className="font-black text-white">1. 기본 원칙</div>
+                  <p>
+                    소름사주의 유료 리포트는 결제 후 이용자가 입력한 정보를 바탕으로 즉시 또는 단기간 내 생성되는 디지털 콘텐츠입니다. 결제 전 상품명, 가격, 제공 내용, 환불 제한 조건을 충분히 확인한 뒤 결제해 주세요.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">2. 결제 취소 가능</div>
+                  <p>
+                    결제 후 리포트 생성이 시작되기 전이거나, 운영자의 사정으로 리포트가 제공되지 않은 경우에는 결제 취소 또는 환불이 가능합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">3. 환불 제한</div>
+                  <p>
+                    이용자의 요청 또는 결제에 따라 유료 리포트 생성이 시작되었거나 결과 열람이 가능한 상태가 된 경우, 디지털 콘텐츠 특성상 단순 변심에 의한 환불은 제한될 수 있습니다. 단, 관계 법령상 청약철회가 가능한 경우에는 해당 법령에 따릅니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">4. 오류 및 중복 결제</div>
+                  <p>
+                    시스템 오류로 리포트가 정상 제공되지 않았거나 동일 상품이 중복 결제된 경우, 확인 후 재제공 또는 환불을 진행합니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">5. 입력 정보 오류</div>
+                  <p>
+                    이용자가 생년월일, 출생시간, 성별, 상대방 정보 등을 잘못 입력하여 리포트가 생성된 경우에는 원칙적으로 환불이 제한될 수 있습니다. 다만 리포트 생성 전 문의한 경우에는 수정 반영을 도와드릴 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">6. 환불 처리 방법</div>
+                  <p>
+                    환불 요청은 주문번호, 결제일, 결제 금액, 요청 사유를 포함하여 고객 문의 채널로 접수해 주세요. 환불 승인 시 결제수단 및 결제대행사 정책에 따라 처리 기간이 달라질 수 있습니다.
+                  </p>
+                </div>
+                <div>
+                  <div className="font-black text-white">7. 유의사항</div>
+                  <p>
+                    본 리포트는 참고용 운세 콘텐츠이며, 결과가 기대와 다르거나 개인적 판단과 다르다는 사유만으로는 환불 사유가 되지 않을 수 있습니다. 단, 관련 법령에서 보장하는 소비자 권리는 본 규정보다 우선합니다.
+                  </p>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div className="mt-5 border-t border-[#7a5b37] pt-4 text-[11px] leading-5 text-[#9d9388]">
+            <p>상호명: 비앤케이 컴퍼니 · 대표자: 이성국 · 사업자등록번호: 519-03-02347</p>
+            <p>통신판매업신고번호: 2024-경북구미-0959 · 고객문의: kkokku0@naver.com</p>
+            <p className="mt-2">© 소름사주. All rights reserved.</p>
+          </div>
+        </footer>
       </main>
     </div>
   );
