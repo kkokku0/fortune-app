@@ -458,7 +458,7 @@ function ReportSection({
   paid?: boolean;
 }) {
   const lines = body
-    .split("\n")
+    .split(String.fromCharCode(10))
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
@@ -472,28 +472,28 @@ function ReportSection({
     <article
       className={cx(
         "relative overflow-hidden border border-[#7a5b37] bg-[#121217] shadow-[0_20px_55px_rgba(0,0,0,0.28)]",
-        isEarlyPaidChapter ? "rounded-[34px] p-5" : "rounded-[30px] p-5",
+        isEarlyPaidChapter ? "rounded-[30px] p-5" : "rounded-[28px] p-5",
         isDeepPaidChapter ? "bg-[#141419]" : undefined
       )}
     >
       <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#d8a86f]/10 blur-3xl" />
 
-      <div className="mb-5 text-center">
-        <div className="text-[10px] font-black tracking-[0.48em] text-[#d8a86f]">
+      <div className="mb-4">
+        <div className="text-[10px] font-black tracking-[0.36em] text-[#d8a86f]">
           {getSectionLabel(index)}
         </div>
-        <h3 className={cx("mt-2 break-keep text-[28px] font-black leading-tight tracking-[-0.06em]", accent)}>
+        <h3 className={cx("mt-2 break-keep text-[22px] font-black leading-tight tracking-[-0.045em]", accent)}>
           {title}
         </h3>
-        <div className="mx-auto mt-3 h-[2px] w-14 bg-[#d8a86f]" />
-        <div className="mt-3 text-xs font-black tracking-[0.08em] text-[#9d9388]">
+        <div className="mt-3 h-[2px] w-12 bg-[#d8a86f]" />
+        <div className="mt-3 text-xs font-black tracking-[0.04em] text-[#9d9388]">
           {getSoreumBadge(title)}
         </div>
       </div>
 
       {firstLine ? (
-        <div className="rounded-[24px] border border-[#7a5b37] bg-black/45 p-4">
-          <p className="break-keep text-[22px] font-black leading-[1.5] tracking-[-0.055em] text-white">
+        <div className="rounded-[22px] border border-[#7a5b37] bg-black/45 p-4">
+          <p className="break-keep text-[18px] font-black leading-[1.65] tracking-[-0.035em] text-white">
             {firstLine}
           </p>
         </div>
@@ -503,7 +503,7 @@ function ReportSection({
         <div
           className={cx(
             "mt-4 break-keep font-medium text-[#d8d0c6]",
-            isEarlyPaidChapter ? "space-y-2 text-[14px] leading-6" : "space-y-4 text-[15px] leading-8",
+            isEarlyPaidChapter ? "space-y-3 text-[15px] leading-7" : "space-y-4 text-[15px] leading-8",
             isDeepPaidChapter ? "text-[16px] leading-8" : undefined
           )}
         >
@@ -540,15 +540,15 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
   return (
     <div className="mt-5 space-y-5">
       {paid ? (
-        <div className="rounded-[30px] border border-[#7a5b37] bg-black/35 p-5 text-center">
-          <div className="text-[10px] font-black tracking-[0.45em] text-[#d8a86f]">
+        <div className="rounded-[28px] border border-[#7a5b37] bg-black/35 p-5">
+          <div className="text-[10px] font-black tracking-[0.32em] text-[#d8a86f]">
             SOREUM REPORT
           </div>
-          <div className="mt-2 text-2xl font-black tracking-[-0.055em] text-white">
-            처음 3장은 짧게, 뒤로 갈수록 깊게 봅니다
+          <div className="mt-2 text-xl font-black tracking-[-0.045em] text-white">
+            핵심부터 찌르고, 뒤에서 깊게 풀어봅니다
           </div>
           <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-            핵심 판정은 빠르게 짚고, 실제로 바뀌는 흐름과 행동 방향은 뒤에서 더 길게 풀어드립니다.
+            짧은 판정으로 끝내지 않고, 반복되는 패턴과 고쳐야 할 지점까지 이어서 봅니다.
           </p>
         </div>
       ) : null}
@@ -1448,8 +1448,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               {!paid && !aiLoading && (
                 <div className="mt-6 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
                   <div className="mb-3 text-xl font-black text-[#d8a86f]">여기까지가 무료 분석입니다</div>
-                  <p className="text-sm leading-6 text-[#c8beb0]">
-                    지금 흐름은 확인됐고, 다음 리포트에서는 앞으로 3개월 흐름과 1년 전체에서 돈·일·관계가 어떻게 움직이는지 이어서 봅니다.
+                  <p className="break-keep text-sm leading-6 text-[#c8beb0]">
+                    무료에서는 핵심 기질과 먼저 보이는 흐름만 보여드립니다. 전체 리포트에서는 왜 같은 문제가 반복되는지, 지금 고치지 않으면 어디서 또 막히는지 더 깊게 봅니다.
                   </p>
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/45 p-4">
                     <div className="mb-2 text-sm font-black text-[#f5efe6]">무료 분석에서 끊긴 다음 흐름을 이어서 봅니다.</div>
@@ -1567,6 +1567,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             </section>
           </div>
         )}
+        {step === "home" ? (
         <footer className="mt-10 rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5 text-[#c8beb0]">
           <div className="mb-4">
             <div className="text-xl font-black text-[#d8a86f]">소름사주 안내</div>
@@ -1750,6 +1751,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             <p className="mt-2">© 소름사주. All rights reserved.</p>
           </div>
         </footer>
+        ) : null}
       </main>
     </div>
   );
