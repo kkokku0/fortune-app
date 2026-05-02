@@ -464,6 +464,15 @@ function getPaidBullets(categoryId: CategoryId) {
     ];
   }
 
+  if (categoryId === "premium") {
+    return [
+      "질문에 대한 직접 답변",
+      "지금 하면 안 되는 선택",
+      "현실적인 판단 기준",
+      "앞으로 3개월·1년 상담 흐름",
+    ];
+  }
+
   return [
     "내 사주에 맞는 핵심 방향",
     "피해야 할 선택과 반복 패턴",
@@ -495,7 +504,7 @@ function SafeImage({
     <img
       src={src}
       alt={alt}
-      className="h-full w-full object-contain"
+      className="h-full w-full object-cover"
       onError={() => setFailed(true)}
     />
   );
@@ -553,7 +562,7 @@ function CharacterCard({
         onClick={onSelect}
         className="block w-full overflow-hidden rounded-[30px] border border-[#7a5b37] bg-black shadow-[0_18px_45px_rgba(0,0,0,0.42)] transition hover:-translate-y-1 hover:border-[#e0b36d]"
       >
-        <div className="relative aspect-[3/4.6] w-full overflow-hidden bg-black p-3">
+        <div className="relative aspect-[3/4.6] w-full overflow-hidden bg-black">
           <SafeImage src={card.image} alt={card.title} fallback={card.emoji} />
         </div>
       </button>
@@ -1059,26 +1068,6 @@ ${message}`);
     }
   };
 
-  const openFullReportForTest = async () => {
-    if (!privacyAgreed) {
-      alert("개인정보 수집·이용에 동의해야 전체 리포트를 볼 수 있습니다.");
-      return;
-    }
-
-    setPaid(true);
-    setStep("result");
-    setAiFull("전체 리포트를 불러오는 중입니다...");
-
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth",
-      });
-    }, 100);
-
-    await generateFullResult();
-  };
-
   const generateConsultAI = async () => {
     setAiLoading(true);
     setConsultAiResult("");
@@ -1360,7 +1349,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
 
               <div className="relative overflow-hidden rounded-[30px] border border-[#7a5b37] bg-black">
-                <div className="aspect-[4/5] w-full p-4">
+                <div className="aspect-[4/5] w-full">
                   <SafeImage src="/characters/bro.png" alt="운세형" fallback="🧑‍💼" />
                 </div>
 
@@ -1917,17 +1906,6 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
                   >
                     전체 리포트 열기 {category.price.toLocaleString()}원
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={openFullReportForTest}
-                    disabled={fullLoading}
-                    className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-sm font-black text-black disabled:opacity-60"
-                  >
-                    {fullLoading
-                      ? "테스트 전체 리포트 생성 중..."
-                      : "테스트용 전체 리포트 바로 보기"}
                   </button>
                 </div>
               )}
