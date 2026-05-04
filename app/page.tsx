@@ -12,6 +12,8 @@ type CategoryId =
   | "career"
   | "love"
   | "marriage"
+  | "health"
+  | "children"
   | "compatibility"
   | "family"
   | "partner"
@@ -29,6 +31,7 @@ type UserInfo = {
   birthTime: string;
   gender: "남성" | "여성";
   question: string;
+
   partnerName: string;
   partnerYear: string;
   partnerMonth: string;
@@ -79,6 +82,7 @@ const emptyUser: UserInfo = {
   birthTime: "",
   gender: "남성",
   question: "",
+
   partnerName: "",
   partnerYear: "",
   partnerMonth: "",
@@ -92,16 +96,16 @@ const categories: Category[] = [
   {
     id: "today",
     title: "오늘운세",
-    subtitle: "오늘 조심할 말과 선택",
+    subtitle: "오늘 말·돈·사람관계에서 조심할 것",
     emoji: "🌙",
     price: 1900,
     featured: true,
-    badge: "입문추천",
+    badge: "가볍게 시작",
   },
   {
     id: "worry",
     title: "고민풀이",
-    subtitle: "같은 고민이 반복되는 이유",
+    subtitle: "지금 고민이 반복되는 사주적 이유",
     emoji: "✨",
     price: 3900,
     featured: true,
@@ -110,7 +114,7 @@ const categories: Category[] = [
   {
     id: "money",
     title: "재물운",
-    subtitle: "돈복·돈이 붙는 방식·새는 구조",
+    subtitle: "돈복 등급과 돈이 붙는 구조",
     emoji: "💰",
     price: 6900,
     featured: true,
@@ -118,10 +122,28 @@ const categories: Category[] = [
   {
     id: "career",
     title: "직업/사업운",
-    subtitle: "맞는 직업군과 피해야 할 일",
+    subtitle: "직장형·사업형·부업형 판정",
     emoji: "💼",
     price: 6900,
     featured: true,
+  },
+  {
+    id: "monthly",
+    title: "신년운세",
+    subtitle: "올해 재물·직업·이직·건강 흐름",
+    emoji: "🌅",
+    price: 12900,
+    featured: true,
+    badge: "올해해운",
+  },
+  {
+    id: "health",
+    title: "건강운",
+    subtitle: "인생 건강운과 체질적 약점",
+    emoji: "🩺",
+    price: 6900,
+    featured: true,
+    badge: "신규",
   },
   {
     id: "love",
@@ -134,70 +156,73 @@ const categories: Category[] = [
   {
     id: "marriage",
     title: "결혼운",
-    subtitle: "배우자 유형과 생활 기준",
+    subtitle: "배우자 유형과 결혼 후 생활 기준",
     emoji: "💍",
     price: 6900,
     featured: true,
   },
   {
+    id: "children",
+    title: "자식운",
+    subtitle: "자식 인연·자식복·관계 흐름",
+    emoji: "🧒",
+    price: 6900,
+    featured: true,
+    badge: "신규",
+  },
+  {
+    id: "lifeFlow",
+    title: "인생대운",
+    subtitle: "초년·청년·중년·말년과 대운 기회",
+    emoji: "👑",
+    price: 12900,
+    featured: true,
+    badge: "대운분석",
+  },
+  {
+    id: "traditional",
+    title: "평생종합사주",
+    subtitle: "재물·직업·결혼·건강·자식까지 종합",
+    emoji: "📜",
+    price: 29900,
+    featured: true,
+    badge: "종합인기",
+  },
+  {
     id: "compatibility",
     title: "궁합풀이",
-    subtitle: "끌리는 이유와 부딪히는 이유",
+    subtitle: "궁합 점수·끌림·충돌·결혼 가능성",
     emoji: "👥",
     price: 6900,
   },
   {
     id: "family",
     title: "가족관계",
-    subtitle: "책임·서운함·거리감",
+    subtitle: "가족궁합·책임·서운함·거리 조절",
     emoji: "🏠",
     price: 6900,
   },
   {
-    id: "lifeFlow",
-    title: "인생흐름",
-    subtitle: "반복되는 패턴과 전환점",
-    emoji: "👑",
-    price: 12900,
-    featured: true,
-  },
-  {
-    id: "monthly",
-    title: "12개월운세",
-    subtitle: "앞으로 1년 월별 흐름",
-    emoji: "🗓️",
-    price: 12900,
-  },
-  {
     id: "partner",
     title: "사업파트너",
-    subtitle: "돈·역할·책임 구조",
+    subtitle: "동업궁합·돈·역할·책임 구조",
     emoji: "🤝",
     price: 12900,
   },
   {
     id: "premium",
     title: "프리미엄상담",
-    subtitle: "질문 하나를 깊게",
+    subtitle: "질문 하나를 깊게 풀어보기",
     emoji: "🔮",
     price: 29000,
-  },
-  {
-    id: "traditional",
-    title: "평생종합사주",
-    subtitle: "초년운부터 말년운까지 전체 흐름",
-    emoji: "📜",
-    price: 29900,
-    featured: true,
-    badge: "종합인기",
   },
 ];
 
 const characters: Character[] = [
   {
     id: "bro",
-    title: "운세형",
-    role: "직업·현실 방향",
+    title: "운세형 도훈",
+    role: "직업·신년·현실 방향",
     image: "/characters/bro.png",
     emoji: "🧑‍💼",
     categoryId: "career",
@@ -205,7 +230,7 @@ const characters: Character[] = [
   {
     id: "grandma",
     title: "춘옥할매",
-    role: "인생흐름·가족",
+    role: "인생대운·가족",
     image: "/characters/grandma.png",
     emoji: "👵",
     categoryId: "lifeFlow",
@@ -213,14 +238,14 @@ const characters: Character[] = [
   {
     id: "seoyeon",
     title: "서연",
-    role: "연애·결혼",
+    role: "연애·결혼·궁합",
     image: "/characters/seoyeon.png",
     emoji: "💘",
     categoryId: "love",
   },
   {
     id: "teacher",
-    title: "도훈",
+    title: "돈맥선생",
     role: "재물·돈 흐름",
     image: "/characters/teacher.png",
     emoji: "💰",
@@ -229,48 +254,216 @@ const characters: Character[] = [
 ];
 
 const reviews: Review[] = [
-  { name: "성xx", category: "직업/사업운", text: "직업군을 그냥 찍어주는 게 아니라 왜 맞는지 사주 근거로 풀어줘서 좋았어요." },
-  { name: "뿌xx", category: "재물운", text: "돈복보다 돈이 새는 구조를 말해줘서 현실적으로 와닿았어요." },
-  { name: "하xx", category: "연애운", text: "어떤 사람을 피해야 하는지까지 말해줘서 제 연애 패턴이 보였어요." },
-  { name: "우xx", category: "평생종합사주", text: "초년운부터 말년운까지 보니까 인생 큰 흐름이 잡혔어요." },
-  { name: "민xx", category: "궁합풀이", text: "좋다 나쁘다가 아니라 왜 끌리고 왜 부딪히는지 나눠줘서 좋았어요." },
-  { name: "준xx", category: "사업파트너", text: "사람 좋은 것과 같이 돈 버는 건 다르다는 말이 기억나요." },
-  { name: "지xx", category: "오늘운세", text: "처음에 1,900원이라 부담 없이 봤는데 생각보다 제 상황이랑 맞아서 놀랐어요." },
-  { name: "라xx", category: "고민풀이", text: "그냥 위로가 아니라 지금 하지 말아야 할 선택을 짚어줘서 좋았어요." },
-  { name: "동xx", category: "재물운", text: "돈복 있다 없다보다 돈이 어디서 새는지 말해주는 게 진짜 도움이 됐어요." },
-  { name: "서xx", category: "연애운", text: "처음엔 설레는데 오래 가면 힘든 사람 유형이 너무 정확했어요." },
-  { name: "강xx", category: "직업/사업운", text: "사업이 맞는지 직장이 맞는지 계속 헷갈렸는데 방향이 좀 잡혔어요." },
-  { name: "현xx", category: "결혼운", text: "결혼운을 너무 막연하게 말하지 않고 배우자 기준을 알려줘서 좋았어요." },
-  { name: "도xx", category: "인생흐름", text: "왜 같은 고민이 반복되는지 흐름으로 설명해줘서 이해가 됐어요." },
-  { name: "윤xx", category: "12개월운세", text: "월별로 조심할 달과 움직일 달이 나눠져 있어서 보기 편했어요." },
-  { name: "박xx", category: "프리미엄상담", text: "제가 쓴 질문을 제대로 받아서 답해주는 느낌이라 만족했어요." },
-  { name: "최xx", category: "오늘운세", text: "가볍게 봤는데 오늘 말 조심하라는 부분이 딱 와닿았어요." },
-  { name: "은xx", category: "재물운", text: "돈이 붙는 방식이랑 피해야 할 돈 선택을 나눠줘서 현실적이었어요." },
-  { name: "태xx", category: "직업/사업운", text: "맞는 일만 말하는 게 아니라 피해야 할 일 구조를 말해줘서 좋았어요." },
-  { name: "소xx", category: "연애운", text: "연애운에서 제가 왜 비슷한 사람에게 끌리는지 설명이 좋았어요." },
-  { name: "기xx", category: "궁합풀이", text: "둘 사이에 왜 말이 꼬이는지 알겠더라고요." },
-  { name: "혜xx", category: "가족관계", text: "가족 안에서 제가 맡는 역할을 말해줘서 마음이 좀 정리됐어요." },
-  { name: "진xx", category: "사업파트너", text: "동업 전에 봤는데 역할과 돈 기준을 먼저 정하라는 말이 도움 됐어요." },
-  { name: "수xx", category: "평생종합사주", text: "중년운부터 풀리는 흐름이라는 말이 제 상황과 맞았어요." },
-  { name: "영xx", category: "고민풀이", text: "막연한 답이 아니라 지금 정리해야 할 기준을 말해줘서 좋았어요." },
-  { name: "규xx", category: "재물운", text: "돈복은 있는데 새는 구조가 있다는 말이 너무 현실적이었어요." },
-  { name: "미xx", category: "결혼운", text: "배우자 유형과 피해야 할 상대를 나눠줘서 기준이 생겼어요." },
-  { name: "찬xx", category: "직업/사업운", text: "직장형인지 사업형인지 매번 헷갈렸는데 이번엔 고정적으로 나와서 좋았어요." },
-  { name: "아xx", category: "프리미엄상담", text: "제가 물어본 고민을 중심으로 답이 나와서 일반 운세랑 달랐어요." },
-  { name: "혁xx", category: "오늘운세", text: "짧게 볼 줄 알았는데 무료 결과도 충분히 읽을 만했어요." },
-  { name: "연xx", category: "연애운", text: "좋은 인연보다 피해야 할 사람을 말해주는 게 더 도움이 됐어요." },
-  { name: "재xx", category: "인생흐름", text: "내가 왜 늦게 풀리는 느낌인지 설명이 와닿았어요." },
-  { name: "나xx", category: "12개월운세", text: "올해 어느 달에 무리하면 안 되는지 보는 게 좋았어요." },
-  { name: "원xx", category: "평생종합사주", text: "초년운, 청년운, 중년운, 말년운이 따로 있어서 돈 낸 느낌이 있었어요." },
-  { name: "희xx", category: "궁합풀이", text: "좋다 나쁘다보다 오래 가는 조건을 알려줘서 좋았어요." },
-  { name: "석xx", category: "재물운", text: "돈이 들어오는 방식과 고정비 얘기가 진짜 현실적이었어요." },
-  { name: "로xx", category: "고민풀이", text: "혼자 생각하던 고민이 왜 반복되는지 정리됐어요." },
-  { name: "유xx", category: "결혼운", text: "결혼을 해야 하냐보다 어떤 기준으로 해야 하는지 알려줘서 좋았어요." },
-  { name: "빈xx", category: "사업파트너", text: "사람이 좋은 것과 돈을 같이 버는 건 다르다는 말이 기억에 남아요." },
-  { name: "경xx", category: "프리미엄상담", text: "결론을 피하지 않고 조건부로 가능하다고 말해줘서 좋았어요." },
-  { name: "훈xx", category: "직업/사업운", text: "맞는 직업군을 3개 이상 나눠서 설명해줘서 실용적이었어요." },
-  { name: "별xx", category: "오늘운세", text: "처음엔 1,900원이라 봤는데 다음엔 재물운도 보고 싶어졌어요." },
-  { name: "림xx", category: "평생종합사주", text: "전체 흐름을 보고 나니까 지금 왜 흔들리는지 이해가 됐어요." },
+  {
+    name: "성xx",
+    category: "직업/사업운",
+    text: "직장형인지 사업형인지 계속 헷갈렸는데 고정 판정처럼 나와서 신뢰가 갔어요.",
+  },
+  {
+    name: "뿌xx",
+    category: "재물운",
+    text: "돈복을 먼저 상중하로 말해주니까 바로 집중됐어요.",
+  },
+  {
+    name: "하xx",
+    category: "연애운",
+    text: "어떤 사람을 피해야 하는지까지 말해줘서 제 연애 패턴이 보였어요.",
+  },
+  {
+    name: "우xx",
+    category: "평생종합사주",
+    text: "초년운부터 건강운, 자식운까지 같이 보니까 진짜 종합사주 느낌이 났어요.",
+  },
+  {
+    name: "민xx",
+    category: "궁합풀이",
+    text: "점수부터 나오고 왜 부딪히는지 설명해줘서 좋았어요.",
+  },
+  {
+    name: "준xx",
+    category: "사업파트너",
+    text: "사람 좋은 것과 같이 돈 버는 건 다르다는 말이 기억나요.",
+  },
+  {
+    name: "지xx",
+    category: "오늘운세",
+    text: "오늘 말이랑 돈에서 조심할 게 구체적으로 나와서 보기 편했어요.",
+  },
+  {
+    name: "라xx",
+    category: "고민풀이",
+    text: "그냥 위로가 아니라 지금 하지 말아야 할 선택을 짚어줘서 좋았어요.",
+  },
+  {
+    name: "동xx",
+    category: "재물운",
+    text: "돈이 들어오는 방식과 돈이 새는 구조를 나눠줘서 현실적이었어요.",
+  },
+  {
+    name: "서xx",
+    category: "연애운",
+    text: "처음엔 설레는데 오래 가면 힘든 사람 유형이 너무 정확했어요.",
+  },
+  {
+    name: "강xx",
+    category: "직업/사업운",
+    text: "맞는 일 구조와 피해야 할 일 구조가 나와서 방향이 잡혔어요.",
+  },
+  {
+    name: "현xx",
+    category: "결혼운",
+    text: "결혼운을 막연하게 말하지 않고 생활 기준을 알려줘서 좋았어요.",
+  },
+  {
+    name: "도xx",
+    category: "인생대운",
+    text: "초년·청년·중년·말년으로 나눠서 보니까 내 인생 흐름이 이해됐어요.",
+  },
+  {
+    name: "윤xx",
+    category: "신년운세",
+    text: "올해 돈, 일, 건강, 이직 흐름을 한 번에 보니까 방향이 잡혔어요.",
+  },
+  {
+    name: "박xx",
+    category: "프리미엄상담",
+    text: "제가 쓴 질문을 제대로 받아서 답해주는 느낌이라 만족했어요.",
+  },
+  {
+    name: "최xx",
+    category: "오늘운세",
+    text: "오늘 급하게 답장하지 말라는 말이 딱 와닿았어요.",
+  },
+  {
+    name: "은xx",
+    category: "건강운",
+    text: "질병 단정이 아니라 체질 흐름으로 풀어줘서 부담 없이 읽었어요.",
+  },
+  {
+    name: "태xx",
+    category: "직업/사업운",
+    text: "맞는 일만 말하는 게 아니라 피해야 할 일 구조를 말해줘서 좋았어요.",
+  },
+  {
+    name: "소xx",
+    category: "연애운",
+    text: "제가 왜 비슷한 사람에게 끌리는지 설명이 좋았어요.",
+  },
+  {
+    name: "기xx",
+    category: "궁합풀이",
+    text: "몇 점인지 먼저 나오니까 진짜 궁합 본 느낌이 났어요.",
+  },
+  {
+    name: "혜xx",
+    category: "가족관계",
+    text: "가족궁합 점수랑 거리 조절 기준이 나와서 마음이 정리됐어요.",
+  },
+  {
+    name: "진xx",
+    category: "사업파트너",
+    text: "동업 전에 봤는데 역할과 돈 기준을 먼저 정하라는 말이 도움 됐어요.",
+  },
+  {
+    name: "수xx",
+    category: "평생종합사주",
+    text: "중년운부터 건강관리까지 같이 보니까 훨씬 현실적이었어요.",
+  },
+  {
+    name: "영xx",
+    category: "고민풀이",
+    text: "막연한 답이 아니라 지금 정리해야 할 기준을 말해줘서 좋았어요.",
+  },
+  {
+    name: "규xx",
+    category: "재물운",
+    text: "돈복 등급을 먼저 보고 나니까 왜 돈이 안 남는지도 이해됐어요.",
+  },
+  {
+    name: "미xx",
+    category: "결혼운",
+    text: "배우자 유형과 피해야 할 상대를 나눠줘서 기준이 생겼어요.",
+  },
+  {
+    name: "찬xx",
+    category: "직업/사업운",
+    text: "직업 결과가 볼 때마다 바뀌지 않아서 좋았어요.",
+  },
+  {
+    name: "아xx",
+    category: "프리미엄상담",
+    text: "제가 물어본 고민을 중심으로 답이 나와서 일반 운세랑 달랐어요.",
+  },
+  {
+    name: "혁xx",
+    category: "오늘운세",
+    text: "오늘 돈 새는 지출 조심하라는 말이 바로 써먹을 수 있었어요.",
+  },
+  {
+    name: "연xx",
+    category: "연애운",
+    text: "좋은 인연보다 피해야 할 사람을 말해주는 게 더 도움이 됐어요.",
+  },
+  {
+    name: "재xx",
+    category: "인생대운",
+    text: "대운 기회가 몇 번 들어오는지 말해줘서 결제한 느낌이 있었어요.",
+  },
+  {
+    name: "나xx",
+    category: "신년운세",
+    text: "올해 이직해야 할지 머물러야 할지 기준이 나와서 좋았어요.",
+  },
+  {
+    name: "원xx",
+    category: "평생종합사주",
+    text: "초년운, 청년운, 중년운, 말년운에 건강과 자식까지 있어서 돈 낸 느낌이 있었어요.",
+  },
+  {
+    name: "희xx",
+    category: "자식운",
+    text: "자식 유무를 단정하지 않고 인연과 관계 흐름으로 말해줘서 좋았어요.",
+  },
+  {
+    name: "석xx",
+    category: "재물운",
+    text: "무리한 투자랑 고정비 큰 사업 조심하라는 게 현실적이었어요.",
+  },
+  {
+    name: "로xx",
+    category: "고민풀이",
+    text: "혼자 생각하던 고민이 왜 반복되는지 정리됐어요.",
+  },
+  {
+    name: "유xx",
+    category: "결혼운",
+    text: "결혼을 해야 하냐보다 어떤 기준으로 해야 하는지 알려줘서 좋았어요.",
+  },
+  {
+    name: "빈xx",
+    category: "사업파트너",
+    text: "좋은 사람과 돈이 맞는 사람은 다르다는 말이 기억에 남아요.",
+  },
+  {
+    name: "경xx",
+    category: "건강운",
+    text: "위장·소화·장 리듬 같은 식으로 구체적으로 나와서 좋았어요.",
+  },
+  {
+    name: "훈xx",
+    category: "직업/사업운",
+    text: "맞는 직업군을 나눠서 설명해줘서 실용적이었어요.",
+  },
+  {
+    name: "별xx",
+    category: "오늘운세",
+    text: "처음엔 1,900원이라 봤는데 다음엔 재물운도 보고 싶어졌어요.",
+  },
+  {
+    name: "림xx",
+    category: "신년운세",
+    text: "올해 돈복이 들어오는지, 건강운은 괜찮은지 같이 봐서 만족했어요.",
+  },
 ];
 
 const birthTimes = [
@@ -312,9 +505,9 @@ const consultPlans: ConsultPlan[] = [
 
 const questionExamples: Record<CategoryId, string[]> = {
   today: [
-    "오늘 제 운에서 가장 조심해야 할 흐름은 뭔가요?",
-    "오늘 돈, 말, 사람관계에서 피해야 할 선택이 있나요?",
-    "오늘 하루를 좋게 넘기려면 어떤 기운을 써야 하나요?",
+    "오늘 제가 말, 돈, 사람관계에서 조심해야 할 것은 뭔가요?",
+    "오늘 급하게 결정하면 손해 볼 일이 있을까요?",
+    "오늘 운을 좋게 쓰려면 뭘 하고 뭘 피해야 하나요?",
   ],
   worry: [
     "제 사주에서 같은 고민이 반복되는 이유가 뭔가요?",
@@ -322,7 +515,7 @@ const questionExamples: Record<CategoryId, string[]> = {
     "이 고민이 제 인생 흐름에서 어떤 의미인지 봐주세요.",
   ],
   money: [
-    "제 사주에서 돈복은 있는 편인가요?",
+    "제 사주에서 돈복은 상·중·하 중 어디인가요?",
     "돈이 들어오는 운과 새는 운을 같이 봐주세요.",
     "제 사주에서 돈이 붙는 방식과 피해야 할 돈 선택이 궁금해요.",
   ],
@@ -337,34 +530,44 @@ const questionExamples: Record<CategoryId, string[]> = {
     "앞으로 1년 인연운과 연애 흐름이 궁금해요.",
   ],
   marriage: [
-    "제 사주에서 결혼운은 있는 편인가요?",
+    "제 사주에서 결혼운은 어떤 흐름인가요?",
     "저에게 맞는 배우자 유형과 결혼 흐름을 봐주세요.",
     "만나는 사람이 있다면 결혼까지 가려면 뭘 맞춰야 하나요?",
   ],
+  health: [
+    "제 사주에서 건강운은 좋은 편인가요?",
+    "인생 전체에서 건강상 약하게 타고난 부분이 궁금해요.",
+    "제 체질적 약점과 무리하면 탈 나는 흐름을 봐주세요.",
+  ],
+  children: [
+    "제 사주에서 자식운은 어떤 편인가요?",
+    "자식 인연과 자식복이 강한 편인지 궁금해요.",
+    "자식과의 관계 흐름과 부모로서 조심할 부분을 봐주세요.",
+  ],
   compatibility: [
-    "우리 둘은 사주적으로 맞는 부분과 안 맞는 부분이 뭔가요?",
-    "이 관계가 오래 갈 수 있는 구조인지 봐주세요.",
-    "왜 끌리는데도 자꾸 부딪히는지 궁금해요.",
+    "우리 둘의 궁합은 몇 점이고 좋은 궁합인가요?",
+    "이 관계가 결혼까지 가도 괜찮은 궁합인지 봐주세요.",
+    "우리 둘이 왜 끌리고 왜 자꾸 부딪히는지 궁금해요.",
   ],
   family: [
-    "이 가족관계에서 왜 자꾸 부딪히는지 봐주세요.",
-    "가족 안에서 제가 어디까지 감당해야 하는지 궁금해요.",
-    "상대방과 저의 맞는 부분과 안 맞는 부분이 궁금해요.",
+    "이 가족관계 궁합은 몇 점이고 좋은 편인가요?",
+    "가족 사이가 왜 자꾸 부딪히는지 사주적으로 봐주세요.",
+    "같이 살거나 돈이 얽히면 어떤 문제가 생길 수 있는지 궁금해요.",
   ],
   partner: [
-    "이 사람과 사업파트너로 맞는지 봐주세요.",
-    "같이 돈을 벌 수 있는 구조인지 궁금해요.",
-    "두 사람의 동업운과 앞으로 1년 사업 흐름을 봐주세요.",
+    "이 사람과 사업파트너 궁합은 몇 점인가요?",
+    "같이 일해도 되는지, 동업하면 문제가 생길지 봐주세요.",
+    "두 사람의 돈 기준, 역할 분담, 책임 구조가 맞는지 궁금해요.",
   ],
   lifeFlow: [
-    "제 인생 전체 흐름에서 지금은 어떤 시기인가요?",
-    "제 운은 늦게 풀리는 편인가요, 빠르게 치고 나가는 편인가요?",
-    "앞으로 1년 안에 큰 전환점이 올 수 있는지 봐주세요.",
+    "제 초년운, 청년운, 중년운, 말년운 흐름을 봐주세요.",
+    "제 인생에서 가장 중요한 대운은 언제 들어오나요?",
+    "제 인생에 대운의 기회는 몇 번 있고, 그걸 잡으려면 뭘 준비해야 하나요?",
   ],
   monthly: [
-    "앞으로 12개월 전체 운세 흐름을 봐주세요.",
-    "올해 돈, 일, 관계에서 조심할 달이 궁금해요.",
-    "올해 움직이면 좋은 달과 쉬어야 할 달을 알려주세요.",
+    "올해 제 신년운세 전체 흐름을 봐주세요.",
+    "올해 돈복, 직업운, 건강운이 어떤지 궁금해요.",
+    "올해 이직운이 있는지, 지금 움직여야 할지 머물러야 할지 봐주세요.",
   ],
   premium: [
     "지금 제일 답답한 문제를 깊게 풀어주세요.",
@@ -374,7 +577,7 @@ const questionExamples: Record<CategoryId, string[]> = {
   traditional: [
     "제 평생 전체 운의 큰 흐름을 봐주세요.",
     "초년운, 중년운, 말년운이 궁금해요.",
-    "재물운, 직업운, 연애·결혼운, 인복까지 종합적으로 봐주세요.",
+    "재물운, 직업운, 연애·결혼운, 건강운, 자식운까지 종합적으로 봐주세요.",
   ],
 };
 
@@ -390,22 +593,105 @@ function nameOf(user: UserInfo) {
   return user.name.trim() || "너";
 }
 
+function makeSafeFileName(value: string) {
+  return (
+    value
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 60) || "소름사주_리포트"
+  );
+}
+
 function getPaidBullets(categoryId: CategoryId) {
+  if (categoryId === "today") {
+    return [
+      "오늘 돈에서 조심할 선택",
+      "오늘 사람관계에서 피해야 할 말",
+      "오늘 몸 컨디션에서 신경 쓸 부분",
+      "오늘 운을 살리는 한 가지 행동",
+    ];
+  }
+
+  if (categoryId === "monthly") {
+    return [
+      "올해 전체 해운 결론",
+      "올해 재물운·돈복 흐름",
+      "올해 직업/사업운과 이직운",
+      "올해 건강운과 조심할 시기",
+    ];
+  }
+
   if (categoryId === "career") {
     return [
+      "직장형·사업형·부업형 명확한 판정",
+      "평생 직업 흐름과 앞으로 1년 변화",
       "내 사주에 맞는 직업군 3~5개",
       "피해야 할 직업군과 일 구조",
-      "직장형·사업형·부업형 판정",
-      "앞으로 3개월·1년 직업운 흐름",
     ];
   }
 
   if (categoryId === "money") {
     return [
-      "돈복이 살아나는 조건",
+      "돈복 상·중상·중·중하·하 명확한 판정",
+      "돈이 들어오는 방식",
       "돈이 새는 구조",
-      "맞는 수익 방향",
-      "피해야 할 돈 선택",
+      "평생 재물 흐름과 앞으로 1년 재물운",
+    ];
+  }
+
+  if (categoryId === "health") {
+    return [
+      "인생 전체에서의 건강운 흐름",
+      "좋게 타고난 부분과 약한 부분",
+      "위장·소화·장·순환 등 체질 흐름",
+      "앞으로 1년 건강운 참고 흐름",
+    ];
+  }
+
+  if (categoryId === "children") {
+    return [
+      "자식 인연의 강약",
+      "자식복이 드러나는 방식",
+      "자식과의 관계 흐름",
+      "부모로서 조심해야 할 부분",
+    ];
+  }
+
+  if (categoryId === "lifeFlow") {
+    return [
+      "초년운·청년운·중년운·말년운",
+      "인생 대운 기회가 몇 번 오는지",
+      "가장 중요한 대운 시기",
+      "대운을 잡기 위해 준비해야 할 것",
+    ];
+  }
+
+  if (categoryId === "compatibility") {
+    return [
+      "궁합 점수와 등급",
+      "서로 끌리는 이유와 부딪히는 이유",
+      "궁합이 좋아지는 조건",
+      "결혼하면 생길 수 있는 현실 문제",
+    ];
+  }
+
+  if (categoryId === "family") {
+    return [
+      "가족궁합 점수와 등급",
+      "사주적으로 부딪히는 이유",
+      "같이 살거나 돈이 얽히면 생길 문제",
+      "가족관계가 좋아지는 조건",
+    ];
+  }
+
+  if (categoryId === "partner") {
+    return [
+      "사업파트너 궁합 점수와 등급",
+      "같이 돈을 벌 수 있는 구조",
+      "동업하면 생길 수 있는 문제",
+      "계약·역할·수익배분 기준",
     ];
   }
 
@@ -414,7 +700,7 @@ function getPaidBullets(categoryId: CategoryId) {
       "어울리는 상대 유형",
       "피해야 할 상대 유형",
       "연애에서 반복되는 패턴",
-      "앞으로 3개월·1년 인연 흐름",
+      "앞으로 1년 인연 흐름",
     ];
   }
 
@@ -423,43 +709,7 @@ function getPaidBullets(categoryId: CategoryId) {
       "내 결혼운의 진짜 흐름",
       "어울리는 배우자 유형",
       "피해야 할 결혼 상대",
-      "앞으로 3개월·1년 결혼운",
-    ];
-  }
-
-  if (categoryId === "compatibility") {
-    return [
-      "두 사람 사주 비교",
-      "끌리는 이유와 부딪히는 이유",
-      "오래 가는 조건",
-      "관계가 나빠지는 위험 신호",
-    ];
-  }
-
-  if (categoryId === "family") {
-    return [
-      "가족 안에서의 역할",
-      "반복되는 서운함",
-      "거리 조절 기준",
-      "어디서 선을 그어야 하는지",
-    ];
-  }
-
-  if (categoryId === "partner") {
-    return [
-      "같이 돈을 벌 수 있는 구조인지",
-      "역할 분담과 충돌 지점",
-      "절대 같이 하면 안 되는 조건",
-      "앞으로 1년 동업 흐름",
-    ];
-  }
-
-  if (categoryId === "monthly") {
-    return [
-      "앞으로 12개월 월별 흐름",
-      "돈·일·관계에서 조심할 달",
-      "움직이면 좋은 시기",
-      "올해 피해야 할 선택",
+      "결혼 후 맞춰야 할 생활 기준",
     ];
   }
 
@@ -467,34 +717,16 @@ function getPaidBullets(categoryId: CategoryId) {
     return [
       "초년운·청년운·중년운·말년운",
       "재물운·직업운·연애결혼운",
-      "인복·건강운·가족운",
-      "앞으로 1년 삶의 방향",
-    ];
-  }
-
-  if (categoryId === "lifeFlow") {
-    return [
-      "반복되는 인생 패턴",
-      "늦게 풀리는지 빠르게 치는지",
-      "돈·일·관계의 큰 방향",
-      "앞으로 3개월·1년 전환 흐름",
-    ];
-  }
-
-  if (categoryId === "premium") {
-    return [
-      "질문에 대한 직접 답변",
-      "지금 하면 안 되는 선택",
-      "현실적인 판단 기준",
-      "앞으로 3개월·1년 상담 흐름",
+      "건강운·자식운·인복·가족운",
+      "인생 전체에서 조심해야 할 반복 패턴",
     ];
   }
 
   return [
     "내 사주에 맞는 핵심 방향",
     "피해야 할 선택과 반복 패턴",
-    "앞으로 3개월 흐름",
-    "앞으로 1년 전체 기준",
+    "앞으로 1년 참고 흐름",
+    "전체 운의 방향",
   ];
 }
 
@@ -655,7 +887,14 @@ function getSectionAccent(title: string) {
     title.includes("어울리는") ||
     title.includes("돈복") ||
     title.includes("돈이 붙") ||
-    title.includes("결혼운")
+    title.includes("건강운") ||
+    title.includes("자식운") ||
+    title.includes("대운") ||
+    title.includes("오늘") ||
+    title.includes("궁합") ||
+    title.includes("신년") ||
+    title.includes("해운") ||
+    title.includes("이직")
   ) {
     return "text-[#e0b36d]";
   }
@@ -664,7 +903,9 @@ function getSectionAccent(title: string) {
     title.includes("피해야") ||
     title.includes("막히") ||
     title.includes("새는") ||
-    title.includes("위험")
+    title.includes("약점") ||
+    title.includes("위험") ||
+    title.includes("부딪")
   ) {
     return "text-[#ef4444]";
   }
@@ -775,7 +1016,7 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
             결론부터 보고, 사주 근거로 깊게 풀어봅니다
           </div>
           <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-            무료에서 멈춘 흐름을 이어서, 맞는 방향과 피해야 할 선택까지 봅니다.
+            무료에서 멈춘 흐름을 이어서, 카테고리별 핵심 답과 피해야 할 선택까지 봅니다.
           </p>
         </div>
       ) : null}
@@ -824,6 +1065,7 @@ export default function Page() {
     categoryId === "family";
 
   const showQuestion = categoryId === "premium" || categoryId === "worry";
+
   const featuredCategories = categories.filter((item) => item.featured);
   const normalCategories = categories.filter((item) => !item.featured);
 
@@ -839,6 +1081,10 @@ export default function Page() {
   }일 · ${user.calendar} · ${user.gender}`;
 
   const paidBullets = getPaidBullets(categoryId);
+
+  const baseFileName = useMemo(() => {
+    return makeSafeFileName(`${nameOf(user)}_${category.title}_소름사주_리포트`);
+  }, [user.name, category.title]);
 
   useEffect(() => {
     const host = window.location.hostname;
@@ -1171,7 +1417,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
   const copyResult = async () => {
     try {
       await navigator.clipboard.writeText(getCurrentResultText());
-      alert("결과 내용을 복사했어.");
+      alert(`${baseFileName} 내용을 복사했어.`);
     } catch (error) {
       console.error(error);
       alert("복사에 실패했어. 브라우저 권한을 확인해줘.");
@@ -1429,7 +1675,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </h1>
 
               <p className="mt-6 break-keep text-[18px] font-medium leading-[1.8] tracking-[-0.04em] text-[#c8beb0]">
-                무료에서는 사주의 핵심 흐름을 먼저 봅니다.
+                무료에서는 사주의 핵심 결론을 먼저 봅니다.
                 <br />
                 전체 리포트에서는{" "}
                 <span className="font-black text-[#d8a86f]">
@@ -1508,11 +1754,52 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
+                올해 흐름부터 잡고 싶다면
+              </h2>
+
+              <div className="mt-5 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
+                <div className="flex items-start gap-4">
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl border border-[#7a5b37] bg-black/45 text-3xl">
+                    🌅
+                  </div>
+                  <div className="flex-1">
+                    <div className="inline-flex rounded-full border border-[#d8a86f] px-3 py-1 text-[11px] font-black text-[#e0b36d]">
+                      올해해운
+                    </div>
+                    <h3 className="mt-3 text-2xl font-black tracking-[-0.045em] text-white">
+                      신년운세
+                    </h3>
+                    <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
+                      올해 돈복이 들어오는지, 이직운이 있는지, 건강운은 괜찮은지,
+                      움직여야 할지 머물러야 할지까지 봅니다.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm font-semibold text-white">
+                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 재물운</div>
+                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 이직운</div>
+                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 건강운</div>
+                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 1~12월 흐름</div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => goInput("monthly")}
+                  className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
+                >
+                  올해 신년운세 보기 12,900원
+                </button>
+              </div>
+            </section>
+
+            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
+              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
                 소름사주는 이렇게 봅니다
               </h2>
               <div className="mt-5 grid gap-3">
                 {[
-                  ["무료", "사주상 지금 어떤 흐름인지 핵심을 먼저 보여줍니다."],
+                  ["무료", "사주상 지금 어떤 흐름인지 핵심 결론을 먼저 보여줍니다."],
                   ["저가 진입", "처음엔 오늘운세 1,900원으로 부담 없이 확인할 수 있습니다."],
                   ["유료", "결론부터 보고, 카테고리별 핵심 답을 깊게 봅니다."],
                   ["기준", "운영자의 예시가 아니라 개개인의 사주 구조로만 풀이합니다."],
@@ -1698,6 +1985,23 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   </p>
                 </div>
               </div>
+
+              {categoryId === "monthly" ? (
+                <div className="mb-5 rounded-3xl border border-[#7a5b37] bg-[#241e18] p-4">
+                  <div className="text-sm font-black text-[#e0b36d]">
+                    신년운세에서 보는 것
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm font-semibold text-white">
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">올해 재물운</div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">올해 직업운</div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">올해 이직운</div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">올해 건강운</div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[#c8beb0]">
+                    올해 움직여야 할지, 머물러야 할지, 돈복이 들어오는지, 건강은 어디를 조심해야 하는지까지 봅니다.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mb-5 rounded-3xl border border-[#7a5b37] bg-[#1b1612] p-4">
                 <div className="text-sm font-black text-[#d8a86f]">
@@ -2009,7 +2313,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     만세력 계산과 사주풀이를 생성 중입니다
                   </div>
                   <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-                    무료에서는 지금 사주에서 보이는 핵심 흐름과 반복되는 문제를 먼저 봅니다.
+                    무료에서는 지금 사주에서 보이는 핵심 결론과 반복되는 문제를 먼저 봅니다.
                   </p>
                 </div>
               ) : (

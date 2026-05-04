@@ -9,6 +9,8 @@ type CategoryId =
   | "career"
   | "love"
   | "marriage"
+  | "health"
+  | "children"
   | "compatibility"
   | "family"
   | "partner"
@@ -26,7 +28,6 @@ type UserInfo = {
   birthTime?: string;
   gender?: "남성" | "여성";
   question?: string;
-
   partnerName?: string;
   partnerYear?: string;
   partnerMonth?: string;
@@ -44,11 +45,12 @@ type FortuneRequest = {
   question?: string;
 };
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+type Grade = "상" | "중상" | "중" | "중하" | "하";
 
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "missing" });
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const ROUTE_VERSION = "soreum-route-family-partner-newyear-v3";
+const NL = String.fromCharCode(10);
 
 function safeText(value: unknown, fallback = "") {
   if (typeof value !== "string") return fallback;
@@ -60,8 +62,12 @@ function getName(user?: UserInfo) {
   return safeText(user?.name, "너");
 }
 
+function gradeSentence(target: string, grade: Grade) {
+  return `${target}은 '${grade}'으로 본다.`;
+}
+
 function getCategoryTitle(categoryId?: CategoryId, categoryTitle?: string) {
-  if (categoryTitle) return categoryTitle;
+  if (categoryTitle) return categoryTitle === "인생흐름" ? "인생대운" : categoryTitle;
 
   const map: Record<CategoryId, string> = {
     today: "오늘운세",
@@ -70,11 +76,13 @@ function getCategoryTitle(categoryId?: CategoryId, categoryTitle?: string) {
     career: "직업/사업운",
     love: "연애운",
     marriage: "결혼운",
+    health: "건강운",
+    children: "자식운",
     compatibility: "궁합풀이",
     family: "가족관계",
     partner: "사업파트너",
-    lifeFlow: "인생흐름",
-    monthly: "12개월운세",
+    lifeFlow: "인생대운",
+    monthly: "신년운세",
     premium: "프리미엄상담",
     traditional: "평생종합사주",
   };
@@ -91,8 +99,36 @@ function shouldUseCareerArchetype(categoryId?: CategoryId) {
     categoryId === "career" ||
     categoryId === "money" ||
     categoryId === "lifeFlow" ||
+    categoryId === "monthly" ||
     categoryId === "traditional" ||
     categoryId === "premium"
+  );
+}
+
+function isCompatibilityCategory(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+  return categoryId === "compatibility" || title.includes("궁합");
+}
+
+function isFamilyCategory(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+  return categoryId === "family" || title.includes("가족");
+}
+
+function isPartnerCategory(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+  return categoryId === "partner" || title.includes("사업파트너") || title.includes("동업") || title.includes("파트너");
+}
+
+function isMonthlyCategory(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+  return (
+    categoryId === "monthly" ||
+    title.includes("신년") ||
+    title.includes("올해") ||
+    title.includes("해운") ||
+    title.includes("12개월") ||
+    title.includes("월별")
   );
 }
 
@@ -115,27 +151,20 @@ function buildUserInfoText(user?: UserInfo) {
 `;
 }
 
-function readElementCount(
-  manse: any,
-  korean: "목" | "화" | "토" | "금" | "수",
-  english: string
-) {
+function readElementCount(manse: any, korean: "목" | "화" | "토" | "금" | "수", english: string) {
   const candidates = [
     manse?.elements,
     manse?.elementCounts,
     manse?.elementCount,
     manse?.oheng,
     manse?.fiveElements,
+    manse?.fiveElementCounts,
   ];
 
   for (const item of candidates) {
     if (!item || typeof item !== "object") continue;
 
-    const value =
-      item[korean] ??
-      item[english] ??
-      item[english.toLowerCase()] ??
-      item[english.toUpperCase()];
+    const value = item[korean] ?? item[english] ?? item[english.toLowerCase()] ?? item[english.toUpperCase()];
 
     if (typeof value === "number") return value;
 
@@ -148,65 +177,415 @@ function readElementCount(
   return 0;
 }
 
-function getCareerArchetypeGuide(manse: any) {
+function getElementSnapshot(manse: any) {
   const wood = readElementCount(manse, "목", "wood");
   const fire = readElementCount(manse, "화", "fire");
   const earth = readElementCount(manse, "토", "earth");
   const metal = readElementCount(manse, "금", "metal");
   const water = readElementCount(manse, "수", "water");
 
-  const strong =
-    manse?.strongestElement ||
-    manse?.strongElement ||
-    manse?.strongest ||
-    "제공된 명식 기준";
+  const strongestElement = manse?.strongestElement || manse?.strongElement || manse?.strongest || "제공된 명식 기준";
+  const weakestElement = manse?.weakestElement || manse?.weakElement || manse?.weakest || "제공된 명식 기준";
+  const dayMaster = manse?.dayMaster?.label || manse?.dayMaster?.name || manse?.dayMaster || manse?.ilgan || "제공된 일간";
 
-  const weak =
-    manse?.weakestElement ||
-    manse?.weakElement ||
-    manse?.weakest ||
-    "제공된 명식 기준";
+  return { wood, fire, earth, metal, water, strongestElement, weakestElement, dayMaster };
+}
 
-  const dayMaster =
-    manse?.dayMaster?.label ||
-    manse?.dayMaster?.name ||
-    manse?.dayMaster ||
-    manse?.ilgan ||
-    "제공된 일간";
+function gradeByScore(score: number): Grade {
+  if (score >= 9) return "상";
+  if (score >= 7) return "중상";
+  if (score >= 5) return "중";
+  if (score >= 3) return "중하";
+  return "하";
+}
+
+function getMoneyGrade(manse: any): Grade {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  let score = 0;
+
+  score += earth >= 4 ? 4 : earth >= 3 ? 3 : earth >= 2 ? 2 : earth;
+  score += water >= 2 ? 2 : water;
+  score += fire >= 2 ? 2 : fire;
+  score += metal >= 2 ? 2 : metal >= 1 ? 1 : 0;
+  score += wood >= 2 ? 1 : 0;
+
+  if (earth >= 3 && metal === 0) score -= 1;
+  if (fire === 0) score -= 1;
+  if (water >= 2 && earth >= 2) score += 1;
+
+  return gradeByScore(score);
+}
+
+function getHealthGrade(manse: any): Grade {
+  const { fire, earth, metal, water } = getElementSnapshot(manse);
+  let score = 5;
+
+  if (fire >= 1) score += 1;
+  if (fire >= 2) score += 1;
+  if (water >= 1) score += 1;
+  if (earth >= 2) score += 1;
+  if (fire === 0) score -= 3;
+  if (metal === 0) score -= 1;
+  if (earth >= 4) score -= 1;
+  if (water === 0) score -= 1;
+
+  return gradeByScore(score);
+}
+
+function getChildrenFlow(manse: any) {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  let score = 0;
+
+  score += wood >= 2 ? 2 : wood;
+  score += fire >= 1 ? 1 : 0;
+  score += water >= 2 ? 2 : water;
+  score += earth >= 2 ? 1 : 0;
+  if (metal === 0) score -= 1;
+  if (fire === 0) score -= 1;
+
+  if (score >= 5) return "자식 인연이 비교적 강한 편";
+  if (score >= 3) return "자식운은 중간 이상이지만 관계 조율이 중요한 편";
+  if (score >= 1) return "자식운이 늦게 드러나거나 책임으로 들어오는 편";
+  return "자식운은 관계 조율과 거리감이 중요한 편";
+}
+
+function getMarriageFlow(manse: any) {
+  const { earth, metal, water, fire } = getElementSnapshot(manse);
+  if (earth >= 3 && fire === 0) return "늦게 안정되는 결혼운";
+  if (metal >= 2 || water >= 2) return "기준이 맞아야 열리는 결혼운";
+  if (fire >= 2) return "인연이 빠르게 들어올 수 있지만 선택 기준이 중요한 결혼운";
+  return "생활 기준을 맞춰야 안정되는 결혼운";
+}
+
+function getCompatibilityScore(myManse: any, partnerManse: any | null) {
+  if (!partnerManse) {
+    return {
+      score: 65,
+      grade: "정보 부족형 궁합",
+      summary: "상대방 정보가 부족해서 기본 궁합만 보는 흐름",
+      risk: "상대방 생년월일과 출생시간이 없으면 실제 충돌 지점이 흐려질 수 있다",
+    };
+  }
+
+  const me = getElementSnapshot(myManse);
+  const partner = getElementSnapshot(partnerManse);
+  let score = 60;
+
+  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 10;
+  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 10;
+  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 8;
+
+  const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
+  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+
+  const diff =
+    Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
+    Math.abs(me.fire / myTotal - partner.fire / partnerTotal) +
+    Math.abs(me.earth / myTotal - partner.earth / partnerTotal) +
+    Math.abs(me.metal / myTotal - partner.metal / partnerTotal) +
+    Math.abs(me.water / myTotal - partner.water / partnerTotal);
+
+  if (diff < 0.8) score += 8;
+  if (diff > 1.6) score -= 8;
+  if (me.fire === 0 && partner.fire === 0) score -= 7;
+  if (me.earth >= 3 && partner.earth >= 3) score -= 7;
+  if ((me.water >= 2 && partner.fire >= 2) || (partner.water >= 2 && me.fire >= 2)) score += 1;
+
+  score = Math.max(35, Math.min(92, score));
+
+  if (score >= 85) {
+    return {
+      score,
+      grade: "좋은 궁합",
+      summary: "서로 보완하는 힘이 강해서 오래 갈 가능성이 있는 궁합",
+      risk: "좋다고 방심하면 생활 기준에서 작은 균열이 생길 수 있다",
+    };
+  }
+
+  if (score >= 75) {
+    return {
+      score,
+      grade: "괜찮은 궁합",
+      summary: "끌림과 현실 조율이 함께 있는 궁합",
+      risk: "초반에는 잘 맞아도 돈, 가족, 생활 리듬을 맞춰야 오래 간다",
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      score,
+      grade: "보통 궁합",
+      summary: "좋은 부분과 부딪히는 부분이 같이 있는 궁합",
+      risk: "서로의 차이를 이해하지 못하면 같은 문제로 반복해서 싸울 수 있다",
+    };
+  }
+
+  if (score >= 50) {
+    return {
+      score,
+      grade: "주의가 필요한 궁합",
+      summary: "끌림은 있어도 결혼이나 장기 관계에서는 조율이 많이 필요한 궁합",
+      risk: "감정만 믿고 밀어붙이면 생활 문제에서 크게 부딪힐 수 있다",
+    };
+  }
+
+  return {
+    score,
+    grade: "쉽지 않은 궁합",
+    summary: "처음 끌림보다 오래 맞춰가는 과정이 훨씬 어려운 궁합",
+    risk: "결혼까지 가면 돈, 가족, 말투, 생활방식에서 피로가 커질 수 있다",
+  };
+}
+
+function getFamilyScore(myManse: any, partnerManse: any | null) {
+  if (!partnerManse) {
+    return {
+      score: 63,
+      grade: "정보 부족형 가족궁합",
+      summary: "상대방 정보가 부족해서 기본 가족관계 흐름만 보는 구조",
+      risk: "상대방 생년월일과 출생시간이 없으면 실제 충돌 지점이 흐려질 수 있다",
+    };
+  }
+
+  const me = getElementSnapshot(myManse);
+  const partner = getElementSnapshot(partnerManse);
+  let score = 60;
+
+  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 8;
+  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 8;
+  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 6;
+
+  if (me.earth >= 3 && partner.earth >= 3) score -= 8;
+  if (me.fire === 0 && partner.fire === 0) score -= 5;
+  if (me.water >= 2 && partner.water >= 2) score += 4;
+  if (me.metal === 0 && partner.metal === 0) score -= 4;
+
+  const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
+  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+
+  const diff =
+    Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
+    Math.abs(me.fire / myTotal - partner.fire / partnerTotal) +
+    Math.abs(me.earth / myTotal - partner.earth / partnerTotal) +
+    Math.abs(me.metal / myTotal - partner.metal / partnerTotal) +
+    Math.abs(me.water / myTotal - partner.water / partnerTotal);
+
+  if (diff < 0.8) score += 6;
+  if (diff > 1.6) score -= 6;
+
+  score = Math.max(35, Math.min(92, score));
+
+  if (score >= 85) {
+    return {
+      score,
+      grade: "좋은 가족궁합",
+      summary: "서로의 부족한 부분을 보완할 수 있는 가족관계",
+      risk: "가깝다는 이유로 선을 무시하면 작은 서운함이 쌓일 수 있다",
+    };
+  }
+
+  if (score >= 75) {
+    return {
+      score,
+      grade: "괜찮은 가족궁합",
+      summary: "정은 있지만 생활 기준과 말투를 맞춰야 안정되는 관계",
+      risk: "가족이라는 이유로 기대가 커지면 부담과 서운함이 반복될 수 있다",
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      score,
+      grade: "보통 가족궁합",
+      summary: "좋은 마음과 부딪히는 지점이 같이 있는 가족관계",
+      risk: "역할, 책임, 돈 문제에서 선을 정하지 않으면 반복해서 감정이 상할 수 있다",
+    };
+  }
+
+  if (score >= 50) {
+    return {
+      score,
+      grade: "거리 조절이 필요한 가족궁합",
+      summary: "정은 있어도 가까울수록 피로가 쌓일 수 있는 관계",
+      risk: "한쪽이 계속 참거나 책임지면 관계가 무거워질 수 있다",
+    };
+  }
+
+  return {
+    score,
+    grade: "쉽지 않은 가족궁합",
+    summary: "가깝게 지낼수록 말투, 책임, 돈 문제에서 충돌이 커질 수 있는 관계",
+    risk: "정으로만 버티면 관계가 회복되기보다 감정 피로가 누적될 수 있다",
+  };
+}
+
+function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
+  if (!partnerManse) {
+    return {
+      score: 62,
+      grade: "정보 부족형 파트너궁합",
+      summary: "상대방 정보가 부족해서 기본 동업 흐름만 보는 구조",
+      risk: "상대방 생년월일과 출생시간이 없으면 돈과 역할 충돌 지점이 흐려질 수 있다",
+    };
+  }
+
+  const me = getElementSnapshot(myManse);
+  const partner = getElementSnapshot(partnerManse);
+  let score = 58;
+
+  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 8;
+  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 8;
+  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 6;
+
+  if ((me.earth >= 2 && partner.metal >= 1) || (partner.earth >= 2 && me.metal >= 1)) score += 7;
+  if ((me.water >= 2 && partner.fire >= 1) || (partner.water >= 2 && me.fire >= 1)) score += 5;
+  if (me.metal === 0 && partner.metal === 0) score -= 8;
+  if (me.fire === 0 && partner.fire === 0) score -= 4;
+  if (me.earth >= 3 && partner.earth >= 3) score -= 5;
+
+  const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
+  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+
+  const diff =
+    Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
+    Math.abs(me.fire / myTotal - partner.fire / partnerTotal) +
+    Math.abs(me.earth / myTotal - partner.earth / partnerTotal) +
+    Math.abs(me.metal / myTotal - partner.metal / partnerTotal) +
+    Math.abs(me.water / myTotal - partner.water / partnerTotal);
+
+  if (diff < 0.8) score += 4;
+  if (diff > 1.7) score -= 7;
+
+  score = Math.max(35, Math.min(92, score));
+
+  if (score >= 85) {
+    return {
+      score,
+      grade: "좋은 사업파트너궁합",
+      summary: "역할을 나누면 서로의 부족한 부분을 채워 돈 흐름을 만들 수 있는 관계",
+      risk: "좋은 궁합이어도 계약과 돈 기준을 대충 넘기면 나중에 균열이 생길 수 있다",
+    };
+  }
+
+  if (score >= 75) {
+    return {
+      score,
+      grade: "괜찮은 사업파트너궁합",
+      summary: "같이 일할 수 있는 힘은 있지만 역할과 책임을 정확히 나눠야 하는 관계",
+      risk: "처음엔 잘 맞아도 수익 배분, 업무 강도, 결정권에서 부딪힐 수 있다",
+    };
+  }
+
+  if (score >= 60) {
+    return {
+      score,
+      grade: "보통 사업파트너궁합",
+      summary: "아이디어나 방향은 맞을 수 있지만 돈 기준을 잡아야 하는 동업 관계",
+      risk: "말로만 시작하면 역할, 책임, 비용 부담에서 반복 충돌이 생길 수 있다",
+    };
+  }
+
+  if (score >= 50) {
+    return {
+      score,
+      grade: "주의가 필요한 사업파트너궁합",
+      summary: "같이 일하려면 계약과 역할 분담이 매우 중요한 관계",
+      risk: "호감이나 의리로 시작하면 돈 문제에서 관계가 틀어질 수 있다",
+    };
+  }
+
+  return {
+    score,
+    grade: "쉽지 않은 사업파트너궁합",
+    summary: "같이 돈을 벌기보다 책임과 기준 문제로 부딪히기 쉬운 관계",
+    risk: "동업으로 가면 수익 배분, 결정권, 책임 소재에서 피로가 커질 수 있다",
+  };
+}
+
+function getLifeFlow(manse: any) {
+  const { earth, fire, metal, water } = getElementSnapshot(manse);
+  if (earth >= 3 && fire === 0) return "초년보다 중년 이후에 기준을 잡으며 풀리는 흐름";
+  if (water >= 2 && metal === 0) return "감각은 있으나 방향을 잡기 전까지 흔들리는 흐름";
+  if (fire >= 2) return "빠르게 움직일수록 기회가 생기지만 무리하면 꺾이는 흐름";
+  return "한 번에 치고 나가기보다 쌓아서 안정되는 흐름";
+}
+
+function getMajorLuckChanceCount(manse: any) {
+  const { earth, fire, metal, water, wood } = getElementSnapshot(manse);
+  let score = 0;
+  if (earth >= 3) score += 1;
+  if (water >= 2) score += 1;
+  if (wood >= 2) score += 1;
+  if (fire >= 2) score += 1;
+  if (metal >= 2) score += 1;
+  if (fire === 0 || metal === 0) score -= 1;
+  if (score >= 3) return "3번";
+  if (score >= 1) return "2번";
+  return "1~2번";
+}
+
+function getMostImportantLuckPhase(manse: any) {
+  const { earth, fire, metal, water } = getElementSnapshot(manse);
+  if (earth >= 3 && fire === 0) return "청년 후반부터 중년 초입";
+  if (water >= 2 && metal === 0) return "중년 초입부터 중년 중반";
+  if (fire >= 2) return "청년기부터 빠르게 열리는 시기";
+  if (metal >= 2) return "중년 이후 자리 잡는 시기";
+  return "중년 이후 안정적으로 커지는 시기";
+}
+
+function getCareerArchetype(manse: any) {
+  const { wood, fire, earth, metal, water, strongestElement, weakestElement, dayMaster } = getElementSnapshot(manse);
 
   let officeScore = 0;
   let businessScore = 0;
   let sideJobScore = 0;
   let freelanceScore = 0;
+  let expertScore = 0;
 
-  if (metal >= 2) officeScore += 3;
+  if (metal >= 3) officeScore += 5;
+  if (metal === 2) officeScore += 3;
   if (metal === 1) officeScore += 1;
-  if (earth >= 2) officeScore += 1;
-  if (water >= 2) officeScore += 1;
+  if (water >= 2 && metal >= 1) officeScore += 1;
+  if (earth >= 2 && metal >= 2) officeScore += 1;
+  if (metal === 0) officeScore -= 4;
 
   if (earth >= 3) businessScore += 3;
-  if (earth === 2) businessScore += 2;
-  if (fire >= 2) businessScore += 2;
-  if (wood >= 2) businessScore += 1;
+  if (fire >= 2) businessScore += 3;
+  if (wood >= 2) businessScore += 2;
+  if (water >= 2 && earth >= 2) businessScore += 1;
+  if (metal === 0 && earth >= 3) businessScore += 1;
 
-  if (earth >= 2 && metal === 0) sideJobScore += 4;
-  if (earth >= 2 && fire >= 1) sideJobScore += 1;
-  if (wood >= 1 && fire >= 1) sideJobScore += 1;
-  if (water >= 2) sideJobScore += 1;
+  if (earth >= 2 && metal === 0) sideJobScore += 5;
+  if (earth >= 3 && fire === 0) sideJobScore += 3;
+  if (water >= 2) sideJobScore += 2;
+  if (wood >= 1) sideJobScore += 1;
+  if (fire <= 1 && earth >= 3) sideJobScore += 1;
 
   if (wood >= 2) freelanceScore += 2;
-  if (fire >= 2) freelanceScore += 3;
-  if (metal === 0) freelanceScore += 1;
-  if (water >= 2 && wood >= 1) freelanceScore += 1;
+  if (fire >= 2) freelanceScore += 4;
+  if (wood >= 2 && fire >= 1) freelanceScore += 2;
+  if (metal === 0 && fire >= 1) freelanceScore += 1;
 
-  if (
-    officeScore === 0 &&
-    businessScore === 0 &&
-    sideJobScore === 0 &&
-    freelanceScore === 0
-  ) {
-    officeScore = 1;
-    sideJobScore = 1;
+  if (water >= 2) expertScore += 3;
+  if (earth >= 2) expertScore += 2;
+  if (metal >= 1) expertScore += 1;
+  if (wood >= 1 && water >= 1) expertScore += 1;
+
+  if (earth >= 3 && metal === 0) {
+    sideJobScore += 4;
+    businessScore += 1;
+    officeScore -= 3;
+  }
+
+  if (earth >= 3 && fire === 0 && metal === 0) {
+    sideJobScore += 3;
+    expertScore += 1;
+    officeScore -= 2;
+  }
+
+  if (water >= 2 && metal === 0) {
+    sideJobScore += 2;
+    expertScore += 1;
   }
 
   const scores = [
@@ -214,28 +593,52 @@ function getCareerArchetypeGuide(manse: any) {
     { type: "사업형", score: businessScore },
     { type: "부업형", score: sideJobScore },
     { type: "프리랜서형", score: freelanceScore },
+    { type: "전문기술형", score: expertScore },
   ].sort((a, b) => b.score - a.score);
 
   const primary = scores[0];
   const secondary = scores[1];
+  let combined = primary.type;
+
+  if (primary.type === "부업형" && (secondary.type === "사업형" || secondary.type === "전문기술형")) {
+    combined = "부업형에 가까운 자기수익형";
+  } else if (primary.type === "부업형" && secondary.type === "직장형") {
+    combined = "직장+부업형";
+  } else if (primary.type === "사업형" && secondary.type === "부업형") {
+    combined = "사업형이지만 부업부터 키워야 하는 타입";
+  } else if (primary.type === "전문기술형" && secondary.type === "부업형") {
+    combined = "전문기술+부업형";
+  } else if (primary.type === "직장형" && secondary.type === "부업형") {
+    combined = "직장 기반 부업형";
+  }
 
   let warning = "초기비용이 크거나 감정적으로 급하게 결정하는 구조";
+  if (combined.includes("직장") && !combined.includes("부업")) warning = "규칙 없는 프리랜서형이나 준비 없는 창업";
+  if (combined.includes("사업")) warning = "준비 없이 크게 벌이는 사업, 무리한 확장, 빚내서 시작하는 구조";
+  if (combined.includes("부업")) warning = "처음부터 크게 벌이는 사업, 고정비 큰 창업, 무리한 투자";
+  if (combined.includes("프리랜서")) warning = "수입 구조 없이 감각만 믿고 움직이는 방식";
+  if (combined.includes("전문기술")) warning = "기술 없이 말로만 하는 사업, 남의 말 듣고 시작하는 투자";
 
-  if (primary.type === "직장형") {
-    warning = "규칙 없는 프리랜서형이나 준비 없는 창업";
-  }
+  return {
+    wood,
+    fire,
+    earth,
+    metal,
+    water,
+    strongestElement,
+    weakestElement,
+    dayMaster,
+    scores,
+    primary: primary.type,
+    secondary: secondary.type,
+    combined,
+    warning,
+  };
+}
 
-  if (primary.type === "사업형") {
-    warning = "안정만 보고 오래 묶이는 일";
-  }
-
-  if (primary.type === "부업형") {
-    warning = "처음부터 크게 벌이는 사업";
-  }
-
-  if (primary.type === "프리랜서형") {
-    warning = "자율성 없이 통제만 강한 조직 구조";
-  }
+function getCareerArchetypeGuide(manse: any) {
+  const career = getCareerArchetype(manse);
+  const scoreLines = career.scores.map((item) => `- ${item.type}: ${item.score}`).join(NL);
 
   return `
 [고정 직업 성향 판정]
@@ -243,33 +646,348 @@ function getCareerArchetypeGuide(manse: any) {
 AI는 이 판정을 절대 바꾸지 말고, 이 판정을 기준으로만 설명해라.
 
 [사용한 오행 점수]
-- 목: ${wood}
-- 화: ${fire}
-- 토: ${earth}
-- 금: ${metal}
-- 수: ${water}
+- 목: ${career.wood}
+- 화: ${career.fire}
+- 토: ${career.earth}
+- 금: ${career.metal}
+- 수: ${career.water}
 
 [기본 정보]
-- 일간: ${dayMaster}
-- 강한 오행: ${strong}
-- 약한 오행: ${weak}
+- 일간: ${career.dayMaster}
+- 강한 오행: ${career.strongestElement}
+- 약한 오행: ${career.weakestElement}
 
 [직업 성향 점수]
-- 직장형: ${officeScore}
-- 사업형: ${businessScore}
-- 부업형: ${sideJobScore}
-- 프리랜서형: ${freelanceScore}
+${scoreLines}
 
 [최종 고정 판정]
-- 1순위: ${primary.type}
-- 2순위: ${secondary.type}
-- 피해야 할 방식: ${warning}
+- 1순위: ${career.primary}
+- 2순위: ${career.secondary}
+- 최종 표현: ${career.combined}
+- 피해야 할 방식: ${career.warning}
 
 [해석 규칙]
-- 직업/사업운, 재물운, 인생흐름, 평생종합사주, 프리미엄상담에서만 이 판정을 사용해라.
-- 연애운, 결혼운, 궁합풀이, 가족관계, 사업파트너에서는 직업 성향 판정을 언급하지 마라.
+- 직업/사업운, 재물운, 인생대운, 평생종합사주, 프리미엄상담에서만 이 판정을 사용해라.
+- 연애운, 결혼운, 궁합풀이, 가족관계, 사업파트너, 건강운, 자식운, 오늘운세에서는 직업 성향 판정을 언급하지 마라.
 - 1순위와 2순위를 뒤집지 마라.
-- 맞는 직업군은 이 고정 판정과 사주 구조에 맞춰 도출해라.
+- 최종 표현을 절대 바꾸지 마라.
+- "안정적인 직장형이 우선"처럼 최종 표현과 다른 말을 하지 마라.
+- "안정적인 기반이 필요하다"와 "직장형이다"는 다르다.
+- 안정 기반이 필요하다고 해서 직장형으로 결론 내리지 마라.
+- 사주상 기반이 필요한 사람에게는 "직장을 다니며 부업"이라고 단정하지 말고, "생활 기반이나 고정 수입 구조 위에 자기 수익 구조를 얹을 때 좋다"라고 표현해라.
+`;
+}
+
+function getFixedConclusionBlock(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  user: UserInfo,
+  manse: any,
+  partnerManse?: any | null
+) {
+  const name = getName(user);
+  const moneyGrade = getMoneyGrade(manse);
+  const healthGrade = getHealthGrade(manse);
+  const career = getCareerArchetype(manse);
+  const childrenFlow = getChildrenFlow(manse);
+  const marriageFlow = getMarriageFlow(manse);
+  const lifeFlow = getLifeFlow(manse);
+  const majorLuckCount = getMajorLuckChanceCount(manse);
+  const majorLuckPhase = getMostImportantLuckPhase(manse);
+  const title = categoryTitle || "";
+
+  if (categoryId === "today" || title.includes("오늘")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 오늘은 급하게 결정하면 손해가 생기기 쉬운 날이야.
+
+AI는 이 결론을 절대 바꾸지 마라.
+오늘운세에서는 "토 기운", "화 기운", "오행" 같은 말을 첫 문장에 쓰지 마라.
+첫 문장은 반드시 사용자가 바로 이해할 수 있는 현실 언어로 시작해라.
+오늘운세에서는 인생 전체 조언을 하지 말고, 오늘 하루의 말, 돈, 사람관계, 몸 컨디션, 피해야 할 선택을 구체적으로 말해라.
+사주 용어는 [왜 그렇게 보냐면] 섹션에서만 쉽게 번역해서 설명해라.
+`;
+  }
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, ${gradeSentence("네 돈복", moneyGrade)}
+
+AI는 이 돈복 등급을 절대 바꾸지 마라.
+"돈복이 있는 편이지만", "나쁘지 않다", "무난하다" 같은 애매한 표현으로 시작하지 마라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+등급 뒤에 바로 "다"를 붙이지 마라. "중다", "상다", "중하다" 같은 어색한 표현 금지.
+등급 표현은 "상으로 본다", "중상으로 본다", "중으로 본다", "중하로 본다", "하로 본다"처럼 자연스럽게 써라.
+`;
+  }
+
+  if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 너는 '${career.combined}'에 가깝다.
+
+AI는 이 직업 성향을 절대 바꾸지 마라.
+"안정적인 직장형이 우선"처럼 고정 결론과 다른 말을 하지 마라.
+사주상 안정 기반이 필요하다고 말할 수는 있지만, 최종 성향은 반드시 '${career.combined}'으로 유지해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, ${gradeSentence("네 건강운", healthGrade)}
+
+AI는 이 건강운 등급을 절대 바꾸지 마라.
+건강운은 의료 진단이 아니라 사주상 건강 흐름이다.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+바로 일간 설명부터 시작하지 마라.
+등급 뒤에 바로 "다"를 붙이지 마라. "중다", "상다", "중하다" 같은 어색한 표현 금지.
+`;
+  }
+
+  if (isFamilyCategory(categoryId, title)) {
+    const family = getFamilyScore(manse, partnerManse || null);
+    return `
+[고정 결론]
+결론부터 말하면, 이 가족관계 궁합은 ${family.score}점이고, '${family.grade}'으로 본다.
+
+가족관계 핵심은 '${family.summary}'이다.
+가장 조심할 부분은 '${family.risk}'이다.
+
+AI는 이 가족관계 점수와 등급을 절대 바꾸지 마라.
+가족관계에서는 첫 문장에 반드시 가족궁합 점수와 좋은지 나쁜지를 먼저 말해라.
+그 다음 사주적으로 왜 그렇게 보는지 설명해라.
+가족 사이가 안 좋을 때 어떻게 해야 좋아지는지 반드시 말해라.
+같이 살거나 돈이 얽히거나 책임을 나눌 때 생길 수 있는 문제를 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (isPartnerCategory(categoryId, title)) {
+    const partnerScore = getBusinessPartnerScore(manse, partnerManse || null);
+    return `
+[고정 결론]
+결론부터 말하면, 두 사람의 사업파트너 궁합은 ${partnerScore.score}점이고, '${partnerScore.grade}'으로 본다.
+
+사업파트너 핵심은 '${partnerScore.summary}'이다.
+가장 조심할 부분은 '${partnerScore.risk}'이다.
+
+AI는 이 사업파트너 점수와 등급을 절대 바꾸지 마라.
+사업파트너에서는 첫 문장에 반드시 동업궁합 점수와 같이 일해도 되는지 먼저 말해라.
+그 다음 사주적으로 왜 그렇게 보는지 설명해라.
+같이 일하면 어떤 문제가 생길 수 있는지 반드시 말해라.
+같이 일해야 한다면 계약, 역할, 돈 기준을 어떻게 잡아야 하는지 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "children" || title.includes("자식")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 네 자식운은 '${childrenFlow}'으로 본다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+자식 유무, 임신, 출산, 자식 수, 성별은 절대 단정하지 마라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "marriage" || title.includes("결혼")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 네 결혼운은 '${marriageFlow}'으로 본다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+결혼운에서는 직업 성향, 부업형, 사업형 이야기를 절대 하지 마라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "compatibility" || title.includes("궁합")) {
+    const compatibility = getCompatibilityScore(manse, partnerManse || null);
+    return `
+[고정 결론]
+결론부터 말하면, 두 사람의 궁합은 ${compatibility.score}점이고, '${compatibility.grade}'으로 본다.
+
+궁합 핵심은 '${compatibility.summary}'이다.
+가장 조심할 부분은 '${compatibility.risk}'이다.
+
+AI는 이 궁합 점수와 등급을 절대 바꾸지 마라.
+궁합풀이에서는 첫 문장에 반드시 궁합 점수와 좋은지 나쁜지를 먼저 말해라.
+그 다음 사주적으로 왜 그렇게 보는지 설명해라.
+궁합이 안 좋은 경우에는 어떻게 하면 좋아질 수 있는지 반드시 말해라.
+궁합이 안 좋은데 결혼하면 어떤 문제가 생길 수 있는지 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "family" || title.includes("가족")) {
+    return `
+[가족궁합 점수 해석]
+- 가족궁합 점수가 왜 그렇게 나왔는지 설명해라.
+- 좋은 점과 힘든 점을 함께 말해라.
+
+[사이가 맞는 부분]
+- 가족으로서 서로 기대거나 도움 받을 수 있는 부분을 말해라.
+- 정, 책임감, 생활 리듬, 말투, 돈 감각 중 맞는 부분을 구체적으로 말해라.
+
+[반복해서 부딪히는 이유]
+- 가족 안에서 반복되는 서운함과 충돌 지점을 설명해라.
+- 역할, 책임, 돈, 말투, 거리감 중 어디서 부딪히는지 말해라.
+
+[같이 살거나 가까이 지내면 생길 수 있는 문제]
+- 같이 살 때 생활 방식, 돈, 집안일, 감정 표현에서 생길 수 있는 문제를 말해라.
+- 겁주지 말고 현실적인 경고로 말해라.
+
+[가족관계가 좋아지는 조건]
+- 기대치를 낮춰야 하는지, 역할을 나눠야 하는지, 거리를 둬야 하는지 구체적으로 말해라.
+- 돈 기준과 말투 기준을 어떻게 잡아야 하는지 말해라.
+
+[그래도 가족으로 오래 보려면]
+- 한쪽만 참는 구조가 되면 안 된다고 말해라.
+- 관계를 끊으라는 식이 아니라 덜 다치는 거리와 기준을 제시해라.
+`;
+  }
+
+  if (categoryId === "partner" || title.includes("사업파트너")) {
+    return `
+[사업파트너 궁합 점수 해석]
+- 사업파트너 궁합 점수가 왜 그렇게 나왔는지 설명해라.
+- 같이 일할 때 좋은 점과 위험한 점을 함께 말해라.
+
+[같이 돈을 벌 수 있는 부분]
+- 서로의 강점이 어떻게 돈 흐름으로 연결될 수 있는지 말해라.
+- 영업, 실행, 관리, 기획, 돈 관리, 사람관리 중 어디가 맞는지 구체적으로 풀어라.
+
+[같이 일하면 부딪히는 이유]
+- 수익 배분, 역할 분담, 책임감, 속도 차이, 결정권에서 어디가 문제인지 말해라.
+- 좋은 사람이어도 동업에서 틀어지는 이유를 사주 구조로 설명해라.
+
+[동업하면 생길 수 있는 현실 문제]
+- 돈이 들어오기 전과 돈이 들어온 후 생길 수 있는 문제를 나눠라.
+- 비용 부담, 손실 책임, 고객 대응, 업무량 불균형, 결정권 충돌을 구체적으로 말해라.
+
+[그래도 같이 일하려면]
+- 계약서에 넣어야 할 기준을 말해라.
+- 역할, 수익 배분, 비용 부담, 정산일, 종료 조건, 의사결정권을 반드시 다뤄라.
+
+[동업 전 테스트 방법]
+- 바로 사업을 열지 말고 작은 프로젝트로 실행력과 책임감을 확인하라고 말해라.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 네 인생 흐름은 '${lifeFlow}'이고, 인생에서 크게 방향이 바뀌는 대운 기회는 ${majorLuckCount} 들어오는 구조로 본다.
+
+가장 중요한 대운은 '${majorLuckPhase}'에 강하게 잡아야 하는 흐름이다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+인생대운에서는 단순한 성격풀이를 하지 말고, 초년운·청년운·중년운·말년운을 나누어라.
+각 시기마다 재물운, 직업운, 건강운, 사람관계 흐름을 함께 설명해라.
+가장 중요한 대운이 언제쯤 강하게 들어오는지, 그 기회를 잡으려면 무엇을 준비해야 하는지 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "traditional" || title.includes("평생")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 네 평생 사주는 '${lifeFlow}'으로 본다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+평생종합사주에서는 건강운과 자식운을 반드시 포함해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "love" || title.includes("연애")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 네 연애운은 '끌림보다 기준을 먼저 잡아야 살아나는 흐름'이다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+연애운에서는 직업 성향, 사업형, 부업형 이야기를 절대 하지 마라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "family" || title.includes("가족")) {
+    const family = getFamilyScore(manse, partnerManse || null);
+    return `
+[고정 결론]
+결론부터 말하면, 이 가족관계 궁합은 ${family.score}점이고, '${family.grade}'으로 본다.
+
+가족관계 핵심은 '${family.summary}'이다.
+가장 조심할 부분은 '${family.risk}'이다.
+
+AI는 이 가족관계 점수와 등급을 절대 바꾸지 마라.
+가족관계에서는 첫 문장에 반드시 가족궁합 점수와 좋은지 나쁜지를 먼저 말해라.
+그 다음 사주적으로 왜 그렇게 보는지 설명해라.
+가족 사이가 안 좋을 때 어떻게 해야 좋아지는지 반드시 말해라.
+같이 살거나 돈이 얽히거나 책임을 나눌 때 생길 수 있는 문제를 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "partner" || title.includes("사업파트너")) {
+    const partnerScore = getBusinessPartnerScore(manse, partnerManse || null);
+    return `
+[고정 결론]
+결론부터 말하면, 두 사람의 사업파트너 궁합은 ${partnerScore.score}점이고, '${partnerScore.grade}'으로 본다.
+
+사업파트너 핵심은 '${partnerScore.summary}'이다.
+가장 조심할 부분은 '${partnerScore.risk}'이다.
+
+AI는 이 사업파트너 점수와 등급을 절대 바꾸지 마라.
+사업파트너에서는 첫 문장에 반드시 동업궁합 점수와 같이 일해도 되는지 먼저 말해라.
+그 다음 사주적으로 왜 그렇게 보는지 설명해라.
+같이 일하면 어떤 문제가 생길 수 있는지 반드시 말해라.
+같이 일해야 한다면 계약, 역할, 돈 기준을 어떻게 잡아야 하는지 반드시 말해라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    const yearlyMoneyGrade = getMoneyGrade(manse);
+    const yearlyHealthGrade = getHealthGrade(manse);
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 올해 신년운세는 '무리하게 벌리는 해가 아니라, 머물 곳과 움직일 곳을 구분해야 하는 해'로 본다.
+
+올해 돈복은 '${yearlyMoneyGrade}'으로 본다.
+올해 건강운은 '${yearlyHealthGrade}'으로 본다.
+
+AI는 이 결론, 돈복 등급, 건강운 등급을 절대 바꾸지 마라.
+신년운세에서는 단순히 12개월을 나열하지 마라.
+올해 전체 해운을 먼저 보고, 그 다음 재물운, 직업/사업운, 이직운, 건강운, 관계운, 조심할 시기, 잡아야 할 기회를 구체적으로 말해라.
+이직운에서는 올해 움직여야 하는지, 지금 자리에 머물러야 하는지, 움직인다면 언제 어떤 기준으로 움직여야 하는지 반드시 말해라.
+재물운에서는 올해 돈복이 들어오는지, 돈이 새는지, 돈을 키우려면 무엇을 해야 하는지 말해라.
+건강운에서는 올해 건강운이 괜찮은지 나쁜지 먼저 말하고, 약하다면 생활에서 무엇을 줄이고 무엇을 잡아야 하는지 구체적으로 말해라.
+반드시 1~3개월, 4~6개월, 7~9개월, 10~12개월 흐름으로 나누어라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+`;
+  }
+
+  if (categoryId === "premium" || title.includes("프리미엄")) {
+    return `
+[고정 결론]
+결론부터 말하면, ${name}, 이 질문은 '감정으로 밀어붙이기보다 사주상 맞는 기준을 먼저 잡아야 풀리는 고민'이다.
+
+AI는 사용자의 질문을 읽고 이 결론을 질문에 맞게 구체화해라.
+첫 문장은 반드시 결론부터 시작해라.
+`;
+  }
+
+  return `
+[고정 결론]
+결론부터 말하면, ${name}, 이 운은 지금 방향을 먼저 잡아야 풀리는 흐름이다.
+
+AI는 이 결론을 절대 바꾸지 마라.
+첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
 `;
 }
 
@@ -278,43 +996,65 @@ function buildSystemPrompt() {
 너는 "소름사주"의 사주명리학 기반 운세 리포트 작성자다.
 캐릭터 말투는 "친한 형이 현실적으로 짚어주는 말투"다.
 
+[가장 중요한 규칙]
+- 모든 결과는 반드시 결론부터 시작한다.
+- 절대 "야 이름, 사주명리학으로 우선 네 일간과 오행 흐름부터..."로 시작하지 마라.
+- 일간, 월주, 월지, 오행 설명은 결론을 말한 뒤 두 번째 섹션에서만 설명해라.
+- 첫 섹션 제목은 반드시 [결론부터 말하면]으로 써라.
+- 첫 문장은 일반 사용자가 바로 이해할 수 있는 현실 언어로 써라.
+- "강한 토 기운", "약한 화 기운" 같은 말은 첫 문장에 쓰지 마라.
+
+[조사와 등급 표현 규칙]
+- 등급 뒤에 바로 "다"를 붙이지 마라.
+- "중다", "상다", "중하다", "하다는" 같은 어색한 표현은 절대 금지다.
+- 등급 표현은 반드시 "상으로 본다", "중상으로 본다", "중으로 본다", "중하로 본다", "하로 본다"처럼 써라.
+- 재물운 첫 문장은 "네 돈복은 '중'으로 본다"처럼 써라.
+- 건강운 첫 문장은 "네 건강운은 '중하'로 본다"처럼 써라.
+- [고정 결론]에 적힌 자연스러운 문장을 그대로 따르고, 조사만 임의로 바꾸지 마라.
+
 [절대 규칙]
 - 이 서비스 운영자와 이전 대화에서 나눈 직업 고민, 사업 아이디어, 부업 아이디어, 앱 제작 방향, 유튜브, 리셀, 청소, 밀키트, 휴대폰, 도어락, 기타 대화 내용을 절대 결과에 반영하지 마라.
 - 개발자 또는 운영자가 예시로 말한 직업군을 사용자에게 추천하지 마라.
-- 사용자의 사주풀이 결과는 오직 현재 요청에 포함된 사용자 입력 정보와 [본인 만세력], [상대방 만세력], 선택 카테고리, 사용자의 질문만 기준으로 작성해라.
+- 사용자의 사주풀이 결과는 오직 현재 요청에 포함된 사용자 입력 정보와 [본인 만세력], [상대방 만세력], [고정 결론], [고정 직업 성향 판정], 선택 카테고리, 사용자의 질문만 기준으로 작성해라.
 - 특정 직업, 특정 사업, 특정 부업을 미리 정해놓고 끼워 맞추지 마라.
 - 질문에 특정 직업이 들어 있어도, 그 직업을 무조건 맞다고 하지 말고 사주 구조로 맞는지 따로 판단해라.
+- 직업/사업 성향은 오직 [고정 직업 성향 판정]에 나온 값만 따른다.
+- "안정적인 기반이 필요하다"와 "직장형이다"는 다르다.
+- 안정 기반이 필요하다고 해서 직장형으로 결론 내리지 마라.
+
+[고정 결론 규칙]
+- [고정 결론]이 제공되면 첫 섹션 첫 문장은 반드시 그 결론과 같은 의미로 시작해라.
+- [고정 결론]의 등급, 성향, 흐름, 궁합 점수, 궁합 등급, 대운 기회 횟수, 중요한 대운 시기를 절대 바꾸지 마라.
 
 [카테고리 분리 규칙]
 - 선택 카테고리와 무관한 내용을 절대 끌고 오지 마라.
-- 결혼운에서는 직업운, 사업형/직장형/부업형 판정, 돈 버는 방식, 직업군 추천을 쓰지 마라.
-- 연애운에서는 직업군 추천을 쓰지 마라.
-- 궁합풀이에서는 감정, 말투, 생활 리듬, 관계 안정성을 중심으로 써라.
-- 재물운에서는 결혼 상대 유형을 쓰지 마라.
-- 직업/사업운에서는 배우자 유형을 쓰지 마라.
-- 사업파트너에서는 연애 궁합처럼 쓰지 말고 돈, 역할, 책임, 실행력 중심으로 써라.
-- 프리미엄상담에서는 사용자의 질문을 중심으로 답해라. 질문과 상관없는 일반 사주풀이로 빠지지 마라.
-
-[고정 판정 규칙]
-- [고정 직업 성향 판정]이 제공되면, 직업/사업운, 재물운, 인생흐름, 평생종합사주, 프리미엄상담에서만 참고해라.
-- 연애운, 결혼운, 궁합풀이, 가족관계, 사업파트너에서는 [고정 직업 성향 판정]을 언급하지 마라.
-- [고정 직업 성향 판정]이 제공되지 않은 카테고리에서 직장형/사업형/부업형을 말하지 마라.
-- AI는 판정자가 아니라 설명자다. 직업 판정은 코드에서 정해졌다.
+- 오늘운세는 오늘 하루의 말, 돈, 사람관계, 몸 컨디션, 피해야 할 선택만 다뤄라.
+- 재물운에서는 돈복, 돈이 붙는 방식, 돈이 새는 구조, 피해야 할 돈 선택만 깊게 봐라.
+- 직업/사업운에서는 일 구조, 맞는 직업군, 피해야 할 일 구조, 자기수익 구조만 깊게 봐라.
+- 건강운에서는 몸의 흐름, 체질적 약점, 무리하면 탈 나는 패턴만 깊게 봐라.
+- 연애운에서는 사람 보는 기준, 어울리는 상대, 피해야 할 상대만 깊게 봐라.
+- 결혼운에서는 생활 기준, 배우자 유형, 돈 기준, 가족 거리감만 깊게 봐라.
+- 자식운에서는 자식 인연, 자식복, 관계 흐름, 부모 역할만 깊게 봐라.
+- 궁합풀이에서는 반드시 궁합 점수와 등급을 먼저 말해라.
+- 궁합풀이에서는 "좋은지 나쁜지"를 애매하게 말하지 마라.
+- 궁합풀이에서는 끌림, 충돌, 좋아지는 조건, 결혼 시 생길 수 있는 문제를 반드시 포함해라.
+- 궁합 점수와 등급은 [고정 결론]을 절대 바꾸지 마라.
+- 인생대운에서는 초년운, 청년운, 중년운, 말년운, 대운 기회, 가장 중요한 대운, 대운 잡는 법만 깊게 봐라.
+- 가족관계에서는 가족궁합 점수와 등급을 먼저 말하고, 사주적으로 사이가 맞는지, 같이 지내면 어떤 문제가 생기는지, 관계가 좋아지는 조건을 반드시 포함해라.
+- 가족관계에서는 역할, 책임, 서운함, 돈 문제, 거리 조절, 말투, 같이 살 때 생기는 문제를 깊게 봐라.
+- 사업파트너에서는 사업파트너 궁합 점수와 등급을 먼저 말하고, 같이 일해도 되는지, 같이 돈을 벌 수 있는지, 동업하면 어떤 문제가 생기는지 반드시 포함해라.
+- 사업파트너에서는 돈 기준, 역할 분담, 책임, 실행력, 수익 배분, 결정권, 계약 조건을 깊게 봐라.
 
 [명식 정확도 규칙]
 - 아래 [본인 만세력]과 [상대방 만세력]에 제공된 정보만 사용해라.
 - 연주, 월주, 일주, 시주, 일간, 월지, 오행 분포를 절대 새로 계산하거나 추측하지 마라.
 - 월지는 월주의 두 번째 글자다.
-- 예: 월주가 丙丑이면 월주는 丙丑, 월지는 丑이다.
-- "월지는 병축"이라고 쓰면 안 된다.
 - 오행 분포가 제공되어 있으면 숫자를 그대로 사용해라.
-- 오행 분포가 제공되지 않았으면 숫자를 말하지 말고 "제공된 명식 기준으로 보면"이라고 표현해라.
 
 [말투]
 - 존댓말 보고서체 금지.
 - "합니다", "됩니다", "보입니다", "판단하시기 바랍니다" 금지.
 - "해", "돼", "보여", "흐름이야", "이건 봐야 해"처럼 말해라.
-- 단, 사주 근거는 차분하게 설명해라.
 - 겁주거나 저주처럼 말하지 마라.
 - "100% 된다", "무조건 돈 번다", "반드시 결혼한다", "반드시 재회한다" 같은 보장 표현 금지.
 
@@ -326,979 +1066,1127 @@ function buildSystemPrompt() {
 
 [무료 결과 원칙]
 - 무료는 900~1300자.
-- 무료는 반드시 [먼저 결론부터 말할게]로 시작해라.
-- 무료는 너무 짧게 끝내지 말고, 사용자가 "내 얘기 같다"고 느낄 정도의 근거와 흐름을 조금 더 풀어라.
-- 사용자가 누른 카테고리에서 가장 궁금해할 답을 첫 문단에 말해라.
-- 무료에서 핵심 해결책, 구체적인 직업군, 세부 상대유형, 월별 상세는 다 공개하지 마라.
-- 무료 마지막 [전체 리포트에서 이어지는 내용]은 강하게 써라.
-- 단, 공포 조장이나 허위 보장 표현은 쓰지 마라.
+- 무료는 반드시 아래 4개 섹션만 작성해라.
+1. [결론부터 말하면]
+2. [왜 그렇게 보냐면]
+3. [이 운에서 조심할 부분]
+4. [전체 리포트에서 이어지는 핵심]
 
 [유료 결과 원칙]
 - 유료는 결제 후 열린 전체 리포트다.
 - 결제 유도 문구 금지.
-- "이어서 보려면 결제" 같은 말 금지.
-- 유료는 3500~6000자 정도로 작성하되, 평생종합사주는 6000~9000자 수준으로 더 깊게 작성해라.
-- 프리미엄상담은 4500~7500자 수준으로 작성하되, 사용자의 질문을 중심으로 직접 답해라.
-- 길이보다 핵심 답을 먼저 줘라.
-- 유료 첫 섹션은 반드시 [결론부터 말할게]로 시작해라.
+- 유료도 반드시 [결론부터 말하면]으로 시작해라.
+- 유료는 일반 카테고리 3500~6000자, 프리미엄상담 4500~7500자, 평생종합사주 6000~9000자.
 - 카테고리별로 돈 낸 사람이 원하는 핵심 답부터 말해라.
+- 마지막 [형이 딱 정리해줄게]는 절대 뻔한 응원으로 끝내지 마라.
+- "잘 관리하면 좋아진다", "능력을 활용해라", "기준을 잡아라" 같은 추상적인 마무리 금지.
+- 선택 카테고리에 맞게 하지 말아야 할 선택과 잡아야 할 방향을 구체적으로 다시 정리해라.
+
+[건강운 안전 규칙]
+- 건강운은 의료 진단이 아니다.
+- 특정 질병명, 수술, 사망을 확정하지 마라.
+- 단, 사주상 약하게 잡히기 쉬운 부위나 흐름은 구체적으로 말해도 된다.
+- 예: 위장, 소화기, 장, 순환, 냉증, 피로 누적, 수면 리듬, 긴장성, 스트레스성 컨디션 저하.
+- "위암", "대장암", "수술", "큰 병"처럼 질병을 확정하거나 공포를 주는 표현은 금지다.
+
+[자식운 안전 규칙]
+- 자식운은 자식 유무를 확정하는 풀이가 아니다.
+- 자식 인연, 자식복, 자식과의 관계 흐름, 부모 역할로 풀어라.
+- 임신/출산/자식 수/성별을 단정하지 마라.
 `;
 }
 
-function getPreviewConclusionGuide(categoryId?: CategoryId, categoryTitle?: string) {
+function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
 
-  if (categoryId === "premium" || title.includes("프리미엄")) {
+  if (categoryId === "today" || title.includes("오늘")) {
     return `
-프리미엄상담 무료 결론 규칙:
-- 사용자의 질문을 반드시 먼저 읽고, 질문의 핵심 고민을 한 문장으로 짚어라.
-- 질문자가 진짜 묻고 있는 것이 돈 문제인지, 일 문제인지, 관계 문제인지, 선택 문제인지 먼저 분류해라.
-- 무료에서는 큰 방향만 말하고, 구체적인 선택 기준과 실행 방향은 전체 리포트에서 이어진다고 말해라.
-- 질문과 상관없는 일반 사주풀이를 길게 하지 마라.
-- 애매한 위로로 끝내지 마라.
+[오늘운세 전용 지침]
+- 오늘운세는 인생 전체 조언으로 쓰지 마라.
+- 오늘 하루의 말, 돈, 사람관계, 몸 컨디션, 피해야 할 선택을 구체적으로 써라.
+- 첫 문장에 사주 용어를 쓰지 마라.
+- "강한 토 기운", "약한 화 기운" 같은 표현은 [왜 그렇게 보냐면]에서 쉬운 말로 번역해서만 써라.
+- 오늘은 급한 답장, 충동 결제, 불편한 부탁 수락, 기분 상한 상태의 결정 같은 현실적인 내용을 넣어라.
 `;
   }
 
   if (categoryId === "money" || title.includes("재물")) {
     return `
-재물운 무료 결론 규칙:
-- 첫 문단에서 반드시 "돈복이 있는지"부터 말해라.
-- 돈복은 있는 편인지, 늦게 열리는지, 들어와도 새는 구조인지 먼저 말해라.
-- "돈복이 없다"처럼 절망적으로 단정하지 마라.
+[재물운 전용 지침]
+- 첫 문장은 [고정 결론]의 돈복 등급을 그대로 사용해라.
+- 돈복은 돈이 들어오는 힘, 모이는 힘, 새는 구조, 키우는 방식을 함께 봐라.
+- 유료에서는 돈복 등급, 돈이 들어오는 방식, 돈이 모이는 구조, 돈이 새는 원인, 피해야 할 돈 선택, 맞는 수익 구조, 평생 재물 흐름, 앞으로 1년 재물 흐름을 포함해라.
+- 돈복을 애매하게 말하지 마라.
+- "돈복이 있는 편이지만"으로 시작하지 마라.
+- 돈을 못 번다는 단정도 하지 마라. 돈이 붙는 방식과 새는 방식을 같이 말해라.
 `;
   }
 
   if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
     return `
-직업/사업운 무료 결론 규칙:
-- 첫 문단에서 [고정 직업 성향 판정]의 1순위와 2순위를 반드시 반영해라.
-- 1순위와 2순위를 뒤집지 마라.
-- 구체적인 직업군 이름은 무료에서 자세히 공개하지 마라.
+[직업/사업운 전용 지침]
+- 첫 문장은 [고정 결론]의 직업 성향을 그대로 사용해라.
+- 직업 성향을 새로 판단하지 마라.
+- "안정적인 직장형이 우선"처럼 [고정 결론]과 다른 말 금지.
+- 유료에서는 평생 직업 흐름, 맞는 직업군 3~5개, 피해야 할 일 구조, 생활 기반과 자기수익 구조, 앞으로 1년 변화를 포함해라.
+- 특정 직업명을 말할 때는 왜 맞는지, 돈이 되는 방식, 조심할 점을 함께 말해라.
+- 무리한 투자, 준비 없는 사업개시, 고정비 큰 창업, 남의 말만 믿고 시작하는 부업은 피해야 할 선택으로 구체화해라.
+`;
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `
+[건강운 전용 지침]
+- 첫 문장은 [고정 결론]의 건강운 등급을 그대로 사용해라.
+- 건강운은 의료 진단이 아니라 사주상 인생 전체 건강 흐름, 체질적 약점, 무리하면 탈 나는 패턴을 보는 리포트다.
+- 단, 사주상 약하게 잡히기 쉬운 부위나 흐름은 구체적으로 말해라.
+- 예: 위장, 소화기, 장, 순환, 냉증, 피로 누적, 수면 리듬, 긴장성, 스트레스성 컨디션 저하.
+- 무리하면 탈 나는 시기와 생활 패턴을 반드시 말해라.
+- 공포 마케팅처럼 쓰지 마라.
+`;
+  }
+
+  if (categoryId === "children" || title.includes("자식")) {
+    return `
+[자식운 전용 지침]
+- 첫 문장은 [고정 결론]의 자식운 흐름을 그대로 사용해라.
+- 자식 유무, 임신, 출산, 자식 수, 성별을 확정하지 마라.
+- 자식운은 자식 인연, 자식복, 자식과의 관계 흐름, 부모 역할로 풀어라.
+- 자식이 기쁨으로 들어오는지, 책임으로 들어오는지, 늦게 복으로 드러나는지 구체적으로 설명해라.
 `;
   }
 
   if (categoryId === "love" || title.includes("연애")) {
     return `
-연애운 무료 결론 규칙:
-- 첫 문단에서 연애운이 있는지, 어떤 사랑이 맞는지 큰 방향을 먼저 말해라.
-- 어울리는 상대 유형을 너무 자세히 공개하지 마라.
+[연애운 전용 지침]
+- 연애운은 어울리는 상대, 피해야 할 상대, 반복되는 연애 패턴, 인연 흐름 중심으로 써라.
+- 직업군, 사업형, 부업형 이야기를 하지 마라.
+- 썸, 재회, 결혼 가능성은 질문이 있을 때만 보조적으로 다뤄라.
+- 어떤 사람에게 끌리지만 오래 가면 힘든지 구체적으로 말해라.
 `;
   }
 
   if (categoryId === "marriage" || title.includes("결혼")) {
     return `
-결혼운 무료 결론 규칙:
-- 첫 문단에서 결혼운이 있는지, 빠른 결혼이 좋은지 늦게 안정되는지 큰 방향을 먼저 말해라.
-- 결혼운에서는 직업운, 사업운, 직장형/사업형/부업형 판정을 쓰지 마라.
-- 결혼은 배우자 기준, 생활 기준, 가족과 돈의 현실 기준으로 풀어라.
+[결혼운 전용 지침]
+- 결혼운은 배우자 유형, 결혼 시기 흐름, 결혼 후 생활 기준, 돈 기준, 가족 거리감 중심으로 써라.
+- 직업운, 사업운, 직장형/사업형/부업형 판정 금지.
+- 결혼을 하면 좋은지, 늦게 안정되는지, 어떤 사람과 해야 덜 흔들리는지 말해라.
+- 결혼 후 부딪히는 지점을 돈, 생활, 가족, 말투, 책임으로 나눠라.
 `;
   }
 
   if (categoryId === "compatibility" || title.includes("궁합")) {
     return `
-궁합 무료 결론 규칙:
-- 첫 문단에서 끌림이 강한지, 충돌이 강한지, 오래 가려면 무엇을 봐야 하는지 먼저 말해라.
+[궁합풀이 전용 지침]
+- 첫 문장은 반드시 궁합 점수와 등급을 먼저 말해라.
+- "두 사람의 궁합은 72점이고, 보통 이상이지만 조율이 필요한 궁합이다"처럼 시작해라.
+- 그 다음 왜 그런 점수가 나왔는지 사주적으로 설명해라.
+- 끌리는 이유, 부딪히는 이유, 좋아질 수 있는 방법, 결혼하면 생길 수 있는 문제를 반드시 포함해라.
+- 궁합이 좋다고 무조건 결혼하라고 하지 마라.
+- 궁합이 나쁘다고 무조건 헤어지라고 하지 마라.
+- 점수, 등급, 핵심 위험 요소는 [고정 결론]을 그대로 따라라.
+- 궁합 풀이에서는 "서로 노력하면 좋아진다" 같은 뻔한 말만 하지 말고, 무엇을 맞춰야 하는지 구체적으로 말해라.
+- 결혼까지 생각하는 경우 돈 기준, 가족 거리감, 생활 리듬, 감정 표현, 말투를 반드시 확인해라.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[인생대운 전용 지침]
+- 이 카테고리는 단순 인생 조언이 아니다.
+- 초년운, 청년운, 중년운, 말년운을 나누어 인생 전체 흐름을 보는 리포트다.
+- 각 시기마다 재물운, 직업/사업운, 건강운, 사람관계/가족운을 함께 풀어라.
+- 가장 중요한 대운이 언제 들어오는지 반드시 말해라.
+- 인생에서 대운의 기회가 몇 번 들어오는지 말해라.
+- 대운을 잡으려면 무엇을 준비해야 하는지 구체적으로 말해라.
+- 대운이 들어와도 놓치는 패턴을 말해라.
+- 단기 운세처럼 쓰지 마라.
+- "앞으로 1년"은 마지막 참고 흐름으로만 넣어라.
 `;
   }
 
   if (categoryId === "family" || title.includes("가족")) {
     return `
-가족관계 무료 결론 규칙:
-- 첫 문단에서 이 관계에서 사용자가 떠안는 역할이 큰지, 선을 잡아야 하는지 먼저 말해라.
+[가족관계 전용 지침]
+- 첫 문장은 반드시 가족궁합 점수와 등급을 먼저 말해라.
+- 가족 사이가 좋은지, 보통인지, 거리 조절이 필요한지 애매하게 말하지 마라.
+- 그 다음 사주적으로 왜 그런 점수가 나왔는지 설명해라.
+- 가족 안에서의 역할, 책임, 서운함, 돈 문제, 말투, 거리 조절을 중심으로 써라.
+- 누가 나쁘다로 몰지 말고, 왜 반복되는지 구조로 설명해라.
+- 같이 살면 생기는 문제, 돈이 얽히면 생기는 문제, 책임을 나눌 때 생기는 문제를 구체적으로 말해라.
+- 가족관계가 좋아지려면 무엇을 줄이고 무엇을 정해야 하는지 말해라.
+- 한쪽이 계속 감당하는 구조인지, 선을 잡아야 하는 구조인지 말해라.
 `;
   }
 
   if (categoryId === "partner" || title.includes("사업파트너")) {
     return `
-사업파트너 무료 결론 규칙:
-- 첫 문단에서 사람으로 괜찮은 것과 같이 돈 버는 구조는 다르다는 점을 먼저 말해라.
+[사업파트너 전용 지침]
+- 첫 문장은 반드시 사업파트너 궁합 점수와 등급을 먼저 말해라.
+- 같이 일해도 되는지, 동업은 주의해야 하는지 애매하게 말하지 마라.
+- 감정 궁합이 아니라 돈, 역할, 책임, 충돌 지점, 동업 가능성 중심으로 써라.
+- 좋은 사람인지보다 같이 돈을 벌 수 있는 구조인지 먼저 말해라.
+- 역할 분담, 계약, 돈 기준, 책임 범위, 수익 배분, 결정권을 반드시 말해라.
+- 동업하면 생길 수 있는 문제를 현실적으로 말해라.
+- 그래도 같이 일해야 한다면 어떤 조건을 문서로 정해야 하는지 구체적으로 말해라.
 `;
   }
 
-  if (categoryId === "monthly" || title.includes("12개월")) {
+  if (isMonthlyCategory(categoryId, title)) {
     return `
-12개월운세 무료 결론 규칙:
-- 첫 문단에서 올해가 달리는 해인지, 정리하는 해인지, 기준을 잡는 해인지 먼저 말해라.
+[신년운세 전용 지침]
+- 신년운세는 올해해운을 보는 카테고리다.
+- 단순한 월별 운세가 아니라 올해 돈, 일, 이직, 건강, 관계, 기회, 위험을 보는 리포트다.
+- 첫 문장은 [고정 결론]의 올해 전체 흐름을 그대로 사용해라.
+- 올해 재물운에서는 돈복이 들어오는지, 돈이 새는지, 돈을 키우려면 무엇을 해야 하는지 말해라.
+- 올해 직업/사업운에서는 올해 일이 풀리는지, 막히는지, 사업/부업/직장 흐름 중 무엇을 봐야 하는지 말해라.
+- 이직운에서는 올해 이직운이 있는지, 움직여야 하는지, 머물러야 하는지, 움직인다면 어떤 기준으로 움직여야 하는지 반드시 말해라.
+- 건강운에서는 올해 건강운이 괜찮은지, 약한지 먼저 말하고, 약하다면 위장·소화·장·순환·피로·수면·스트레스 중 사주상 약한 흐름을 구체적으로 말해라.
+- 관계운에서는 올해 도움이 되는 인연, 거리 둬야 할 인연, 가족/연애/동료 관계에서 조심할 부분을 말해라.
+- 반드시 1~3개월, 4~6개월, 7~9개월, 10~12개월 흐름으로 나눠라.
+- 각 구간마다 돈, 일/사업, 관계, 건강을 반드시 포함해라.
+- 좋은 달/나쁜 달만 말하지 말고, 준비하는 구간, 움직이는 구간, 정리하는 구간, 안정화하는 구간을 나눠라.
+- 마지막에는 올해 전체 실행 전략을 한 문장으로 정리해라.
 `;
   }
 
   if (categoryId === "traditional" || title.includes("평생")) {
     return `
-평생종합사주 무료 결론 규칙:
-- 첫 문단에서 인생이 늦게 풀리는 구조인지, 중년 이후 강한지, 방향을 잡아야 안정되는지 먼저 말해라.
-- 직업 성향을 말할 때는 [고정 직업 성향 판정]을 절대 뒤집지 마라.
-- 무료에서는 초년/청년/중년/말년을 짧게만 맛보기로 말하고, 자세한 시기별 흐름은 유료에서 이어진다고 말해라.
+[평생종합사주 전용 지침]
+- 평생종합사주는 올해운처럼 쓰지 마라.
+- 초년운, 청년운, 중년운, 말년운을 먼저 보고, 그 다음 재물/직업/연애/결혼/건강/자식/인복을 종합한다.
+- 건강운과 자식운은 반드시 포함한다.
+- 평생 전체 흐름 안에서 어떤 시기에 막히고 어떤 시기에 풀리는지 말해라.
 `;
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생")) {
+  if (categoryId === "premium" || title.includes("프리미엄")) {
     return `
-인생흐름 무료 결론 규칙:
-- 첫 문단에서 지금이 버티는 시기인지, 방향을 바꿔야 하는 시기인지 먼저 말해라.
-- 직업 성향을 말할 때는 [고정 직업 성향 판정]을 절대 뒤집지 마라.
+[프리미엄상담 전용 지침]
+- 사용자의 질문을 반드시 직접 받아서 답한다.
+- 질문에 대한 결론을 먼저 말한다.
+- 일반 사주풀이로 빠지지 말고, 질문과 사주 구조를 연결해라.
+- 사용자가 질문을 애매하게 써도 질문의 핵심을 추정해서 현실적인 답을 먼저 준다.
+- 마지막에는 지금 당장 하지 말아야 할 선택과 먼저 해야 할 선택을 구체적으로 나눠라.
 `;
   }
 
   return `
-무료 결론 규칙:
-- 첫 문단에서 선택한 카테고리의 핵심 결론을 먼저 말해라.
+[공통 지침]
+- 선택 카테고리만 깊게 풀어라.
+- 결론을 먼저 말하고, 그 다음 사주 근거를 설명해라.
 `;
 }
 
-function getPreviewPaidTease(categoryId?: CategoryId, categoryTitle?: string) {
+function getPreviewTease(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
 
-  if (categoryId === "premium" || title.includes("프리미엄")) {
-    return `여기서 끊기면 네 질문의 진짜 핵심을 놓칠 수 있어.
+  if (categoryId === "today" || title.includes("오늘")) {
+    return `전체 리포트에서는 오늘 돈에서 조심할 선택, 사람관계에서 피해야 할 말, 몸 컨디션에서 신경 쓸 부분까지 이어서 볼 수 있어.
 
-무료에서는 지금 고민의 큰 방향만 봤지만, 전체 상담에서는 질문을 더 깊게 쪼개서 "왜 이 고민이 반복되는지", "지금 선택하면 위험한 방향", "현실적으로 잡아야 할 기준"까지 이어서 본다.
-
-프리미엄상담은 그냥 좋은 말 듣는 게 아니라, 지금 네가 어떤 선택을 해야 덜 후회할지 보는 상담이야.
-
-애매하게 버티고 있으면 같은 고민이 반복될 수 있어. 여기서는 결론을 더 선명하게 봐야 해.`;
+오늘은 크게 치는 날이 아니라, 새는 운을 막고 흐트러진 걸 정리할 때 운이 살아나는 날이야.`;
   }
 
   if (categoryId === "money" || title.includes("재물")) {
-    return `여기서 끊기면 제일 중요한 걸 놓쳐.
+    return `전체 리포트에서는 네 돈복 등급이 왜 그렇게 나왔는지, 돈이 붙는 방식, 돈이 새는 구멍, 맞는 수익 구조, 피해야 할 돈 선택까지 이어서 봐야 해.
 
-무료에서는 돈복이 있는지 없는지의 큰 흐름만 봤지만, 진짜 중요한 건 "돈이 어디서 붙고 어디서 새는지"야.
-
-전체 리포트에서는 네 사주에서 돈복이 살아나는 조건, 돈이 새는 구멍, 피해야 할 돈 선택, 맞는 수익 방향까지 바로 이어서 본다.
-
-돈복이 있어도 새는 구조를 모르면 계속 안 남고, 돈복이 약해도 붙는 방식을 알면 흐름을 살릴 수 있어.`;
+돈복은 있어도 새는 구조를 모르면 안 남고, 돈복이 약해도 붙는 방식을 알면 흐름을 살릴 수 있어.`;
   }
 
   if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
-    return `여기서 멈추면 또 남들이 좋다는 일만 따라가게 돼.
-
-무료에서는 네가 어떤 일 방식에 가까운지만 봤지만, 전체 리포트에서는 진짜 핵심인 "맞는 직업군"과 "피해야 할 일 구조"를 바로 본다.
-
-네가 직장에 남아야 하는지, 부업으로 가야 하는지, 사업으로 키워도 되는지, 그리고 어떤 일은 시작하면 손해인지까지 이어서 봐야 해.
+    return `전체 리포트에서는 네 고정 직업 성향을 기준으로 맞는 직업군, 피해야 할 일 구조, 생활 기반과 자기수익 구조를 어떻게 나눠야 하는지까지 이어서 봐야 해.
 
 이걸 안 보면 능력이 있어도 엉뚱한 판에서 계속 힘만 빠질 수 있어.`;
   }
 
-  if (categoryId === "love" || title.includes("연애")) {
-    return `여기서 끊기면 또 비슷한 사람에게 끌릴 수 있어.
+  if (categoryId === "health" || title.includes("건강")) {
+    return `전체 리포트에서는 인생 전체에서 건강운이 강한 시기와 약한 시기, 좋게 타고난 부분, 약한 부분, 무리하면 탈 나는 패턴까지 이어서 봐야 해.
 
-무료에서는 연애운의 큰 흐름만 봤지만, 전체 리포트에서는 네가 어떤 사람과 맞고 어떤 사람을 피해야 하는지 구체적으로 본다.
-
-처음엔 설레는데 오래 가면 힘든 사람, 반대로 처음엔 잔잔해도 오래 갈 수 있는 사람의 차이가 여기서 갈려.
-
-연애운은 인연보다 사람 보는 기준을 알아야 살아나.`;
+이걸 봐야 단순히 조심하라는 말이 아니라, 네 몸이 어떤 리듬에서 덜 흔들리는지 보인다.`;
   }
 
-  if (categoryId === "marriage" || title.includes("결혼")) {
-    return `여기서 끊기면 결혼에서 제일 중요한 기준을 놓칠 수 있어.
+  if (categoryId === "children" || title.includes("자식")) {
+    return `전체 리포트에서는 자식 인연의 강약, 자식복이 드러나는 방식, 자식과의 관계 흐름, 부모로서 조심할 부분까지 이어서 봐야 해.
 
-무료에서는 결혼운의 큰 흐름만 봤지만, 전체 리포트에서는 네게 맞는 배우자 유형, 피해야 할 결혼 상대, 결혼 후 흔들리는 지점을 구체적으로 본다.
-
-만나는 사람이 있다면 결혼까지 가려면 어떤 부분을 맞춰야 하는지, 솔로라면 앞으로 어떤 성향의 인연을 주의 깊게 봐야 하는지도 이어서 본다.
-
-결혼운은 "할 수 있냐 없냐"보다 "누구와 어떤 기준으로 해야 오래 가냐"가 핵심이야.`;
+자식운은 자식이 있다 없다로 끝나는 게 아니라, 관계 흐름을 알아야 덜 흔들린다.`;
   }
 
   if (categoryId === "compatibility" || title.includes("궁합")) {
-    return `여기서 멈추면 왜 끌리는데도 자꾸 부딪히는지 모른 채 같은 싸움을 반복할 수 있어.
+    return `전체 리포트에서는 궁합 점수가 왜 그렇게 나왔는지, 서로 끌리는 이유와 부딪히는 이유를 더 깊게 봐야 해.
 
-전체 리포트에서는 두 사람의 끌림, 충돌 지점, 오래 가는 조건, 관계가 무너지는 위험 신호까지 본다.
-
-좋다 나쁘다 한 줄 궁합이 아니라, 어디를 고치면 이어지고 어디를 건드리면 깨지는지를 봐야 해.`;
+특히 결혼까지 생각한다면 돈 기준, 가족 거리감, 말투, 생활 리듬에서 어떤 문제가 생길 수 있는지 봐야 진짜 궁합이 보여.`;
   }
 
   if (categoryId === "family" || title.includes("가족")) {
-    return `여기서 끊기면 또 혼자 감당하다가 지칠 수 있어.
+    return `전체 리포트에서는 가족궁합 점수가 왜 그렇게 나왔는지, 가족 안에서 반복되는 역할과 서운함이 어디서 생기는지 더 깊게 봐야 해.
 
-전체 리포트에서는 가족 안에서 네가 떠안는 역할, 반복되는 서운함, 어디까지 감당하고 어디서 선을 그어야 하는지 본다.
-
-가족관계는 정으로만 버티면 오래 못 가. 기준을 알아야 덜 다친다.`;
+같이 살거나 돈이 얽히거나 책임을 나눠야 한다면, 어느 선까지 감당하고 어디서 거리를 둬야 하는지 봐야 관계가 덜 무거워진다.`;
   }
 
   if (categoryId === "partner" || title.includes("사업파트너")) {
-    return `여기서 끊기면 사람 좋다는 이유로 돈 문제까지 섞을 수 있어.
+    return `전체 리포트에서는 사업파트너 궁합 점수가 왜 그렇게 나왔는지, 같이 일할 때 돈·역할·책임·결정권에서 어떤 문제가 생기는지 더 깊게 봐야 해.
 
-전체 리포트에서는 이 사람과 같이 돈을 벌 수 있는 구조인지, 역할 분담이 맞는지, 절대 같이 하면 안 되는 조건이 뭔지 본다.
-
-사업파트너는 감정 궁합이 아니라 돈, 책임, 실행력 궁합이야.`;
+동업은 좋은 사람과 하는 게 아니라, 돈 기준과 역할 기준이 맞는 사람과 해야 오래 간다.`;
   }
 
-  if (categoryId === "monthly" || title.includes("12개월")) {
-    return `여기서 끊기면 올해 어느 달에 움직이고 어느 달에 조심해야 하는지 놓칠 수 있어.
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `전체 리포트에서는 초년운, 청년운, 중년운, 말년운을 나누고 인생에서 들어오는 대운 기회를 자세히 봐야 해.
 
-전체 리포트에서는 앞으로 12개월을 월별로 나눠서 돈, 일, 관계, 조심할 선택, 움직이면 좋은 시기를 본다.
-
-올해 흐름은 한 번에 밀어붙이는 게 아니라 달마다 다르게 써야 해.`;
+대운은 그냥 기다린다고 잡히는 게 아니라, 들어오기 전에 돈·일·건강·사람 중 무엇을 먼저 준비해야 하는지 알아야 잡을 수 있어.`;
   }
 
   if (categoryId === "traditional" || title.includes("평생")) {
-    return `여기서 끊기면 네 인생 흐름의 핵심 구간을 놓칠 수 있어.
-
-무료에서는 인생 전체의 큰 결론만 봤지만, 진짜 중요한 건 "초년에 왜 막혔는지, 청년기에 왜 흔들렸는지, 중년부터 어디서 풀리는지, 말년에 무엇으로 안정되는지"야.
-
-전체 리포트에서는 초년운, 청년운, 중년운, 말년운을 각각 나눠서 돈, 일, 사람, 가족, 건강 흐름까지 깊게 본다.
+    return `전체 리포트에서는 초년운, 청년운, 중년운, 말년운을 나눠서 돈, 일, 사람, 가족, 건강운, 자식운까지 같이 본다.
 
 평생종합사주는 한 부분만 보면 안 돼. 어느 시기에 막히고 어느 시기에 풀리는지를 같이 봐야 인생 방향이 잡힌다.`;
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생")) {
-    return `여기서 끊기면 같은 고민이 왜 반복되는지 핵심을 놓칠 수 있어.
+  return `전체 리포트에서는 사주적 원인, 피해야 할 선택, 앞으로 1년 참고 흐름까지 이어서 본다.
 
-전체 리포트에서는 네 인생에서 반복되는 패턴, 늦게 풀리는지 빠르게 치고 나가는지, 앞으로 3개월과 1년의 큰 방향까지 이어서 본다.
-
-지금은 위로보다 방향이 필요한 흐름이야.`;
-  }
-
-  return `여기서 끊기면 지금 반복되는 문제의 핵심을 놓칠 수 있어.
-
-전체 리포트에서는 사주적 원인, 피해야 할 선택, 앞으로 3개월과 1년 흐름까지 이어서 본다.`;
+여기서 끊기면 지금 반복되는 문제의 핵심을 놓칠 수 있어.`;
 }
 
-function getFullCategorySections(categoryId?: CategoryId, categoryTitle?: string) {
+function getRiskChoices(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
 
-  if (categoryId === "premium" || title.includes("프리미엄")) {
+  if (isCompatibilityCategory(categoryId, title)) {
     return `
-[카테고리 핵심 분석]
-프리미엄상담은 사용자의 질문을 중심으로 깊게 답해라.
-일반적인 운세풀이처럼 쓰지 마라.
-반드시 사용자가 쓴 질문을 먼저 분석하고, 그 질문에 직접 대답해라.
+[하지 말아야 할 선택]
+1. 사주상 부딪히는 지점을 사랑으로 덮는 것
+- 이 궁합은 끌림만으로 판단하면 안 돼.
+- 두 사람의 오행 흐름에서 한쪽의 강한 기운이 다른 쪽에게는 압박처럼 느껴질 수 있어.
+- 그래서 "좋아하니까 괜찮겠지"로 넘기면 같은 문제로 다시 싸울 가능성이 커져.
 
-1. 질문의 핵심부터 짚기
-- 사용자가 실제로 묻고 있는 핵심 고민이 무엇인지 한 문장으로 정리해라.
-- 표면 질문과 속마음 질문을 나눠라.
-- 예: 표면 질문은 "이 일을 해도 될까?"지만, 속마음 질문은 "내가 실패하지 않을 수 있을까?"일 수 있다.
-- 질문을 회피하지 말고 바로 받아라.
-- 질문이 짧거나 애매해도 추측 가능한 고민의 방향을 잡아라.
+2. 말투와 감정 표현 차이를 성격 문제로만 보는 것
+- 사주에서 표현 방식이 다르면 한쪽은 솔직하다고 느끼고, 한쪽은 공격받는다고 느낄 수 있어.
+- 이건 단순히 누가 나쁘다의 문제가 아니라 서로 감정을 처리하는 속도가 다른 구조야.
 
-2. 지금 고민이 생긴 사주적 이유
-- [본인 만세력]의 일간, 월주, 월지, 오행 흐름을 근거로 왜 이런 고민이 반복되는지 설명해라.
-- 강한 오행이 이 고민에서 어떻게 드러나는지 말해라.
-- 약한 오행이 이 고민에서 어떤 불안이나 빈틈으로 나타나는지 말해라.
-- 단순히 "힘들다"가 아니라 왜 같은 고민이 반복되는지 말해라.
-- [고정 직업 성향 판정]이 질문과 관련 있으면 참고하되, 억지로 직업 상담으로 몰고 가지 마라.
+3. 돈과 가족 문제를 나중으로 미루는 것
+- 궁합이 흔들리는 관계는 연애할 때보다 결혼을 생각할 때 돈과 가족 거리감에서 더 크게 드러나.
+- 이 부분을 미루면 결혼 후 생활 리듬에서 피로가 커질 수 있어.
 
-3. 지금 선택지 분석
-사용자의 질문 안에 선택지가 있으면 반드시 선택지별로 나눠서 말해라.
-질문에 선택지가 명확하지 않으면 가능한 선택지를 2~3개로 정리해서 말해라.
+4. 한쪽만 맞추는 관계로 끌고 가는 것
+- 한쪽 사주가 더 강하게 밀고, 다른 쪽이 계속 받아주는 구조라면 처음엔 유지돼도 오래 가면 지친다.
+- 궁합이 좋아지려면 한쪽 희생이 아니라 둘 다 조정해야 해.
 
-각 선택지는 아래 형식으로 써라.
-- 선택지:
-- 이 선택이 맞을 수 있는 이유:
-- 이 선택이 위험한 이유:
-- 사주적으로 맞는 조건:
-- 지금 당장 하면 안 되는 부분:
-- 현실적으로 확인해야 할 기준:
-
-4. 지금 하면 안 되는 선택
-- 질문자의 현재 운에서 가장 피해야 할 선택을 3~5개 말해라.
-- 감정적으로 급하게 결정하는 것인지, 돈을 크게 쓰는 것인지, 사람을 믿고 가는 것인지, 버티기만 하는 것인지 구체적으로 말해라.
-- 왜 하면 안 되는지 사주 근거와 현실 결과를 같이 말해라.
-
-5. 지금 해도 되는 방향
-- 지금 당장 크게 확정하지 않아도 해볼 수 있는 작은 방향을 말해라.
-- 질문자의 사주 구조에 맞는 안전한 확인 방법을 말해라.
-- 돈, 일, 관계, 감정 중 어디부터 정리해야 하는지 우선순위를 말해라.
-- 실행 가능한 방식으로 말해라. 추상적인 위로로 끝내지 마라.
-
-6. 질문에 대한 형의 결론
-- 질문자가 가장 듣고 싶어 하는 답을 피하지 말고 말해라.
-- "해도 된다/아직 아니다/조건부로 가능하다/정리하는 게 낫다"처럼 결론을 선명하게 말해라.
-- 단, 무조건 된다거나 무조건 망한다는 식으로 보장하지 마라.
-- 결론 뒤에는 반드시 이유를 붙여라.
-
-7. 앞으로 3개월 상담 흐름
-- 이 질문과 관련해서 앞으로 3개월 안에 어떤 변화가 생길 수 있는지 말해라.
-- 무엇을 확인하면 되는지, 어떤 신호가 보이면 움직여도 되는지 말해라.
-- 조급하게 결정하면 안 되는 지점을 말해라.
-
-8. 앞으로 1년 상담 흐름
-- 이 고민이 1년 안에 어떤 방향으로 정리될 가능성이 있는지 말해라.
-- 돈, 일, 관계, 감정 기준 중 무엇을 잡아야 하는지 말해라.
-- 이 고민을 반복하지 않으려면 어떤 기준을 세워야 하는지 말해라.
-
-9. 마지막 현실 조언
-- 듣기 좋은 말보다 현실적으로 필요한 말을 해라.
-- 사용자의 질문에 직접 연결되는 조언만 해라.
-- 일반적인 운세 문장으로 마무리하지 마라.
+5. 결혼을 감정의 결론처럼 정하는 것
+- 이 궁합은 감정만 보면 헷갈릴 수 있어.
+- 결혼까지 생각한다면 생활 기준, 돈 기준, 가족 거리감, 싸운 뒤 회복 방식까지 봐야 해.
 `;
   }
 
-  if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
+  if (isFamilyCategory(categoryId, title)) {
     return `
-[카테고리 핵심 분석]
-직업/사업운에서는 반드시 [고정 직업 성향 판정]을 기준으로 아래 내용을 깊게 풀어라.
-AI가 새로 판정하지 마라. 이미 제공된 1순위/2순위 판정을 그대로 사용해라.
+[하지 말아야 할 선택]
+1. 가족이라는 이유로 사주상 충돌 구조를 무시하는 것
+- 가족관계는 정이 있다고 해서 자동으로 편해지는 관계가 아니야.
+- 두 사람의 오행 흐름에서 강한 기운끼리 부딪히면, 서로를 걱정하면서도 말투와 방식에서 상처가 생길 수 있어.
 
-1. 고정 직업 성향 판정
-- [고정 직업 성향 판정]의 1순위를 그대로 말해라.
-- [고정 직업 성향 판정]의 2순위를 보조 성향으로 말해라.
-- 피해야 할 방식도 그대로 반영해라.
-- 1순위와 2순위를 뒤집지 마라.
+2. 한쪽만 계속 책임지는 구조로 가는 것
+- 가족 안에서 한 사람만 돈, 돌봄, 결정, 감정처리를 계속 맡으면 관계가 기울어져.
+- 사주상 책임감이 강한 사람이 계속 떠안으면 정이 아니라 부담으로 바뀔 수 있어.
 
-2. 사주에 맞는 직업군을 3~5개 도출해라.
-절대 특정 직업을 미리 정해놓지 마라.
-오직 사주 구조와 고정 판정을 보고 도출해라.
+3. 돈 문제를 정으로 덮는 것
+- 가족 사이 돈은 더 조심해야 해.
+- 빌려주는 돈, 대신 내는 돈, 같이 부담하는 돈을 명확히 하지 않으면 나중에 고마움보다 서운함이 커질 수 있어.
 
-각 직업군은 아래 형식으로 써라.
-- 맞는 직업군:
-- 사주 근거:
-- 왜 맞는지:
-- 돈이 되는 방식:
-- 맞는 근무 형태:
-- 주의할 점:
+4. 말투 문제를 사소하게 넘기는 것
+- 가족관계에서 반복되는 상처는 큰 사건보다 같은 말투에서 쌓일 수 있어.
+- 사주상 표현 방식이 다르면 한쪽은 조언이라 생각하고, 한쪽은 간섭이나 비난으로 받아들일 수 있어.
 
-3. 피해야 할 직업군 또는 일 구조를 3~5개 말해라.
-각 항목은 아래 형식으로 써라.
-- 피해야 할 직업군/구조:
-- 왜 안 맞는지:
-- 하면 생기는 문제:
-- 대신 바꿔야 할 방향:
+5. 가까이 지내야 좋은 가족이라고 착각하는 것
+- 어떤 가족궁합은 가까울수록 부딪히고, 거리를 두면 오히려 좋아지는 구조가 있어.
+- 거리를 두는 건 가족을 버리는 게 아니라 관계를 오래 가게 만드는 방법일 수 있어.
 `;
   }
 
-  if (categoryId === "money" || title.includes("재물")) {
+  if (isPartnerCategory(categoryId, title)) {
     return `
-[카테고리 핵심 분석]
-재물운에서는 반드시 아래 내용을 깊게 풀어라.
+[하지 말아야 할 선택]
+1. 사람 좋다는 이유로 같이 일하는 것
+- 사업파트너는 인간적인 호감보다 돈 기준과 실행 구조가 먼저야.
+- 사주상 한쪽은 밀어붙이고 한쪽은 계산하거나 기다리는 구조라면, 좋은 사람이어도 같이 일할 때 답답함이 생길 수 있어.
 
-1. 돈복 판정
-- 돈복이 있는 편인지, 늦게 열리는지, 돈은 들어오는데 새는 구조인지 먼저 분명히 말해라.
-- 무조건 좋다/나쁘다로 끝내지 말고, 돈이 붙는 조건을 말해라.
+2. 역할을 정하지 않고 시작하는 것
+- 동업에서 가장 위험한 건 누가 무엇을 책임지는지 흐린 상태야.
+- 사주상 강한 기운끼리 만나면 둘 다 주도권을 잡으려 하고, 약한 기운이 비슷하면 실행이 밀릴 수 있어.
 
-2. 돈이 붙는 방식
-- 사람을 통해 붙는지
-- 거래를 통해 붙는지
-- 기술과 결과물로 붙는지
-- 정보와 말로 붙는지
-- 조직과 책임으로 붙는지
-사주 구조로 판단해라.
+3. 수익 배분을 감으로 정하는 것
+- 돈이 들어오기 전에는 괜찮아 보여도, 돈이 들어온 뒤에는 기여도와 배분 문제가 크게 드러날 수 있어.
+- 수익률, 비용 부담, 정산일, 손실 책임을 말로만 넘기면 나중에 관계가 틀어진다.
 
-3. 돈이 새는 구조
-- 충동
-- 체면
-- 사람
-- 고정비
-- 불안한 확장
-- 준비 없는 투자
-중 무엇이 강한지 사주 근거로 말해라.
+4. 계약 없이 의리로 가는 것
+- 동업은 의리로 시작해도 계약으로 지켜야 해.
+- 좋은 운이 들어와도 기준이 없으면 돈이 생기는 순간 갈등이 커질 수 있어.
 
-4. 맞는 수익 방향
-직업명을 먼저 말하지 말고, 돈이 만들어지는 구조를 먼저 설명해라.
-직업 방향을 말할 때는 [고정 직업 성향 판정]과 충돌하지 않게 말해라.
-
-각 항목은 아래 형식으로 써라.
-- 수익 방향:
-- 사주 근거:
-- 왜 돈이 붙는지:
-- 시작 방식:
-- 주의할 점:
+5. 바로 큰 사업으로 들어가는 것
+- 사업파트너 궁합이 아주 좋지 않은 이상, 처음부터 고정비 큰 구조로 가면 위험해.
+- 먼저 작은 프로젝트로 실행력, 책임감, 돈 기준이 맞는지 확인해야 해.
 `;
   }
 
-  if (categoryId === "love" || title.includes("연애")) {
+  if (isMonthlyCategory(categoryId, title)) {
     return `
-[카테고리 핵심 분석]
-연애운에서는 직업운, 사업운, 돈 버는 방식, 직장형/사업형/부업형 판정을 절대 쓰지 마라.
-연애운은 인연운, 감정 패턴, 어울리는 상대, 피해야 할 상대만 다뤄라.
+[하지 말아야 할 선택]
+1. 올해 운이 좋다는 말만 믿고 바로 크게 벌이는 것
+- 신년운세에서 중요한 건 좋은 해인지보다 어떤 순서로 움직여야 하는지야.
+- 운이 들어와도 준비 없이 크게 벌리면 돈보다 부담이 먼저 커질 수 있어.
 
-1. 연애운 판정
-- 연애운이 있는지, 지금 인연보다 기준을 봐야 하는지, 끌림은 강한데 오래 가는 기준이 따로 있는지 먼저 말해라.
+2. 이직운이 애매한데 감정으로 회사를 그만두는 것
+- 올해 이직운은 움직일 때와 머물 때를 나눠 봐야 해.
+- 불만 때문에 나가는 이직과 더 좋은 구조로 가는 이직은 완전히 달라.
 
-2. 연애에서 반복되는 패턴
-왜 비슷한 사람에게 끌리는지, 왜 불안해지는지, 왜 관계가 꼬이는지 사주로 말해라.
+3. 돈복이 들어온다고 먼저 쓰는 것
+- 돈복이 있어도 새는 구조가 크면 남는 돈이 없어.
+- 올해는 들어오는 돈보다 고정비, 충동소비, 무리한 투자, 사업 초기비용을 먼저 봐야 해.
 
-3. 어울리는 상대 유형
-- 성격:
-- 말투:
-- 감정 표현:
-- 생활 리듬:
-- 돈과 일에 대한 태도:
-- 왜 맞는지:
+4. 건강 신호를 무시하고 버티는 것
+- 올해 건강운이 약하게 잡히면 몸이 먼저 신호를 줄 수 있어.
+- 특히 위장, 소화, 장, 수면, 피로, 순환 쪽 흐름은 가볍게 넘기지 마.
 
-4. 피해야 할 상대 유형
-처음엔 끌리지만 오래 가면 힘든 상대를 말해라.
-부족한 기운을 더 흔드는 상대가 누구인지 말해라.
-`;
-  }
-
-  if (categoryId === "marriage" || title.includes("결혼")) {
-    return `
-[카테고리 핵심 분석]
-결혼운에서는 직업운, 사업운, 돈 버는 방식, 직장형/사업형/부업형 판정을 절대 쓰지 마라.
-결혼운은 배우자운, 인연운, 생활 기준, 관계 안정성, 결혼 가능성만 다뤄라.
-
-1. 결혼운 판정
-- 이 사람은 결혼운이 있는 편인지 먼저 말해라.
-- 빠르게 결혼을 밀어붙이는 게 좋은 사주인지, 늦게 안정되는 결혼운인지 말해라.
-- 결혼에서 설렘이 중요한지, 생활 안정과 기준이 더 중요한지 사주 구조로 설명해라.
-- 결혼이 늦어진다면 왜 늦어지는지, 결혼이 흔들린다면 어디서 흔들리는지 말해라.
-
-2. 어울리는 배우자 유형
-아래 항목을 구체적으로 풀어라.
-- 성격:
-- 생활 습관:
-- 돈 관리 방식:
-- 가족관계 태도:
-- 감정 표현 방식:
-- 책임감:
-- 말투와 갈등 해결 방식:
-- 왜 이 유형이 사주적으로 맞는지:
-
-3. 피해야 할 결혼 상대
-아래 기준으로 말해라.
-- 처음에는 끌리지만 결혼 후 힘들어지는 상대:
-- 돈 기준이 맞지 않는 상대:
-- 가족 경계가 없는 상대:
-- 말투나 감정 기복으로 상처를 주는 상대:
-- 책임감 없이 감정만 앞서는 상대:
-- 왜 이 유형이 사주적으로 안 맞는지:
-
-4. 현재 만나는 사람이 있을 때 결혼까지 가는 조건
-상대방 정보가 없으면 "상대방 명식이 없어서 본인 사주 기준으로 보면"이라고 말해라.
-
-- 이 관계가 결혼으로 가려면 먼저 맞춰야 할 기준:
-- 돈 문제에서 확인해야 할 것:
-- 가족 문제에서 확인해야 할 것:
-- 말투와 감정 표현에서 고쳐야 할 것:
-- 결혼 전 반드시 확인해야 할 현실 조건:
-- 이 부분이 맞춰지면 결혼운이 살아나는 이유:
-
-5. 현재 만나는 사람이 없을 때 들어오기 쉬운 인연
-- 앞으로 들어오기 쉬운 인연의 성향:
-- 어디서 인연이 들어오기 쉬운지:
-- 처음에 끌리는 사람과 실제 맞는 사람이 어떻게 다른지:
-- 좋은 인연을 알아보는 신호:
-- 피해야 할 인연의 신호:
-`;
-  }
-
-  if (categoryId === "compatibility" || title.includes("궁합")) {
-    return `
-[카테고리 핵심 분석]
-궁합풀이에서는 반드시 본인과 상대방을 비교해라.
-직업운, 사업형/직장형 판정은 쓰지 마라.
-상대방 정보가 부족하면 부족하다고 말하고, 본인 사주 중심으로 관계 패턴을 풀어라.
-
-1. 궁합 결론
-끌림이 강한지, 충돌이 강한지, 오래 가려면 무엇을 조심해야 하는지 먼저 말해라.
-
-2. 두 사람 사주 비교
-- 일간 비교
-- 오행 균형 비교
-- 강한 기운과 부족한 기운 비교
-
-3. 끌리는 이유
-서로 어떤 기운 때문에 끌리는지 말해라.
-
-4. 부딪히는 이유
-말투, 감정 표현, 돈 기준, 생활 리듬, 자존심 중 어디에서 부딪히는지 말해라.
-
-5. 오래 가는 조건
-대화 방식, 거리 조절, 돈 문제, 감정 회복 방식, 건드리면 안 되는 부분을 말해라.
-`;
-  }
-
-  if (categoryId === "family" || title.includes("가족")) {
-    return `
-[카테고리 핵심 분석]
-가족관계에서는 직업운을 쓰지 마라.
-가족 안의 역할, 책임, 거리감, 서운함, 말투, 기대를 중심으로 풀어라.
-
-1. 관계 결론
-이 관계에서 사용자가 떠안는 역할이 큰지, 선을 잡아야 하는지 먼저 말해라.
-
-2. 가족 안에서의 역할
-이 사람이 가족 안에서 어떤 역할을 떠안는지 말해라.
-
-3. 반복되는 서운함
-왜 같은 문제로 계속 부딪히는지 사주 구조로 말해라.
-
-4. 거리 조절 기준
-어디까지 감당하고 어디서 선을 그어야 하는지 말해라.
-
-5. 좋아지는 조건
-돈, 책임, 말투, 기대, 거리감 기준으로 풀어라.
-`;
-  }
-
-  if (categoryId === "partner" || title.includes("사업파트너")) {
-    return `
-[카테고리 핵심 분석]
-사업파트너 운에서는 감정 궁합이 아니라 돈, 역할, 책임, 실행력 중심으로 풀어라.
-연애 궁합처럼 쓰지 마라.
-
-1. 동업 가능성 결론
-같이 돈을 벌 수 있는 구조인지, 사람은 좋아도 돈 기준은 안 맞는지 먼저 말해라.
-
-2. 역할 분담
-누가 기획형인지, 실행형인지, 관리형인지, 확장형인지 말해라.
-
-3. 충돌 지점
-돈 기준, 책임감, 속도, 결정권, 말투에서 어디가 부딪히는지 말해라.
-
-4. 절대 같이 하면 안 되는 조건
-계약 없이 시작, 돈 관리 섞기, 역할 불명확, 감정으로 결정, 손실 기준 없음 같은 위험을 사주 흐름에 맞게 말해라.
-`;
-  }
-
-  if (categoryId === "monthly" || title.includes("12개월")) {
-    return `
-[카테고리 핵심 분석]
-12개월운세에서는 반드시 1년 흐름을 나눠라.
-
-1. 올해 전체 결론
-달리는 해인지, 정리하는 해인지, 준비하는 해인지 먼저 말해라.
-
-2. 상반기 흐름
-돈, 일, 관계, 건강 리듬을 말해라.
-
-3. 하반기 흐름
-돈, 일, 관계, 건강 리듬을 말해라.
-
-4. 월별 흐름
-각 달마다 아래 형식으로 짧게 말해라.
-- 이달의 핵심:
-- 돈:
-- 일:
-- 관계:
-- 조심할 것:
-- 해보면 좋은 것:
-`;
-  }
-
-  if (categoryId === "traditional" || title.includes("평생")) {
-    return `
-[카테고리 핵심 분석]
-평생종합사주는 유료 리포트 중 가장 깊은 종합 풀이로 작성해라.
-절대 짧게 요약하지 마라.
-초년운, 청년운, 중년운, 말년운은 각각 충분히 길게 풀어라.
-각 시기마다 돈, 일, 관계, 가족, 건강, 인복의 흐름을 함께 봐라.
-
-1. 인생 전체 결론
-- 이 사람의 인생이 초반에 강한지, 중년 이후 풀리는지, 말년에 안정되는지 먼저 말해라.
-- 인생 전체에서 가장 중요한 키워드 3개를 뽑아라.
-- 평생 반복되는 삶의 패턴을 말해라.
-- 타고난 복이 어디서 살아나는지 말해라.
-- 막히는 지점이 어디인지 말해라.
-- 직업 성향을 말할 때는 반드시 [고정 직업 성향 판정]을 따른다.
-
-2. 타고난 사주 구조
-- 일간, 월주, 월지, 오행 균형을 바탕으로 타고난 성향을 깊게 설명해라.
-- 강한 오행이 삶에서 어떻게 드러나는지 말해라.
-- 약한 오행이 삶에서 어떤 빈틈으로 나타나는지 말해라.
-- 이 사람이 타고난 장점 3가지를 말해라.
-- 이 사람이 반복적으로 흔들리는 약점 3가지를 말해라.
-- 겉으로 보이는 모습과 속마음이 다르면 나눠서 설명해라.
-
-3. 초년운
-초년운은 어린 시절부터 20대 초중반까지의 흐름으로 풀어라.
-아래 내용을 반드시 포함해라.
-
-- 어린 시절 정서 흐름:
-- 부모, 가족, 집안 분위기에서 받기 쉬운 영향:
-- 어릴 때부터 강하게 발달한 기질:
-- 초년에 부족하게 느끼기 쉬운 부분:
-- 공부, 적응, 인간관계 흐름:
-- 초년기에 생기기 쉬운 상처나 콤플렉스:
-- 초년운이 이후 인생에 남기는 영향:
-- 초년운을 좋게 쓰는 방법:
-
-단, 부모나 가족을 단정적으로 비난하지 마라.
-"그럴 수 있는 흐름"으로 부드럽게 표현해라.
-
-4. 청년운
-청년운은 20대 중후반부터 30대 후반까지의 흐름으로 풀어라.
-아래 내용을 반드시 포함해라.
-
-- 사회에 나가면서 겪는 시행착오:
-- 일과 돈에서 흔들리기 쉬운 지점:
-- 연애와 사람관계에서 반복되는 패턴:
-- 내가 뭘 해야 할지 몰라 방황하기 쉬운 이유:
-- 이 시기에 잡아야 할 기준:
-- 청년기에 잘 맞는 도전 방식:
-- 청년기에 피해야 할 선택:
-- 청년운이 중년운으로 이어지는 방식:
-
-5. 중년운
-중년운은 40대 전후부터 50대 후반까지의 흐름으로 풀어라.
-가장 중요하게 길게 써라.
-아래 내용을 반드시 포함해라.
-
-- 중년부터 풀리는 사주인지, 중년에 한 번 크게 방향을 바꾸는 사주인지:
-- 돈과 일에서 안정이 생기는 조건:
-- 직업/사업운의 변화:
-- [고정 직업 성향 판정]과 연결한 중년 이후 일의 방향:
-- 가족, 배우자, 자녀, 책임의 흐름:
-- 인간관계가 정리되는 방식:
-- 중년에 가장 조심해야 할 선택:
-- 중년에 운이 살아나는 신호:
-- 중년운을 좋게 쓰는 현실적인 기준:
-
-6. 말년운
-말년운은 60대 이후의 흐름으로 풀어라.
-불안하게 겁주지 말고, 안정과 정리의 관점으로 말해라.
-아래 내용을 반드시 포함해라.
-
-- 말년에 안정되는 사주인지, 계속 움직여야 사는 사주인지:
-- 재물의 보존과 생활 안정 흐름:
-- 가족과의 거리감:
-- 배우자운과 혼자 있는 시간의 흐름:
-- 건강운을 볼 때 조심해야 할 생활 패턴:
-- 말년에 외로움이 생기는 구조가 있는지:
-- 말년운을 좋게 만드는 습관:
-- 결국 이 사람이 말년에 가져야 할 삶의 태도:
-
-7. 재물운
-- 돈복이 있는 편인지 먼저 말해라.
-- 돈이 붙는 시기와 방식:
-- 돈이 새는 구조:
-- 크게 벌기보다 지켜야 하는 사주인지, 확장해야 하는 사주인지:
-- 초년, 청년, 중년, 말년에 재물 흐름이 어떻게 바뀌는지:
-- 피해야 할 돈 선택:
-
-8. 직업/사업운
-- 반드시 [고정 직업 성향 판정]을 따른다.
-- 직장형, 사업형, 부업형, 프리랜서형 중 1순위와 2순위를 그대로 말해라.
-- 맞는 직업군 3~5개:
-- 피해야 할 직업군/일 구조 3~5개:
-- 초년/청년/중년/말년에 일의 방향이 어떻게 바뀌는지:
-- 중년 이후 일에서 운이 살아나는 조건:
-
-9. 연애·결혼운
-- 연애에서 반복되는 패턴:
-- 어울리는 상대 유형:
-- 피해야 할 상대 유형:
-- 결혼운이 빠른 편인지 늦게 안정되는 편인지:
-- 결혼 후 흔들리기 쉬운 지점:
-- 중년 이후 배우자운과 관계 안정성:
-- 혼자 사는 흐름이 강한지, 함께 살아야 안정되는지:
-
-10. 인복과 귀인운
-- 사람복이 있는 편인지 먼저 말해라.
-- 어떤 사람이 귀인으로 들어오는지:
-- 어떤 사람이 오히려 운을 막는지:
-- 초년, 청년, 중년, 말년에 인복이 어떻게 바뀌는지:
-- 사람에게 기대도 되는 부분과 기대하면 안 되는 부분:
-- 귀인을 알아보는 신호:
-
-11. 가족운
-- 가족 안에서 맡기 쉬운 역할:
-- 부모와의 흐름:
-- 형제자매 또는 가까운 가족과의 흐름:
-- 배우자와 자녀가 있다면 그 관계에서 나타나는 책임:
-- 가족 때문에 지치지 않으려면 어디서 선을 그어야 하는지:
-- 가족운을 좋게 쓰는 기준:
-
-12. 건강운
-의학적 진단처럼 말하지 마라.
-생활 습관과 사주적 리듬으로만 말해라.
-
-- 강한 오행 때문에 과해지기 쉬운 생활 패턴:
-- 약한 오행 때문에 보완해야 할 생활 리듬:
-- 스트레스가 몸에 쌓이는 방식:
-- 초년/청년/중년/말년에 조심해야 할 생활 습관:
-- 건강운을 좋게 쓰는 습관:
-
-13. 피해야 할 삶의 패턴
-- 이 사람이 평생 반복하면 운을 깎아먹는 선택을 5개 말해라.
-각 항목은 아래 형식으로 써라.
-- 피해야 할 패턴:
-- 왜 반복되는지:
-- 반복하면 생기는 문제:
-- 바꿔야 할 기준:
-
-14. 앞으로 1년 방향
-- 지금부터 1년 안에 가장 먼저 정리해야 할 것:
-- 돈에서 잡아야 할 기준:
-- 일에서 잡아야 할 기준:
-- 관계에서 잡아야 할 기준:
-- 가족과 감정에서 조심할 것:
-- 1년 안에 운이 좋아지는 신호:
-- 마지막으로 이 사람이 꼭 기억해야 할 한 문장:
-`;
-  }
-
-  if (categoryId === "lifeFlow" || title.includes("인생")) {
-    return `
-[카테고리 핵심 분석]
-인생흐름에서는 반드시 아래 내용을 깊게 풀어라.
-
-1. 인생흐름 결론
-지금이 버티는 시기인지, 방향을 바꿔야 하는 시기인지, 늦게 풀리는 구조인지 먼저 말해라.
-
-2. 반복되는 인생 패턴
-왜 같은 고민이 반복되는지 말해라.
-
-3. 돈, 일, 관계, 가족, 건강 리듬
-각 흐름을 나눠서 말해라.
-
-4. 직장형·사업형·부업형 판정
-반드시 [고정 직업 성향 판정]의 1순위와 2순위를 그대로 반영해라.
-AI가 새로 판정하지 마라.
+5. 사람 문제를 계속 미루는 것
+- 올해 관계운에서 불편한 사람을 계속 끌고 가면 중요한 시기에 발목을 잡을 수 있어.
+- 거리 둘 사람, 다시 봐야 할 사람, 도움 되는 사람을 구분해야 해.
 `;
   }
 
   if (categoryId === "today" || title.includes("오늘")) {
     return `
-[카테고리 핵심 분석]
-오늘운세에서는 오늘 강하게 작동하는 기운을 중심으로 말해라.
+[하지 말아야 할 선택]
+1. 기분 상한 상태에서 바로 답장하는 것
+- 오늘은 말이 짧아지거나 표정이 굳어 보일 수 있어.
+- 특히 카톡, 전화, 가족이나 가까운 사람과의 대화에서 한 박자 늦추는 게 좋아.
 
-1. 오늘 결론
-오늘은 움직여도 되는 날인지, 조심해야 하는 날인지 먼저 말해라.
+2. 급하게 돈 쓰는 것
+- 오늘은 작은 지출이 모여서 돈이 새기 쉬운 흐름이야.
+- 충동구매, 배달, 필요 없는 결제, 남 때문에 쓰는 돈을 조심해.
 
-2. 오늘 강한 기운
-3. 오늘 조심해야 할 말과 선택
-4. 돈, 일, 관계에서 피해야 할 행동
-5. 오늘 해보면 좋은 행동
-`;
-  }
+3. 누가 재촉한다고 바로 결정하는 것
+- 오늘은 빠른 결정이 운을 살리는 날이 아니야.
+- 계약, 구매, 약속, 돈 관련 대답은 한 번 더 보고 움직이는 게 좋아.
 
-  if (categoryId === "worry" || title.includes("고민")) {
-    return `
-[카테고리 핵심 분석]
-고민풀이에서는 사용자의 질문을 중심으로 사주 구조에서 왜 이 고민이 반복되는지 풀어라.
-
-1. 고민 결론
-이 고민이 선택 문제인지, 사람 문제인지, 돈 문제인지, 기준 문제인지 먼저 말해라.
-
-2. 이 고민의 사주적 원인
-3. 지금 하면 안 되는 선택
-4. 지금 해보면 좋은 방향
-5. 앞으로 3개월/1년 안에 정리해야 할 기준
-`;
-  }
-
-  return `
-[카테고리 핵심 분석]
-현재 선택된 ${categoryTitle}에만 집중해라.
-
-1. 이 카테고리의 결론
-2. 이 카테고리에서 반복되는 문제
-3. 사주적 원인
-4. 피해야 할 선택
-5. 해보면 좋은 방향
-`;
-}
-
-function buildThreeMonthGuide(categoryId?: CategoryId, categoryTitle?: string) {
-  const title = categoryTitle || "";
-
-  if (categoryId === "premium" || title.includes("프리미엄")) {
-    return `
-[앞으로 3개월 상담 흐름]
-프리미엄상담 기준으로만 말해라.
-사용자의 질문과 직접 연결해서 답해라.
-
-- 이 질문과 관련해서 앞으로 3개월 안에 확인해야 할 변화:
-- 움직여도 되는 신호:
-- 아직 움직이면 위험한 신호:
-- 감정적으로 급하게 결정하면 안 되는 이유:
-- 3개월 안에 작게 해볼 수 있는 현실적인 확인:
-`;
-  }
-
-  if (categoryId === "marriage" || title.includes("결혼")) {
-    return `
-[앞으로 3개월 흐름]
-결혼운 기준으로만 말해라. 직업운, 사업운, 돈 버는 방식은 쓰지 마라.
-
-- 앞으로 3개월 안에 인연이 움직이는 방식:
-- 만나는 사람이 있다면 관계가 깊어질 수 있는 조건:
-- 만나는 사람이 있다면 결혼 이야기가 막히는 지점:
-- 솔로라면 어떤 성향의 사람을 주의 깊게 봐야 하는지:
-- 조급하게 결정하면 안 되는 이유:
-- 결혼운이 살아나는 신호:
-`;
-  }
-
-  if (categoryId === "love" || title.includes("연애")) {
-    return `
-[앞으로 3개월 흐름]
-연애운 기준으로만 말해라.
-
-- 들어오기 쉬운 인연의 분위기:
-- 피해야 할 인연의 신호:
-- 관계가 깊어지는 신호:
-- 연락과 만남에서 조심할 흐름:
-- 감정이 흔들릴 때 잡아야 할 기준:
-`;
-  }
-
-  if (categoryId === "compatibility" || title.includes("궁합")) {
-    return `
-[앞으로 3개월 흐름]
-궁합 기준으로만 말해라.
-
-- 두 사람 관계가 가까워지는 조건:
-- 말다툼이나 서운함이 커지는 신호:
-- 감정 회복을 위해 필요한 태도:
-- 가까워질수록 조심해야 할 부분:
+4. 이미 아닌 걸 알면서 억지로 끌고 가는 것
+- 오늘은 버티는 힘이 고집으로 바뀌기 쉬워.
+- 안 맞는 대화, 안 맞는 약속, 불편한 부탁은 무리해서 끌고 가지 마.
 `;
   }
 
   if (categoryId === "money" || title.includes("재물")) {
     return `
-[앞으로 3개월 흐름]
-재물운 기준으로만 말해라.
+[하지 말아야 할 선택]
+1. 남의 말만 듣고 들어가는 투자
+- 지인이 좋다고 해서 따라 들어가는 돈은 조심해야 해.
+- 네 사주는 돈이 들어오는 방식보다 돈이 새는 구멍을 막는 게 먼저야.
 
-- 돈이 붙는 신호:
-- 돈이 새는 신호:
-- 조심해야 할 돈 선택:
-- 작게 확인해보면 좋은 수익 흐름:
+2. 무리한 대출이나 빚을 끼고 시작하는 사업
+- 돈복이 있어도 감당 범위를 넘긴 고정비는 운을 눌러.
+- 처음부터 크게 벌이는 구조보다 작게 검증하고 키우는 흐름이 맞아.
+
+3. 체면 때문에 쓰는 돈
+- 보여주기식 소비, 관계 유지용 지출, 급한 호의는 재물운을 새게 만들어.
+
+4. 준비 안 된 동업
+- 계약, 역할, 책임, 돈 기준이 없는 동업은 피해야 해.
+- 좋은 사람과 돈이 맞는 사람은 다르다.
+
+5. 회수 계획 없이 들어가는 장사나 투자
+- 돈이 묶이는 구조는 네 사주에서 심리 압박을 크게 만들 수 있어.
+- 시작 전 손실 한도, 회수 기간, 빠져나올 기준을 먼저 정해야 해.
 `;
   }
 
   if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
     return `
-[앞으로 3개월 흐름]
-직업/사업운 기준으로만 말해라.
-반드시 [고정 직업 성향 판정]과 충돌하지 않게 말해라.
+[하지 말아야 할 선택]
+1. 준비 없이 바로 사업을 크게 시작하는 것
+- 고정비 큰 매장, 인건비, 임대료부터 안고 들어가는 방식은 조심해야 해.
+- 사주가 사업 쪽으로 열려도 처음부터 크게 벌리면 운보다 부담이 먼저 커져.
 
-- 가까운 시기에 건드려보면 좋은 일의 방향:
-- 이직/부업/사업/직장 유지 중 조심스럽게 볼 흐름:
-- 피해야 할 일 구조:
-- 일이 풀리는 신호:
+2. 안정만 보고 오래 묶이는 일
+- 생활 기반은 필요하지만, 그것만으로는 운이 답답해질 수 있어.
+- 안정이 필요하다는 말과 직장형이라는 말은 다르다.
+
+3. 남이 돈 된다는 말만 믿고 따라가는 부업
+- 부업형이라고 해서 아무 부업이나 맞는 건 아니야.
+- 네가 통제할 수 없고, 구조를 이해하지 못하는 부업은 피해야 해.
+
+4. 기술이나 루트 없이 시작하는 판매/창업
+- 감으로 시작하면 돈보다 피로가 먼저 쌓여.
+- 네가 직접 팔 수 있는 이유, 다시 사게 만들 이유, 고정 고객을 만들 이유가 있어야 해.
+
+5. 초반부터 빚을 내서 판을 키우는 것
+- 아직 검증되지 않은 구조에 돈을 먼저 넣으면 회복이 늦어질 수 있어.
+- 네 사주는 작게 확인하고 키우는 방식이 훨씬 안전해.
 `;
   }
 
-  if (categoryId === "traditional" || title.includes("평생")) {
+  if (categoryId === "health" || title.includes("건강")) {
     return `
-[앞으로 3개월 흐름]
-평생종합사주 기준에서 가까운 3개월 흐름을 말해라.
+[하지 말아야 할 선택]
+1. 속이 불편한데도 계속 참는 것
+- 사주상 토가 강하거나 화가 약하면 위장, 소화, 장 쪽으로 부담이 쌓이는 흐름이 나올 수 있어.
+- 병명으로 단정하는 건 아니지만, 소화 리듬과 장 컨디션은 꾸준히 봐야 해.
 
-- 지금 인생 흐름에서 가까운 3개월이 어떤 의미인지:
-- 돈, 일, 관계에서 조심해야 할 선택:
-- 무리하게 밀어붙이면 안 되는 부분:
-- 작게 정리하면 좋은 부분:
-- 운이 살아나는 신호:
+2. 밤낮이 무너지는 생활
+- 화 기운이 약하면 몸을 따뜻하게 돌리고 회복시키는 리듬이 약해질 수 있어.
+- 잠이 무너지면 운보다 몸이 먼저 버티지 못해.
+
+3. 스트레스를 속으로만 삼키는 것
+- 표현이 막히면 몸이 먼저 긴장하는 구조가 될 수 있어.
+- 말하지 못한 스트레스가 위장, 어깨, 목, 수면 쪽으로 갈 수 있어.
+
+4. 한 번에 몰아서 무리하는 것
+- 평소엔 버티다가 한 번에 무너지는 패턴을 조심해야 해.
+- 운동도 일도 회복 시간을 빼면 건강운이 꺾여.
+
+5. 몸의 신호를 운으로만 넘기는 것
+- 사주는 흐름을 보는 거지 진단이 아니야.
+- 실제 증상이 있으면 병원 검진은 따로 봐야 해.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[하지 말아야 할 선택]
+1. 초년의 실패를 평생 운으로 착각하는 것
+- 초년운이 답답한 사주도 중년 이후에 풀리는 경우가 있어.
+- 초반에 안 풀렸다고 인생 전체를 포기하면 대운을 못 잡아.
+
+2. 대운이 들어오기 전에 무리하게 판을 키우는 것
+- 운이 아직 준비 구간인데 큰돈, 큰 사업, 큰 결정을 하면 부담이 먼저 커질 수 있어.
+- 대운은 준비 없이 맞으면 기회가 아니라 압박으로 들어올 수 있어.
+
+3. 사람 정리를 못 해서 좋은 운을 막는 것
+- 대운이 들어올 때는 사람관계도 같이 바뀐다.
+- 붙잡지 않아도 될 인연을 계속 붙잡으면 새 운이 들어올 자리가 없어.
+
+4. 건강을 무시하고 버티기만 하는 것
+- 인생 대운은 체력과 컨디션이 받쳐줘야 잡을 수 있어.
+- 몸이 무너지면 좋은 기회가 와도 오래 못 끌고 가.
+
+5. 같은 방식으로 계속 밀어붙이는 것
+- 대운이 바뀌면 방법도 바뀌어야 해.
+- 예전 방식으로만 버티면 새 기회를 알아보지 못할 수 있어.
 `;
   }
 
   return `
-[앞으로 3개월 흐름]
-선택한 카테고리에 맞는 3개월 흐름만 말해라.
-테스트표처럼 쓰지 마라.
-1개월차/2개월차/3개월차로 나누지 마라.
+[하지 말아야 할 선택]
+1. 선택 카테고리의 사주 구조를 보지 않고 감정으로만 판단하는 것
+- 이 카테고리에서는 단순 조언이 아니라 사주상 강한 기운과 약한 기운이 어떻게 문제를 만드는지 봐야 해.
+
+2. 반복되는 문제를 성격 탓으로만 보는 것
+- 같은 문제가 반복된다면 성격보다 구조를 먼저 봐야 해.
+- 사주상 강한 기운이 과하게 쓰이거나 약한 기운이 무너질 때 같은 일이 반복될 수 있어.
+
+3. 기준 없이 관계나 돈을 끌고 가는 것
+- 운이 막히는 시기에는 기준 없는 선택이 손해로 이어질 수 있어.
+- 돈, 사람, 일 중 어디에서 기준이 필요한지 먼저 봐야 해.
+
+4. 이미 불편한 흐름을 알면서도 계속 미루는 것
+- 사주에서 반복되는 문제는 미룰수록 더 무거워질 수 있어.
+- 지금 줄여야 할 것과 붙잡아야 할 것을 구분해야 해.
 `;
 }
 
-function buildOneYearGuide(categoryId?: CategoryId, categoryTitle?: string) {
+function getDirectionChoices(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
 
-  if (categoryId === "premium" || title.includes("프리미엄")) {
+  if (isCompatibilityCategory(categoryId, title)) {
     return `
-[앞으로 1년 상담 흐름]
-프리미엄상담 기준으로만 말해라.
-사용자의 질문과 직접 연결해서 답해라.
+[잡아야 할 방향]
+1. 감정보다 생활 기준을 먼저 맞춰라
+- 이 궁합은 좋아하는 마음만으로 오래 가는 구조가 아니야.
+- 연락, 돈, 가족, 시간 쓰는 방식이 맞아야 관계가 안정돼.
 
-- 이 고민이 1년 안에 어떤 방향으로 정리될 가능성이 있는지:
-- 돈, 일, 관계, 감정 중 무엇을 먼저 잡아야 하는지:
-- 같은 고민을 반복하지 않기 위해 세워야 할 기준:
-- 1년 안에 정리해야 할 사람/일/돈/감정의 문제:
-- 질문자에게 필요한 현실적인 기준:
+2. 서로의 사주상 예민한 지점을 알아야 해
+- 한쪽이 강하게 밀고 가는 기운이면 다른 쪽은 압박을 느낄 수 있어.
+- 한쪽이 감정을 쌓는 구조면 작은 말도 오래 남을 수 있어.
+
+3. 싸움 후 회복 방식을 정해라
+- 궁합은 안 싸우는 것보다 싸운 뒤 어떻게 돌아오는지가 중요해.
+- 사과 방식, 혼자 있는 시간, 대화 타이밍을 맞춰야 해.
+
+4. 돈과 가족 기준은 미리 말해라
+- 결혼을 생각한다면 이 부분은 반드시 봐야 해.
+- 돈 문제와 가족 문제는 결혼 후에 더 크게 드러날 수 있어.
+
+5. 한쪽만 맞추는 구조를 끊어라
+- 오래 가려면 둘 다 조정해야 해.
+- 한 사람만 참고 맞추는 관계는 결국 무너질 수 있어.
 `;
   }
 
-  if (categoryId === "marriage" || title.includes("결혼")) {
+  if (isFamilyCategory(categoryId, title)) {
     return `
-[앞으로 1년 흐름]
-결혼운 기준으로만 말해라. 직업운을 쓰지 마라.
+[잡아야 할 방향]
+1. 정과 책임을 분리해라
+- 가족을 아끼는 마음과 모든 걸 대신 감당하는 건 달라.
+- 어디까지 도와주고 어디서 멈출지 기준을 잡아야 해.
 
-- 1년 안에 잡아야 할 배우자 기준:
-- 결혼으로 이어질 가능성이 커지는 관계의 특징:
-- 반대로 정리해야 할 관계의 특징:
-- 가족, 돈, 생활 리듬에서 반드시 확인해야 할 것:
-- 1년 안에 결혼운을 좋게 쓰기 위한 방향:
+2. 사주상 부딪히는 말투를 줄여라
+- 서로 걱정해서 하는 말도 한쪽에게는 간섭처럼 느껴질 수 있어.
+- 맞는 말을 하더라도 말투와 타이밍을 조절해야 관계가 덜 다쳐.
+
+3. 돈 기준을 미리 정해라
+- 가족 사이 돈 문제는 나중에 말하면 더 힘들어져.
+- 빌려주는 돈, 함께 쓰는 돈, 대신 내는 돈의 기준을 먼저 정해야 해.
+
+4. 적당한 거리를 죄책감으로 보지 마라
+- 어떤 가족궁합은 적당한 거리가 있어야 더 오래 간다.
+- 덜 부딪히는 거리를 찾는 게 관계를 포기하는 건 아니야.
+
+5. 역할을 다시 나눠라
+- 늘 하던 사람이 계속 하는 구조를 바꿔야 해.
+- 책임을 나누고 기대치를 낮추면 관계가 가벼워질 수 있어.
 `;
   }
 
-  if (categoryId === "love" || title.includes("연애")) {
+  if (isPartnerCategory(categoryId, title)) {
     return `
-[앞으로 1년 흐름]
-연애운 기준으로만 말해라.
+[잡아야 할 방향]
+1. 역할을 먼저 나눠라
+- 누가 영업, 운영, 돈 관리, 고객 대응, 실행을 맡는지 정해야 해.
+- 역할이 겹치면 감정싸움이 되고, 비면 일이 멈춘다.
 
-- 1년 안에 인연운이 좋아지는 조건:
-- 정리해야 할 관계 패턴:
-- 좋은 사람을 알아보는 기준:
-- 피해야 할 사람의 반복 신호:
+2. 돈 기준을 문서로 정해라
+- 수익 배분, 비용 부담, 손실 책임, 정산일을 처음부터 정해야 해.
+- 말로만 정한 동업은 운이 좋아도 오래 가기 어렵다.
+
+3. 작은 프로젝트로 먼저 테스트해라
+- 바로 큰 사업을 열기보다 작은 일로 실행력과 책임감을 확인해야 해.
+- 같이 일해보면 사주보다 더 현실적인 부분이 보인다.
+
+4. 결정권을 정해라
+- 모든 걸 둘이 같이 결정하면 속도가 늦어질 수 있어.
+- 어떤 일은 누가 최종 결정하는지 정해야 해.
+
+5. 빠져나오는 기준까지 정해라
+- 시작 조건만큼 중요한 게 종료 조건이야.
+- 잘 안 됐을 때 어떻게 정리할지 미리 정해야 관계가 덜 상해.
 `;
   }
 
-  if (categoryId === "compatibility" || title.includes("궁합")) {
+  if (isMonthlyCategory(categoryId, title)) {
     return `
-[앞으로 1년 흐름]
-궁합 기준으로만 말해라.
+[잡아야 할 방향]
+1. 올해 전체 방향은 머물 곳과 움직일 곳을 구분하는 것
+- 올해는 무조건 움직인다고 좋은 해가 아니야.
+- 지금 자리를 지켜야 하는 부분과 새로 테스트해야 하는 부분을 나눠야 해.
 
-- 관계가 안정되기 위한 조건:
-- 반복 갈등이 생기는 지점:
-- 1년 안에 반드시 맞춰야 할 기준:
-- 이 관계가 깊어질 수 있는 신호:
+2. 재물운은 돈이 들어오는 방식보다 새는 구멍부터 봐라
+- 돈복이 들어와도 고정비와 충동 지출이 크면 남지 않아.
+- 올해는 수입을 키우는 것과 동시에 새는 돈을 막아야 해.
+
+3. 직업/사업운은 작은 테스트로 확인해라
+- 이직, 부업, 사업 모두 바로 크게 움직이지 말고 작은 테스트를 먼저 해.
+- 반응이 있는지, 반복 가능한지, 몸이 버티는지 확인해야 해.
+
+4. 이직운은 감정이 아니라 조건으로 판단해라
+- 지금 일이 싫어서 나가는 건 위험할 수 있어.
+- 연봉, 업무강도, 성장 가능성, 사람 스트레스, 이동 후 안정성을 같이 봐야 해.
+
+5. 건강운은 회복 루틴을 먼저 만들어라
+- 올해 건강운이 약하면 무리해서 버티는 방식은 안 맞아.
+- 식사, 수면, 걷기, 스트레스 배출, 검진 같은 기본 루틴이 운을 받쳐줘야 해.
 `;
   }
 
   if (categoryId === "money" || title.includes("재물")) {
     return `
-[앞으로 1년 흐름]
-재물운 기준으로만 말해라.
+[잡아야 할 방향]
+1. 돈이 새는 구멍부터 막아라
+- 먼저 고정비, 충동소비, 사람 때문에 나가는 돈, 체면 때문에 쓰는 돈부터 줄여야 해.
 
-- 1년 안에 잡아야 할 돈 기준:
-- 피해야 할 큰돈 선택:
-- 돈이 남는 구조:
-- 재물운이 살아나는 조건:
+2. 무리한 투자보다 반복 수익을 먼저 만들어라
+- 월급, 부업, 기술료, 소개 수익, 재판매 마진, 관리형 수익처럼 반복되는 구조를 먼저 봐야 해.
+
+3. 지인 말 듣고 돈 넣는 구조를 피하고, 네가 통제할 수 있는 돈길을 잡아라
+- 네가 직접 확인하고, 작게 테스트하고, 손실 범위를 정할 수 있는 구조가 맞아.
+
+4. 처음부터 큰 사업보다 작은 수익 구조부터 만들어라
+- 고정비 큰 매장, 대출 끼고 시작하는 사업, 재고를 많이 안고 시작하는 장사는 조심해야 해.
+
+5. 돈이 붙는 방식은 ‘기술 + 반복 + 신뢰’ 쪽으로 잡아라
+- 네가 할 줄 아는 것, 사람들이 반복해서 필요로 하는 것, 신뢰가 쌓일수록 단가가 올라가는 구조에서 재물운이 살아나.
 `;
   }
 
   if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
     return `
-[앞으로 1년 흐름]
-직업/사업운 기준으로만 말해라.
-반드시 [고정 직업 성향 판정]과 충돌하지 않게 말해라.
+[잡아야 할 방향]
+1. 생활 기반은 안정시키되, 자기 수익 구조를 따로 만들어라
+- 이건 안정적인 직장형이라는 뜻이 아니야.
+- 흔들리지 않을 최소 기반 위에 네 기술, 네 루트, 네 고객을 만들어야 한다는 뜻이야.
 
-- 1년 안에 잡아야 할 일의 기준:
-- 맞는 직업 방향이 선명해지는 조건:
-- 피해야 할 일 구조:
-- 확장해야 하는지, 안정시켜야 하는지, 정리해야 하는지:
+2. 작게 시작해서 반복 수요를 확인해라
+- 처음부터 큰 사업보다 작게 테스트하고 반응을 보는 흐름이 맞아.
+
+3. 네가 직접 통제할 수 있는 일을 골라라
+- 남의 기분, 남의 결정, 남의 시스템에만 의존하면 운이 답답해져.
+
+4. 기술·정보·정리·관리 능력을 돈으로 바꾸는 구조를 봐라
+- 단순히 몸만 쓰는 일보다, 경험이 쌓일수록 단가가 올라가는 방향이 좋아.
+
+5. 일의 이름보다 돈이 생기는 구조를 봐라
+- 직업명이 좋아 보여도 돈길이 안 보이면 오래 못 가.
+- 네 사주는 구조를 잡아야 버는 타입으로 봐야 해.
+`;
+  }
+
+  return `
+[잡아야 할 방향]
+1. 사주에서 강하게 쓰이는 기운을 현실의 기준으로 바꿔라
+- 강한 기운은 장점이지만 기준 없이 쓰면 고집이나 무리수가 될 수 있어.
+
+2. 약한 기운이 흔들리는 상황을 줄여라
+- 약한 부분은 반복되는 문제로 드러나기 쉬워.
+- 그 부분을 생활 기준과 선택 기준으로 보완해야 해.
+
+3. 지금 카테고리에서 먼저 정해야 할 기준을 잡아라
+- 돈이면 돈 기준, 관계면 거리감, 일이면 역할과 구조를 먼저 봐야 해.
+
+4. 감정이 아니라 반복되는 패턴을 보고 선택해라
+- 운은 한 번의 기분보다 반복되는 흐름에서 더 잘 보여.
+`;
+}
+
+function getFinalSummaryGuide(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+
+  if (categoryId === "today" || title.includes("오늘")) {
+    return `
+[형이 딱 정리해줄게]
+- 오늘운세는 추상적인 인생 조언으로 끝내지 마라.
+- 오늘 조심할 말, 돈, 사람관계, 몸 컨디션을 구체적으로 정리해라.
+- 오늘은 무리한 확장보다 정리, 급한 결정보다 보류, 감정적인 말보다 한 박자 늦춘 답변이 좋다고 말해라.
+- 마지막 문장은 "오늘은 크게 치는 날이 아니라, 새는 운을 막고 흐트러진 걸 정리할 때 운이 살아나는 날이야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return `
+[형이 딱 정리해줄게]
+- 절대 뻔한 응원으로 끝내지 마라.
+- 돈복 등급을 자연스러운 조사로 다시 말해라. 예: "네 돈복은 '중'으로 본다."
+- 돈이 붙는 방식과 돈이 새는 구조를 다시 정리해라.
+- 무리한 투자, 지인 말 듣고 들어가는 돈, 준비 없는 사업, 고정비 큰 창업을 조심하라고 말해라.
+- 맞는 방향은 반복 수익, 기술, 신뢰, 작은 판매, 관리형 수익, 직접 통제 가능한 돈길이라고 말해라.
+- 마지막 문장은 "그게 네 사주에서 재물운을 살리는 방식이야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
+    return `
+[형이 딱 정리해줄게]
+- 고정 직업 성향을 다시 말해라.
+- 안정적인 직장형이라는 말로 흐리지 마라.
+- 생활 기반은 필요하지만 자기 수익 구조를 따로 만들어야 한다고 말해라.
+- 준비 없는 큰 사업, 남이 돈 된다는 부업, 고정비 큰 창업을 조심하라고 말해라.
+- 맞는 방향은 작게 시작해서 반복 수요를 확인하고, 기술·정보·정리·관리 능력을 돈으로 바꾸는 것이라고 말해라.
+- 마지막 문장은 "네 사주는 남의 판에서 오래 버티는 것보다, 네 판을 조금씩 만드는 쪽에서 일이 풀린다."로 끝내라.
+`;
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `
+[형이 딱 정리해줄게]
+- 건강운 등급을 자연스러운 조사로 다시 말해라. 예: "네 건강운은 '중하'로 본다."
+- 의료 진단이 아니라 사주상 건강 흐름이라고 말해라.
+- 약한 흐름을 위장·소화·장 리듬, 순환, 피로 누적, 수면, 스트레스성 긴장 중 사주에 맞춰 구체적으로 정리해라.
+- 하지 말아야 할 것은 참기, 밤낮 무너짐, 스트레스 삼키기, 몰아서 무리하기라고 말해라.
+- 맞는 방향은 식사·수면·스트레스 배출·몸을 따뜻하게 하는 리듬이라고 말해라.
+- 마지막 문장은 "너는 무리해서 강해지는 타입이 아니라, 리듬을 잡아야 덜 흔들리는 타입이야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "love" || title.includes("연애")) {
+    return `
+[형이 딱 정리해줄게]
+- 연애운 결론을 다시 말해라.
+- 외로움 때문에 시작하는 관계, 초반 설렘만 보는 관계, 생활 리듬이 안 맞는 사람을 조심하라고 말해라.
+- 맞는 방향은 끌림보다 기준, 감정보다 반복되는 태도, 설렘보다 안정감이라고 말해라.
+- 마지막 문장은 "네 연애운은 사람을 잘 고를 때 살아나는 운이야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "marriage" || title.includes("결혼")) {
+    return `
+[형이 딱 정리해줄게]
+- 결혼운 결론을 다시 말해라.
+- 외로움 때문에 결혼 결정, 돈 기준 불일치, 가족 문제 무시, 상대를 바꾸려는 생각을 조심하라고 말해라.
+- 맞는 방향은 생활 기준, 돈 기준, 가족 거리감, 역할 분담이 맞는 사람이라고 말해라.
+- 마지막 문장은 "네 결혼운은 설렘보다 생활 기준이 맞을 때 안정된다."로 끝내라.
+`;
+  }
+
+  if (categoryId === "compatibility" || title.includes("궁합")) {
+    return `
+[형이 딱 정리해줄게]
+- 궁합 점수와 등급을 다시 말해라.
+- 이 궁합이 좋은지 나쁜지 애매하게 말하지 마라.
+- 끌리는 이유와 부딪히는 이유를 구체적으로 다시 정리해라.
+- 궁합이 좋아지려면 돈 기준, 가족 거리감, 말투, 생활 리듬 중 무엇을 맞춰야 하는지 말해라.
+- 결혼하면 생길 수 있는 문제를 현실적으로 말해라.
+- 마지막 문장은 "이 관계는 감정만 보면 헷갈리고, 생활 기준까지 맞춰야 진짜 궁합이 보이는 관계야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "family" || title.includes("가족")) {
+    return `
+[형이 딱 정리해줄게]
+- 가족궁합 점수와 등급을 다시 말해라.
+- 가족 사이가 좋은지, 보통인지, 거리 조절이 필요한지 애매하게 말하지 마라.
+- 가족 안에서 반복되는 역할, 책임, 돈 문제, 말투 문제를 구체적으로 정리해라.
+- 같이 살거나 돈이 얽히면 어떤 문제가 생기는지 현실적으로 말해라.
+- 관계가 좋아지려면 어떤 선을 정하고 어떤 기대를 줄여야 하는지 말해라.
+- 마지막 문장은 "이 가족관계는 정으로만 버티는 관계가 아니라, 선을 정해야 오래 덜 다치는 관계야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "partner" || title.includes("사업파트너")) {
+    return `
+[형이 딱 정리해줄게]
+- 사업파트너 궁합 점수와 등급을 다시 말해라.
+- 같이 일해도 되는지, 조심해야 하는지 애매하게 말하지 마라.
+- 돈 기준, 역할 분담, 책임 범위, 결정권에서 어디가 위험한지 구체적으로 정리해라.
+- 동업을 한다면 반드시 문서로 정해야 할 내용을 말해라.
+- 호감보다 구조가 중요하다고 말해라.
+- 마지막 문장은 "이 관계는 좋은 사람이냐보다, 같이 돈을 벌 구조가 맞느냐를 먼저 봐야 하는 관계야."로 끝내라.
+`;
+  }
+
+  if (categoryId === "children" || title.includes("자식")) {
+    return `
+[형이 딱 정리해줄게]
+- 자식운 결론을 다시 말해라.
+- 자식 유무, 임신, 출산을 단정하지 마라.
+- 기대, 간섭, 경제적 책임을 혼자 떠안는 것을 조심하라고 말해라.
+- 맞는 방향은 기대보다 기준, 통제보다 거리, 감정보다 말의 온도라고 말해라.
+- 마지막 문장은 "자식운은 붙잡는 운이 아니라, 관계의 온도를 맞춰야 살아나는 운이야."로 끝내라.
+`;
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    return `
+[형이 딱 정리해줄게]
+- 올해 전체 해운을 다시 한 문장으로 말해라.
+- 올해 재물운은 돈복이 들어오는지, 돈이 새는지, 돈을 키우려면 무엇을 해야 하는지 정리해라.
+- 올해 직업/사업운은 움직일지 머물지, 이직운이 있는지, 테스트해야 할 방향이 무엇인지 정리해라.
+- 건강운은 괜찮은지 약한지 먼저 말하고, 약하다면 생활에서 무엇을 줄이고 무엇을 잡아야 하는지 말해라.
+- 관계운에서는 올해 도움 되는 인연과 거리 둘 인연을 구분해라.
+- 1~3개월, 4~6개월, 7~9개월, 10~12개월 중 가장 중요한 구간을 다시 짚어라.
+- 마지막 문장은 "올해는 무조건 크게 움직이는 해가 아니라, 머물 곳과 움직일 곳을 구분할 때 운이 살아나는 해다."로 끝내라.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[형이 딱 정리해줄게]
+- 인생대운을 추상적인 조언으로 끝내지 마라.
+- 초년운, 청년운, 중년운, 말년운 중 어디서 가장 크게 풀리는지 다시 말해라.
+- 인생에서 대운 기회가 몇 번 들어오는지 말해라.
+- 가장 중요한 대운을 잡으려면 무엇을 준비해야 하는지 구체적으로 정리해라.
+- 돈, 일, 건강, 사람 중 무엇을 먼저 잡아야 하는지 말해라.
+- 마지막 문장은 "네 인생은 한 번에 끝나는 운이 아니라, 대운이 들어오는 시기를 알아보고 그 전에 준비할 때 크게 달라지는 흐름이야."로 끝내라.
+`;
+  }
+
+  return `
+[형이 딱 정리해줄게]
+- 절대 뻔한 응원으로 끝내지 마라.
+- 선택 카테고리의 결론을 다시 말해라.
+- 하지 말아야 할 선택과 잡아야 할 방향을 구체적으로 다시 정리해라.
+`;
+}
+
+function getFullSections(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+
+  if (categoryId === "today" || title.includes("오늘")) {
+    return `
+[오늘 돈에서 조심할 것]
+- 충동결제, 불필요한 지출, 남 때문에 쓰는 돈을 구체적으로 말해라.
+
+[오늘 사람관계에서 조심할 말]
+- 급한 답장, 차가운 말투, 기분 상한 상태의 대화를 구체적으로 말해라.
+
+[오늘 몸 컨디션에서 신경 쓸 부분]
+- 과식, 찬 음식, 밤늦은 무리, 피로 누적을 현실적으로 말해라.
+
+[오늘 운을 살리는 한 가지]
+- 오늘 당장 할 수 있는 행동 하나를 구체적으로 말해라.
+`;
+  }
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return `
+[돈이 들어오는 방식]
+- 사주상 돈이 어디서 붙는지 구체적으로 말해라.
+- 월급형, 기술형, 장사형, 사업형, 부업형, 중개형, 콘텐츠형, 사람관계형 중 사주 흐름에 맞는 것을 골라 설명해라.
+- 돈이 한 번에 크게 들어오는 사주인지, 작게 반복해서 모이는 사주인지 구분해라.
+
+[돈이 새는 구조]
+- 충동, 체면, 사람, 고정비, 불안한 확장, 준비 없는 투자 중 어디서 새는지 말해라.
+- 돈이 새는 장면을 현실적으로 풀어라.
+
+[맞는 수익 구조]
+- [고정 직업 성향 판정]과 충돌하지 않게 설명해라.
+- 직업명보다 돈이 만들어지는 구조를 먼저 말해라.
+- 작게 테스트할 수 있는 수익 구조와 피해야 할 구조를 나눠라.
+
+[평생 재물 흐름]
+- 초년, 청년, 중년, 말년 재물 흐름을 나눠라.
+- 언제 돈을 모으기 좋고, 언제 새기 쉬운지 말해라.
+
+[앞으로 1년 재물운]
+- 앞으로 1년 동안 돈을 키우는 방식과 돈이 새는 위험을 나눠라.
+- 무리한 투자, 준비 없는 사업개시, 고정비 큰 확장을 조심시켜라.
+`;
+  }
+
+  if (categoryId === "career" || title.includes("직업") || title.includes("사업")) {
+    return `
+[고정 직업 성향 판정]
+- [고정 직업 성향 판정]의 최종 표현을 그대로 설명해라.
+- 안정 기반이 필요하다고 해도 최종 성향을 바꾸지 마라.
+
+[맞는 직업군]
+- 사주적으로 맞는 직업군을 3~5개 제시해라.
+- 각 직업군마다 왜 맞는지, 돈이 되는 방식, 주의할 점을 말해라.
+- 단순히 직업명만 나열하지 말고, 어떤 구조가 맞는지 말해라.
+
+[피해야 할 일 구조]
+- 피해야 할 직업군/구조를 3~5개 말해라.
+- 왜 안 맞는지 설명해라.
+- 준비 없는 사업개시, 무리한 투자, 고정비 큰 창업, 남이 시켜서 하는 일, 감정노동 과다 구조를 사주에 맞춰 설명해라.
+
+[평생 직업 흐름]
+- 젊을 때 맞는 일, 중년 이후 맞는 일을 나눠라.
+- 초년에는 시행착오가 있는지, 중년 이후 자기 판이 커지는지 말해라.
+
+[앞으로 1년 직업/사업 변화]
+- 앞으로 1년 동안 움직여야 할 방향, 테스트해야 할 방향, 피해야 할 결정을 말해라.
+- 직장을 다니라는 식으로 단정하지 말고, 생활 기반과 자기수익 구조를 나눠 설명해라.
+`;
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `
+[인생 전체 건강운]
+- 의료 진단이 아니라 사주상 건강 흐름으로 설명해라.
+- 건강운 등급이 왜 그렇게 나왔는지 오행 구조로 설명해라.
+
+[좋게 타고난 부분]
+- 회복력, 버티는 힘, 체력 흐름 중 사주상 강한 부분을 말해라.
+- 어떤 생활을 하면 건강운이 살아나는지 말해라.
+
+[약하게 잡힌 부분]
+- 체질적 약점, 무리하면 탈 나는 패턴을 말해라.
+- 병명 확정 금지.
+- 단, 위장·소화기, 장 리듬, 순환, 몸의 열, 피로 누적, 수면, 긴장성 컨디션처럼 구체적인 흐름은 말해라.
+
+[위장·소화·장 흐름]
+- 토가 과하거나 화가 약한 구조라면 위장, 소화, 장 리듬이 예민해질 수 있다고 말해라.
+- 단, 의학적 진단처럼 말하지 마라.
+
+[시기별 건강 흐름]
+- 초년, 청년, 중년, 말년 건강운을 나눠라.
+- 어느 시기에 무리하면 탈이 나기 쉬운지 말해라.
+
+[앞으로 1년 건강운]
+- 앞으로 1년 동안 조심해야 할 생활 패턴과 좋아지는 루틴을 말해라.
+`;
+  }
+
+  if (categoryId === "children" || title.includes("자식")) {
+    return `
+[자식 인연의 강약]
+- 자식 유무가 아니라 사주상 자식 인연 흐름으로 말해라.
+
+[자식복의 성격]
+- 기쁨으로 오는지, 책임으로 오는지, 늦게 복으로 드러나는지 설명해라.
+
+[자식과의 관계 흐름]
+- 가까운 관계인지, 거리 조절이 필요한지, 말과 기준이 중요한지 풀어라.
+
+[부모로서 조심할 부분]
+- 기대, 간섭, 경제적 책임, 감정 표현 중 무엇을 조심해야 하는지 말해라.
+
+[자식운이 좋아지는 조건]
+- 말투, 경제적 선, 기대치, 거리감, 부모 자신의 삶을 어떻게 잡아야 하는지 말해라.
+`;
+  }
+
+  if (categoryId === "compatibility" || title.includes("궁합")) {
+    return `
+[궁합 점수 해석]
+- 두 사람의 궁합 점수가 왜 그렇게 나왔는지 설명해라.
+- 좋은 점과 나쁜 점을 함께 말해라.
+
+[서로 끌리는 이유]
+- 사주적으로 왜 끌리는지 설명해라.
+- 감정, 분위기, 말투, 생활 리듬 중 어디서 끌리는지 말해라.
+
+[부딪히는 이유]
+- 서로가 반복해서 싸울 수 있는 지점을 구체적으로 말해라.
+- 말투, 돈, 가족, 생활습관, 감정 표현 중 어디서 부딪히는지 말해라.
+
+[이 궁합이 좋아지는 조건]
+- 이 관계가 좋아지려면 무엇을 맞춰야 하는지 말해라.
+- 연락 방식, 돈 기준, 가족 거리감, 생활 리듬, 감정 표현을 구체적으로 말해라.
+
+[이 궁합으로 결혼하면 생길 수 있는 문제]
+- 결혼 후 나타날 수 있는 현실 문제를 말해라.
+- 돈, 집안, 역할 분담, 생활 습관, 감정 피로 중 사주상 강하게 보이는 것을 풀어라.
+- 겁주지 말고 현실적인 경고로 말해라.
+
+[그래도 이어가려면]
+- 이 관계를 유지하려면 서로 어떤 노력을 해야 하는지 말해라.
+- 한쪽만 참는 구조가 되면 안 된다고 말해라.
+
+[결혼 전 반드시 확인할 것]
+- 돈 쓰는 방식, 가족 거리감, 싸움 후 회복 방식, 생활 리듬, 감정 표현 방식을 체크리스트처럼 풀어라.
+`;
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    return `
+[올해 전체 해운]
+- 올해가 어떤 해인지 먼저 결론 내려라.
+- 올해는 움직여야 하는 해인지, 버텨야 하는 해인지, 준비해야 하는 해인지, 정리해야 하는 해인지 말해라.
+
+[올해 재물운]
+- 돈복이 들어오는지, 약한지, 중간인지 먼저 말해라.
+- 돈이 들어오는 방식과 돈이 새는 구조를 나눠라.
+- 무리한 투자, 사업 초기비용, 고정비, 충동소비를 조심해야 하는지 말해라.
+
+[올해 직업/사업운]
+- 일이 풀리는 해인지, 막히는 해인지, 준비하는 해인지 말해라.
+- 직장, 사업, 부업, 프리랜서 흐름 중 무엇이 강한지 말해라.
+- 고정 직업 성향 판정과 충돌하지 않게 설명해라.
+
+[올해 이직운]
+- 이직운이 있는지, 없는지, 애매한지 먼저 말해라.
+- 움직여야 하는 사람인지, 지금은 머물러야 하는 사람인지 말해라.
+- 움직인다면 어떤 조건일 때 움직여야 하는지 말해라.
+- 머물러야 한다면 무엇을 준비해야 하는지 말해라.
+
+[올해 건강운]
+- 올해 건강운이 괜찮은지 약한지 먼저 말해라.
+- 약하다면 위장·소화·장·순환·피로·수면·스트레스 중 사주상 약한 흐름을 구체적으로 말해라.
+- 생활에서 무엇을 줄이고 무엇을 잡아야 하는지 말해라.
+
+[올해 관계운]
+- 올해 도움이 되는 인연과 거리 둘 인연을 나눠라.
+- 가족, 연애, 동료, 사업관계에서 조심할 부분을 말해라.
+
+[1~3개월 흐름]
+- 돈, 일/사업, 관계, 건강을 나누어 설명해라.
+- 이 구간에서 정리해야 할 것과 피해야 할 선택을 말해라.
+
+[4~6개월 흐름]
+- 작게 테스트해야 할 방향을 말해라.
+- 수익, 일, 관계에서 어떤 반응을 확인해야 하는지 설명해라.
+
+[7~9개월 흐름]
+- 되는 것과 안 되는 것을 구분하는 시기로 풀어라.
+- 남길 것, 줄일 것, 거리 둘 것을 구체적으로 말해라.
+
+[10~12개월 흐름]
+- 확장보다 안정화가 필요한지, 실제로 키워도 되는지 사주 흐름으로 말해라.
+- 다음 해를 위해 준비해야 할 구조를 말해라.
+
+[올해 실행 전략]
+- 올해 실제로 해야 할 순서를 정리해라.
+- 준비 → 테스트 → 정리 → 안정화 흐름으로 마무리해라.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[초년운]
+- 어릴 때부터 20대 초반까지의 흐름을 풀어라.
+- 가족 영향, 성격 형성, 공부/진로 기초, 건강 흐름, 돈에 대한 감각을 포함해라.
+
+[청년운]
+- 20대 중후반부터 30대 흐름을 풀어라.
+- 직업 선택, 돈의 기초, 연애·결혼 흐름, 사람관계, 시행착오를 포함해라.
+
+[중년운]
+- 40대부터 50대 흐름을 풀어라.
+- 재물운, 직업/사업운, 가족 책임, 건강관리, 자리 잡는 시기를 포함해라.
+
+[말년운]
+- 60대 이후 흐름을 풀어라.
+- 재물 안정, 건강 흐름, 가족과의 거리, 마음의 평안, 남는 운을 포함해라.
+
+[내 인생의 대운 기회]
+- 인생에서 크게 방향이 바뀌는 기회가 몇 번 들어오는지 말해라.
+- 대운은 정확한 연도 확정이 아니라, 사주 흐름상 강하게 열리는 시기대로 설명해라.
+- 대운의 기회가 돈, 일, 사람, 건강 중 어디서 오는지 말해라.
+
+[가장 중요한 대운]
+- 가장 크게 잡아야 할 대운 시기를 말해라.
+- 그 시기에 재물운, 직업운, 건강운, 사람관계가 어떻게 움직이는지 설명해라.
+
+[대운을 잡으려면]
+- 이 사주가 대운을 놓치는 패턴을 말해라.
+- 대운이 들어오기 전에 준비해야 할 일, 정리해야 할 사람, 줄여야 할 습관을 구체적으로 말해라.
 `;
   }
 
   if (categoryId === "traditional" || title.includes("평생")) {
     return `
-[앞으로 1년 흐름]
-평생종합사주 기준에서 앞으로 1년의 방향을 말해라.
+[초년운]
+[청년운]
+[중년운]
+[말년운]
 
-- 지금부터 1년 안에 가장 먼저 정리해야 할 것:
-- 돈에서 잡아야 할 기준:
-- 일에서 잡아야 할 기준:
-- 관계에서 잡아야 할 기준:
-- 가족과 감정에서 조심할 것:
-- 1년 안에 운이 좋아지는 신호:
-- 이 1년이 중년운/말년운으로 어떻게 이어질 수 있는지:
+[재물운]
+- 돈복 등급을 다시 확인하고, 평생 재물 흐름을 말해라.
+
+[직업운/사업운]
+- [고정 직업 성향 판정]을 절대 바꾸지 말고 평생 직업 흐름을 말해라.
+
+[연애운/결혼운]
+- 연애 패턴, 배우자 유형, 결혼 후 생활 기준을 말해라.
+
+[건강운]
+- 인생 전체 건강운, 체질적 약점, 무리하면 탈 나는 패턴을 반드시 포함해라.
+
+[자식운]
+- 자식 인연, 자식복, 관계 흐름, 부모 역할을 반드시 포함해라.
+
+[인복과 가족운]
+[인생 전체에서 반복되는 패턴]
+[앞으로 1년 참고 흐름]
 `;
   }
 
   return `
-[앞으로 1년 흐름]
-선택한 카테고리에 맞는 1년 흐름만 말해라.
-미래를 보장하지 말고 흐름과 기준으로 말해라.
+[카테고리 핵심 분석]
+- 선택 카테고리의 핵심만 깊게 풀어라.
 `;
 }
 
 function buildPreviewPrompt(params: {
-  user?: UserInfo;
-  categoryId?: CategoryId;
+  user: UserInfo;
+  categoryId: CategoryId;
   categoryTitle: string;
   question: string;
   manseText: string;
+  fixedConclusionText: string;
 }) {
-  const { user, categoryId, categoryTitle, question, manseText } = params;
-  const name = getName(user);
-  const conclusionGuide = getPreviewConclusionGuide(categoryId, categoryTitle);
-  const paidTease = getPreviewPaidTease(categoryId, categoryTitle);
+  const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText } = params;
 
   return `
 ${buildUserInfoText(user)}
 
 ${manseText}
+
+${fixedConclusionText}
 
 [선택 카테고리]
 ${categoryTitle}
@@ -1306,81 +2194,57 @@ ${categoryTitle}
 [사용자 질문]
 ${question || "없음"}
 
-[무료 리포트 작성 지시]
-무료 리포트는 900~1300자로 작성해라.
-무료는 "사주 용어 설명"이 아니라 "사용자가 가장 궁금해하는 결론"부터 말해야 한다.
-너무 짧게 끝내지 말고, 사용자가 "내 얘기 같다"고 느낄 정도의 근거와 흐름을 조금 더 풀어라.
-단, 유료에서 봐야 할 핵심 해결책과 구체적인 직업군/상대유형/월별 상세는 남겨둬라.
+${getCategoryGuide(categoryId, categoryTitle)}
 
-${conclusionGuide}
+[무료 결과 작성 지시]
+무료 결과를 작성해라.
 
-반드시 아래 5개 섹션만 써라.
+반드시 아래 4개 섹션만 써라.
+다른 제목 추가 금지.
 
-[먼저 결론부터 말할게]
-첫 문장은 반드시 이렇게 시작해라.
-"야 ${name}, 먼저 결론부터 말하면"
+[결론부터 말하면]
+- 첫 문장은 반드시 [고정 결론]과 같은 의미로 시작해라.
+- 만세력 설명부터 시작하지 마라.
+- 첫 문장은 사용자가 바로 이해할 수 있는 현실어로 써라.
+- 등급 표현은 "중다", "상다"처럼 쓰지 말고 "중으로 본다", "상으로 본다"처럼 써라.
 
-- 선택 카테고리에서 사용자가 가장 궁금해할 결론을 먼저 말해라.
-- 프리미엄상담이면 사용자의 질문을 먼저 받고, 질문의 핵심 고민에 직접 답해라.
-- 재물운이면 돈복이 있는지 먼저 말해라.
-- 직업/사업운이면 [고정 직업 성향 판정]의 1순위/2순위를 기준으로 말해라.
-- 연애운이면 연애운이 있는지, 어떤 사람과 맞는지 큰 방향을 먼저 말해라.
-- 결혼운이면 결혼운이 있는지, 빠른 결혼인지 늦게 안정되는지 먼저 말해라.
-- 평생종합사주면 인생 전체가 초반형인지 중후반형인지, 어느 시기에 풀리는지 큰 방향을 먼저 말해라.
-- 결혼운에서는 직업운, 직장형/사업형/부업형 판정을 쓰지 마라.
-- 궁합이면 끌림과 충돌 중 무엇이 강한지 먼저 말해라.
+[왜 그렇게 보냐면]
+- 여기서 일간, 월지, 오행 분포를 설명해라.
+- [본인 만세력]에 있는 값만 사용해라.
+- 궁합풀이에서는 [본인 만세력]과 [상대방 만세력]을 비교해라.
+- 어려운 명리학 용어는 현실 언어로 풀어라.
 
-[사주명리학으로 보면]
-- [본인 만세력]의 일간, 월주, 월지, 오행 흐름을 짧게 말해라.
-- 월주와 월지를 헷갈리지 마라.
-- 월주는 두 글자 전체이고, 월지는 월주의 두 번째 글자다.
-- "월지는 병축"이라고 쓰면 안 된다.
-- 오행 숫자는 제공된 것만 써라.
-- 이 섹션은 결론을 뒷받침하는 근거로만 짧게 써라.
+[이 운에서 조심할 부분]
+- 이 카테고리에서 반복될 수 있는 문제를 말해라.
+- 겁주지 말고, 왜 그런 패턴이 나오는지 사주 근거로 말해라.
 
-[지금 이 운에서 보이는 흐름]
-- 선택 카테고리 기준으로 지금 어떤 흐름이 강하게 보이는지 말해라.
-- 프리미엄상담이면 질문자의 고민이 왜 생겼는지, 표면 질문과 속마음 질문을 가볍게 나눠라.
-- 재물운이면 돈이 붙는 방식과 새는 흐름을 가볍게 말해라.
-- 직업/사업운이면 일하는 방식과 흔들리는 지점을 가볍게 말해라.
-- 연애운이면 끌리는 사람과 오래 가는 사람의 차이를 가볍게 말해라.
-- 결혼운이면 결혼에서 중요한 기준과 흔들리는 지점을 가볍게 말해라.
-- 궁합이면 끌림과 충돌의 흐름을 가볍게 말해라.
-- 평생종합사주면 초년/청년/중년/말년 중 어느 흐름이 특히 중요한지 맛보기로 말해라.
-- 단, 유료에서 다룰 구체적인 해결책은 여기서 다 풀지 마라.
+[전체 리포트에서 이어지는 핵심]
+${getPreviewTease(categoryId, categoryTitle)}
 
-[지금 반복되는 문제]
-- 왜 막히는지 짧게 팩폭해라.
-- 해결책을 자세히 쓰지 마라.
-- 이 흐름은 고칠 수 있다는 희망을 한 줄 넣어라.
-
-[전체 리포트에서 이어지는 내용]
-${paidTease}
-
-[금지]
-- 선택 카테고리와 무관한 내용을 쓰지 마라.
-- 운영자나 이전 대화에서 나온 직업, 사업, 부업, 아이디어를 넣지 마라.
-- 무료에서 핵심 답을 다 공개하지 마라.
+길이:
+- 900~1300자.
+- 문단 사이에 빈 줄을 넣어라.
+- 말투는 친한 형처럼.
 `;
 }
 
 function buildFullPrompt(params: {
-  user?: UserInfo;
-  categoryId?: CategoryId;
+  user: UserInfo;
+  categoryId: CategoryId;
   categoryTitle: string;
   question: string;
   manseText: string;
+  fixedConclusionText: string;
 }) {
-  const { user, categoryId, categoryTitle, question, manseText } = params;
-  const name = getName(user);
-  const categorySections = getFullCategorySections(categoryId, categoryTitle);
-  const threeMonthGuide = buildThreeMonthGuide(categoryId, categoryTitle);
-  const oneYearGuide = buildOneYearGuide(categoryId, categoryTitle);
+  const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText } = params;
+  const categorySections = getFullSections(categoryId, categoryTitle);
 
   return `
 ${buildUserInfoText(user)}
 
 ${manseText}
+
+${fixedConclusionText}
 
 [선택 카테고리]
 ${categoryTitle}
@@ -1388,200 +2252,124 @@ ${categoryTitle}
 [사용자 질문]
 ${question || "없음"}
 
-[유료 전체 리포트 작성 지시]
-유료 리포트는 3500~6000자 정도로 작성해라.
-단, 평생종합사주는 6000~9000자 수준으로 훨씬 더 깊고 길게 작성해라.
-단, 프리미엄상담은 4500~7500자 수준으로 사용자의 질문을 중심으로 깊게 작성해라.
-첫 섹션은 반드시 [결론부터 말할게]로 시작해라.
-사주 설명보다 사용자가 돈 내고 보고 싶은 답을 먼저 줘라.
-선택 카테고리와 무관한 내용을 쓰지 마라.
+${getCategoryGuide(categoryId, categoryTitle)}
 
-[프리미엄상담 특별 지시]
-- 선택 카테고리가 프리미엄상담이면, 사용자의 질문이 리포트의 중심이다.
-- 질문을 무시하고 일반적인 사주풀이로 빠지지 마라.
-- 첫 결론에서 반드시 사용자의 질문에 직접 답해라.
-- 질문이 "이걸 해도 될까?"라면 "조건부로 가능하다", "아직은 이르다", "정리하는 게 낫다"처럼 방향을 분명히 말해라.
-- 질문이 "나한테 맞을까?"라면 "맞는 부분과 안 맞는 부분"을 나눠서 말해라.
-- 질문이 "왜 이렇게 힘들까?"라면 "반복되는 사주적 패턴"과 "지금 끊어야 할 선택"을 말해라.
-- 질문이 애매하면, AI가 질문의 숨은 의도를 먼저 정리한 뒤 답해라.
-- 애매한 위로로 끝내지 말고, 현실적인 판단 기준을 줘라.
+[전체 리포트 작성 지시]
+전체 유료 리포트를 작성해라.
+결제 유도 문구 금지.
+다른 카테고리 추천 금지.
+등급 표현은 "중다", "상다"처럼 쓰지 말고 "중으로 본다", "상으로 본다"처럼 자연스럽게 써라.
 
-[절대 금지]
-- 운영자와 이전에 나눈 직업 고민, 사업 아이디어, 부업 아이디어, 앱 제작 내용, 대화 예시를 절대 반영하지 마라.
-- 개발자가 예시로 든 직업군을 사용자에게 추천하지 마라.
-- 특정 직업군을 미리 정해놓고 끼워 맞추지 마라.
-- 오직 [본인 만세력], [상대방 만세력], 현재 사용자 입력, 선택 카테고리만 근거로 써라.
-- 결혼운/연애운/궁합/가족관계에서는 직업운 챕터를 쓰지 마라.
-
-반드시 아래 구조로 작성해라.
-
-[결론부터 말할게]
-- ${name}의 ${categoryTitle}에서 가장 중요한 결론을 먼저 말해라.
-- 프리미엄상담이면 사용자의 질문에 먼저 직접 답해라. "결론부터 말하면 이 선택은 ○○하다"처럼 회피하지 말고 말해라.
-- 직업운이면 [고정 직업 성향 판정]의 1순위/2순위를 그대로 말해라.
-- 재물운이면 "돈복은 ○○한 편이고, 돈은 ○○ 방식에서 붙고, ○○에서 샌다"처럼 바로 말해라.
-- 연애운이면 "너는 ○○한 사람과 맞고, ○○한 사람은 피해야 한다"처럼 바로 말해라.
-- 결혼운이면 "결혼운은 ○○한 편이고, ○○한 배우자와 맞고, ○○한 관계는 피해야 한다"처럼 바로 말해라.
-- 평생종합사주면 "초년에는 ○○, 청년기에는 ○○, 중년부터 ○○, 말년에는 ○○ 흐름이다"처럼 시기별 큰 결론을 먼저 말해라.
-- 궁합이면 "끌림은 있는데 ○○에서 부딪힌다"처럼 바로 말해라.
-- 추상적으로 말하지 마라.
-
-[사주명리학 근거]
-첫 문장은 이렇게 시작해라.
-"야 ${name}, 사주명리학으로 보면 네 구조는 이렇게 잡혀 있어."
-
-- 일간, 월주, 월지, 오행 균형, 강한 기운, 부족한 기운을 설명해라.
-- 월주와 월지를 헷갈리지 마라.
-- 월주는 두 글자 전체이고, 월지는 월주의 두 번째 글자다.
-- "월지는 병축"이라고 쓰면 안 된다.
-- 오행 숫자는 제공된 것만 써라.
-- 길게 강의하지 말고 결론을 받쳐주는 근거만 말해라.
-- 결혼운/연애운/궁합에서는 직업 성향을 언급하지 마라.
-- 프리미엄상담에서는 질문과 연결되는 사주 근거만 우선적으로 말해라.
-
+공통 구조:
+[결론부터 말하면]
+[왜 그렇게 보냐면]
+[타고난 ${categoryTitle}]
+[이 운이 막히는 패턴]
+[이 운이 살아나는 조건]
 ${categorySections}
+[앞으로 1년 참고 흐름]
+${getRiskChoices(categoryId, categoryTitle)}
+${getDirectionChoices(categoryId, categoryTitle)}
+${getFinalSummaryGuide(categoryId, categoryTitle)}
 
-[피해야 할 방향]
-- 이 카테고리에서 특히 피해야 할 선택을 3~5개 말해라.
-- 각 항목마다 왜 안 맞는지 사주 근거와 현실 결과를 같이 말해라.
-- 프리미엄상담이면 사용자의 질문과 직접 연결해서 피해야 할 선택을 말해라.
-- 결혼운이면 피해야 할 결혼 상대와 생활 구조를 말해라.
-- 연애운이면 피해야 할 상대 유형을 말해라.
-- 궁합/가족/파트너면 관계에서 피해야 할 말, 돈, 역할 구조를 말해라.
-- 직업운이면 [고정 직업 성향 판정]의 피해야 할 방식과 연결해라.
-- 평생종합사주면 평생 반복하면 운을 깎아먹는 삶의 패턴을 말해라.
-
-${threeMonthGuide}
-
-${oneYearGuide}
-
-[형이 딱 정리해줄게]
-마지막은 5~7줄로 끝내라.
-- 너는 ○○ 흐름이다.
-- 맞는 방향은 ○○이다.
-- 피해야 할 건 ○○이다.
-- 앞으로 3개월은 ○○을 조심해라.
-- 1년 안에는 ○○ 기준을 잡아야 한다.
-- 이 방향이면 운이 다시 살아날 수 있다.
+길이:
+- 일반 카테고리: 3500~6000자.
+- 프리미엄상담: 4500~7500자.
+- 평생종합사주: 6000~9000자.
+- 문단 사이에 빈 줄을 넣어라.
 `;
 }
 
-function fallbackPreview(categoryTitle: string, user?: UserInfo) {
-  const name = getName(user);
+function fallbackPreview(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
+  const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse).replace("[고정 결론]", "").trim();
 
-  return `[먼저 결론부터 말할게]
+  return `[결론부터 말하면]
 
-야 ${name}, 먼저 결론부터 말하면 지금 ${categoryTitle}은 좋다 나쁘다로만 끊을 흐름은 아니야.
+${fixed}
 
-네가 어떤 기준으로 선택하느냐에 따라 살아날 수 있는 운이 있고, 반대로 같은 패턴을 반복하면 계속 막힐 수 있는 운이 같이 있어.
+[왜 그렇게 보냐면]
 
-[사주명리학으로 보면]
+제공된 만세력 기준으로 보면 이 결론은 일간과 오행 분포에서 나온 흐름이야.
 
-지금은 AI 사주 분석이 잠깐 막혀서 자세한 일간, 월주, 오행 풀이를 깊게 하긴 어려워.
+자세한 명식 풀이는 전체 리포트에서 더 길게 봐야 하지만, 무료에서는 먼저 결론과 큰 방향만 잡아줄게.
 
-다만 사주는 단순히 운이 있다 없다가 아니라, 그 운을 어떤 방식으로 쓰느냐가 중요해.
+[이 운에서 조심할 부분]
 
-[지금 이 운에서 보이는 흐름]
+이 운은 무리하게 밀어붙인다고 바로 좋아지는 흐름은 아니야.
 
-${categoryTitle}에서는 지금 겉으로 보이는 결과보다 네가 반복해서 선택하는 기준이 더 중요해.
+사주상 강한 기운을 잘 쓰고, 약한 기운이 흔들리는 지점을 조심해야 반복이 줄어들어.
 
-같은 상황이 반복된다면 운이 없는 게 아니라, 맞는 방향과 안 맞는 방향이 아직 정리되지 않았을 수 있어.
+[전체 리포트에서 이어지는 핵심]
 
-[지금 반복되는 문제]
-
-문제는 운이 없어서가 아니라, 맞는 방향과 안 맞는 방향을 구분하지 못한 채 버티는 데서 생길 수 있어.
-
-이 흐름은 충분히 바꿀 수 있어.
-
-[전체 리포트에서 이어지는 내용]
-
-여기서 끊기면 지금 반복되는 문제의 핵심을 놓칠 수 있어.
-
-전체 리포트에서는 네 사주 구조를 기준으로 ${categoryTitle}에서 맞는 방향, 피해야 할 선택, 앞으로 3개월과 1년 흐름까지 이어서 본다.`;
+${getPreviewTease(categoryId, categoryTitle)}`;
 }
 
-function fallbackFull(categoryTitle: string, user?: UserInfo) {
-  const name = getName(user);
+function fallbackFull(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
+  const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse).replace("[고정 결론]", "").trim();
 
-  return `[결론부터 말할게]
+  return `[결론부터 말하면]
 
-${name}, 지금 ${categoryTitle}에서 중요한 건 좋은 말 많이 듣는 게 아니라, 맞는 방향과 피해야 할 방향을 가르는 거야.
+${fixed}
 
-현재 AI 분석이 잠깐 막혀서 상세 만세력 기반 리포트는 제한됐지만, 전체 리포트 구조는 이렇게 봐야 해.
+[왜 그렇게 보냐면]
 
-[사주명리학 근거]
+제공된 만세력 기준으로 보면 이 결론은 일간, 월지, 오행 분포의 균형에서 나온 흐름이야.
 
-사주는 일간, 월주, 월지, 오행 균형, 강한 기운과 부족한 기운을 먼저 봐야 해.
+강한 기운은 장점이 되지만, 과하면 부담이 되고 약한 기운은 반복되는 문제로 나타날 수 있어.
 
-그 다음 그 기운이 돈, 일, 연애, 관계에서 어떻게 드러나는지 현실 언어로 번역해야 한다.
+[타고난 ${categoryTitle}]
 
-[카테고리 핵심 분석]
+이 운은 없는 운이라기보다, 맞는 방식으로 써야 살아나는 운이야.
 
-${categoryTitle}은 단순히 운이 좋다 나쁘다로 끝낼 수 없어.
+[이 운이 막히는 패턴]
 
-이 카테고리에서 네가 반복하는 패턴, 강하게 쓰는 기운, 부족해서 흔들리는 기운을 같이 봐야 해.
+급하게 결정하거나, 약한 기운을 무시하고 밀어붙이면 같은 문제가 반복될 수 있어.
 
-[피해야 할 방향]
+[이 운이 살아나는 조건]
 
-1. 남들이 좋다는 이유만으로 따라가는 선택.
+사주상 강한 기운은 살리고, 부족한 기운을 생활과 선택으로 보완해야 해.
 
-2. 불안해서 급하게 결정하는 선택.
+[앞으로 1년 참고 흐름]
 
-3. 이미 아닌 걸 알면서 계속 끌고 가는 선택.
+앞으로 1년은 결론을 바꾸는 시기가 아니라, 이미 나온 결론을 현실에서 확인하고 기준을 잡는 흐름이야.
 
-4. 돈, 감정, 관계를 한꺼번에 섞는 선택.
+${getRiskChoices(categoryId, categoryTitle)}
 
-[앞으로 3개월 흐름]
+${getDirectionChoices(categoryId, categoryTitle)}
 
-앞으로 3개월은 무리하게 판을 키우는 것보다, 네가 어디서 흔들리는지 먼저 보는 흐름이야.
-
-[앞으로 1년 흐름]
-
-1년 안에는 기준을 잡아야 해.
-
-돈이면 돈 기준, 일이면 일하는 방식, 관계면 사람 보는 기준을 정리해야 운이 살아난다.
-
-[형이 딱 정리해줄게]
-
-너는 지금 방향을 다시 잡아야 하는 흐름이야.
-
-피해야 할 건 불안해서 급하게 선택하는 거야.
-
-앞으로 3개월은 흐름을 확인하고, 1년 안에는 기준을 잡아야 해.
-
-이 방향이면 운은 다시 살아날 수 있어.`;
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
 }
 
 async function generateText(prompt: string, maxTokens: number) {
   const completion = await client.chat.completions.create({
     model: MODEL,
     messages: [
-      {
-        role: "system",
-        content: buildSystemPrompt(),
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
+      { role: "system", content: buildSystemPrompt() },
+      { role: "user", content: prompt },
     ],
-    temperature: 0.25,
+    temperature: 0.12,
     max_tokens: maxTokens,
   });
 
   return completion.choices[0]?.message?.content?.trim() || "";
 }
 
+function getPreviewMaxTokens(categoryId: CategoryId) {
+  if (categoryId === "traditional") return 1900;
+  if (categoryId === "premium") return 1900;
+  return 1700;
+}
+
 function getFullMaxTokens(categoryId: CategoryId) {
   if (categoryId === "traditional") return 11000;
-  if (categoryId === "premium") return 8500;
-  return 6500;
+  if (categoryId === "premium") return 9000;
+  return 7200;
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as FortuneRequest;
-
     const mode = body.mode || "preview";
     const user = body.user || {};
     const categoryId = body.categoryId || "today";
@@ -1589,7 +2377,6 @@ export async function POST(request: Request) {
     const question = safeText(body.question || user.question, "");
 
     const myManse = calculateManse(user);
-
     const partnerManse = hasPartnerBirthInfo(user)
       ? calculateManse({
           year: user.partnerYear,
@@ -1602,14 +2389,13 @@ export async function POST(request: Request) {
       : null;
 
     const myManseText = formatManseForPrompt(myManse);
-    const careerArchetypeText = getCareerArchetypeGuide(myManse);
-
     const partnerManseText = partnerManse
       ? formatManseForPrompt(partnerManse)
       : "상대방 만세력 정보: 상대방 생년월일 또는 출생 정보가 부족합니다.";
 
+    const fixedConclusionText = getFixedConclusionBlock(categoryId, categoryTitle, user, myManse, partnerManse);
     const careerBlock = shouldUseCareerArchetype(categoryId)
-      ? careerArchetypeText
+      ? getCareerArchetypeGuide(myManse)
       : `[고정 직업 성향 판정]
 이 카테고리에서는 직업 성향 판정을 사용하지 않는다.
 직업운, 사업운, 직장형/사업형/부업형 판정, 직업군 추천을 쓰지 마라.`;
@@ -1625,113 +2411,63 @@ ${partnerManseText}
 `;
 
     if (!process.env.OPENAI_API_KEY) {
-      if (mode === "full") {
-        const full = fallbackFull(categoryTitle, user);
+      const preview = fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse);
+      const full = fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse);
 
-        return NextResponse.json({
-          preview: "",
-          full,
-          result: full,
-          manse: myManse,
-          partnerManse,
-          careerArchetype: shouldUseCareerArchetype(categoryId)
-            ? careerArchetypeText
-            : "",
-          warning: "OPENAI_API_KEY가 없어 fallback 전체 리포트를 반환했습니다.",
-        });
+      if (mode === "full") {
+        return NextResponse.json({ preview: "", full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, routeVersion: ROUTE_VERSION });
       }
 
       if (mode === "both") {
-        const preview = fallbackPreview(categoryTitle, user);
-        const full = fallbackFull(categoryTitle, user);
-
-        return NextResponse.json({
-          preview,
-          full,
-          result: full,
-          manse: myManse,
-          partnerManse,
-          careerArchetype: shouldUseCareerArchetype(categoryId)
-            ? careerArchetypeText
-            : "",
-          warning: "OPENAI_API_KEY가 없어 fallback 리포트를 반환했습니다.",
-        });
+        return NextResponse.json({ preview, full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, routeVersion: ROUTE_VERSION });
       }
 
-      const preview = fallbackPreview(categoryTitle, user);
-
-      return NextResponse.json({
-        preview,
-        full: "",
-        result: preview,
-        manse: myManse,
-        partnerManse,
-        careerArchetype: shouldUseCareerArchetype(categoryId)
-          ? careerArchetypeText
-          : "",
-        warning: "OPENAI_API_KEY가 없어 fallback 무료 리포트를 반환했습니다.",
-      });
+      return NextResponse.json({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, routeVersion: ROUTE_VERSION });
     }
 
     if (mode === "preview") {
       let preview = "";
-
       try {
         preview = await generateText(
-          buildPreviewPrompt({
-            user,
-            categoryId,
-            categoryTitle,
-            question,
-            manseText,
-          }),
-          1800
+          buildPreviewPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText }),
+          getPreviewMaxTokens(categoryId)
         );
       } catch (error) {
         console.error("preview generation error:", error);
-        preview = fallbackPreview(categoryTitle, user);
+        preview = fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse);
       }
 
       return NextResponse.json({
-        preview: preview || fallbackPreview(categoryTitle, user),
+        preview: preview || fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse),
         full: "",
-        result: preview || fallbackPreview(categoryTitle, user),
+        result: preview || fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse),
         manse: myManse,
         partnerManse,
-        careerArchetype: shouldUseCareerArchetype(categoryId)
-          ? careerArchetypeText
-          : "",
+        fixedConclusion: fixedConclusionText,
+        routeVersion: ROUTE_VERSION,
       });
     }
 
     if (mode === "full") {
       let full = "";
-
       try {
         full = await generateText(
-          buildFullPrompt({
-            user,
-            categoryId,
-            categoryTitle,
-            question,
-            manseText,
-          }),
+          buildFullPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText }),
           getFullMaxTokens(categoryId)
         );
       } catch (error) {
         console.error("full generation error:", error);
-        full = fallbackFull(categoryTitle, user);
+        full = fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse);
       }
 
       return NextResponse.json({
         preview: "",
-        full: full || fallbackFull(categoryTitle, user),
-        result: full || fallbackFull(categoryTitle, user),
+        full: full || fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse),
+        result: full || fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse),
         manse: myManse,
         partnerManse,
-        careerArchetype: shouldUseCareerArchetype(categoryId)
-          ? careerArchetypeText
-          : "",
+        fixedConclusion: fixedConclusionText,
+        routeVersion: ROUTE_VERSION,
       });
     }
 
@@ -1740,54 +2476,55 @@ ${partnerManseText}
 
     try {
       preview = await generateText(
-        buildPreviewPrompt({
-          user,
-          categoryId,
-          categoryTitle,
-          question,
-          manseText,
-        }),
-        1800
+        buildPreviewPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText }),
+        getPreviewMaxTokens(categoryId)
       );
     } catch (error) {
       console.error("preview generation error:", error);
-      preview = fallbackPreview(categoryTitle, user);
+      preview = fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse);
     }
 
     try {
       full = await generateText(
-        buildFullPrompt({
-          user,
-          categoryId,
-          categoryTitle,
-          question,
-          manseText,
-        }),
+        buildFullPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText }),
         getFullMaxTokens(categoryId)
       );
     } catch (error) {
       console.error("full generation error:", error);
-      full = fallbackFull(categoryTitle, user);
+      full = fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse);
     }
 
     return NextResponse.json({
-      preview: preview || fallbackPreview(categoryTitle, user),
-      full: full || fallbackFull(categoryTitle, user),
-      result: full || fallbackFull(categoryTitle, user),
+      preview: preview || fallbackPreview(categoryId, categoryTitle, user, myManse, partnerManse),
+      full: full || fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse),
+      result: full || fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse),
       manse: myManse,
       partnerManse,
-      careerArchetype: shouldUseCareerArchetype(categoryId)
-        ? careerArchetypeText
-        : "",
+      fixedConclusion: fixedConclusionText,
+      routeVersion: ROUTE_VERSION,
     });
   } catch (error) {
     console.error("fortune route error:", error);
 
     return NextResponse.json(
       {
-        preview: fallbackPreview("운세풀이"),
+        preview: `[결론부터 말하면]
+
+지금 운세 생성 중 문제가 생겼어.
+
+[왜 그렇게 보냐면]
+
+서버에서 만세력 또는 AI 응답을 처리하는 중 오류가 난 상태야.
+
+[이 운에서 조심할 부분]
+
+코드 오류가 있는 상태에서 계속 테스트하면 결과가 흔들릴 수 있어.
+
+[전체 리포트에서 이어지는 핵심]
+
+터미널 에러 메시지를 확인해서 route.ts와 manse.ts 연결을 먼저 잡아야 해.`,
         full: "",
-        result: fallbackPreview("운세풀이"),
+        result: "",
         error: "AI 운세 생성 중 문제가 발생했습니다.",
       },
       { status: 200 }
@@ -1796,9 +2533,5 @@ ${partnerManseText}
 }
 
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    message: "soreum saju route is working",
-    model: MODEL,
-  });
+  return NextResponse.json({ ok: true, message: "soreum saju fortune route is working", model: MODEL, routeVersion: ROUTE_VERSION, relationshipLogic: "family-partner-compatibility-saju-risk-final", yearlyLogic: "newyear-career-money-jobchange-health-v1" });
 }
