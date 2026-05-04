@@ -90,13 +90,22 @@ const emptyUser: UserInfo = {
 
 const categories: Category[] = [
   {
-    id: "traditional",
-    title: "평생종합사주",
-    subtitle: "초년운부터 말년운까지 전체 흐름",
-    emoji: "📜",
-    price: 29900,
+    id: "today",
+    title: "오늘운세",
+    subtitle: "오늘 조심할 말과 선택",
+    emoji: "🌙",
+    price: 1900,
     featured: true,
-    badge: "런칭특가",
+    badge: "입문추천",
+  },
+  {
+    id: "worry",
+    title: "고민풀이",
+    subtitle: "같은 고민이 반복되는 이유",
+    emoji: "✨",
+    price: 3900,
+    featured: true,
+    badge: "가성비",
   },
   {
     id: "money",
@@ -123,33 +132,12 @@ const categories: Category[] = [
     featured: true,
   },
   {
-    id: "lifeFlow",
-    title: "인생흐름",
-    subtitle: "반복되는 패턴과 전환점",
-    emoji: "👑",
-    price: 12900,
-    featured: true,
-  },
-  {
-    id: "today",
-    title: "오늘운세",
-    subtitle: "오늘 조심할 말과 선택",
-    emoji: "🌙",
-    price: 1900,
-  },
-  {
-    id: "worry",
-    title: "고민풀이",
-    subtitle: "같은 고민이 반복되는 이유",
-    emoji: "✨",
-    price: 3900,
-  },
-  {
     id: "marriage",
     title: "결혼운",
     subtitle: "배우자 유형과 생활 기준",
     emoji: "💍",
     price: 6900,
+    featured: true,
   },
   {
     id: "compatibility",
@@ -166,11 +154,12 @@ const categories: Category[] = [
     price: 6900,
   },
   {
-    id: "partner",
-    title: "사업파트너",
-    subtitle: "돈·역할·책임 구조",
-    emoji: "🤝",
+    id: "lifeFlow",
+    title: "인생흐름",
+    subtitle: "반복되는 패턴과 전환점",
+    emoji: "👑",
     price: 12900,
+    featured: true,
   },
   {
     id: "monthly",
@@ -180,11 +169,27 @@ const categories: Category[] = [
     price: 12900,
   },
   {
+    id: "partner",
+    title: "사업파트너",
+    subtitle: "돈·역할·책임 구조",
+    emoji: "🤝",
+    price: 12900,
+  },
+  {
     id: "premium",
     title: "프리미엄상담",
     subtitle: "질문 하나를 깊게",
     emoji: "🔮",
     price: 29000,
+  },
+  {
+    id: "traditional",
+    title: "평생종합사주",
+    subtitle: "초년운부터 말년운까지 전체 흐름",
+    emoji: "📜",
+    price: 29900,
+    featured: true,
+    badge: "종합인기",
   },
 ];
 
@@ -224,36 +229,48 @@ const characters: Character[] = [
 ];
 
 const reviews: Review[] = [
-  {
-    name: "성xx",
-    category: "직업/사업운",
-    text: "직업군을 그냥 찍어주는 게 아니라 왜 맞는지 사주 근거로 풀어줘서 좋았어요.",
-  },
-  {
-    name: "뿌xx",
-    category: "재물운",
-    text: "돈복보다 돈이 새는 구조를 말해줘서 현실적으로 와닿았어요.",
-  },
-  {
-    name: "하xx",
-    category: "연애운",
-    text: "어떤 사람을 피해야 하는지까지 말해줘서 제 연애 패턴이 보였어요.",
-  },
-  {
-    name: "우xx",
-    category: "평생종합사주",
-    text: "초년운부터 말년운까지 보니까 인생 큰 흐름이 잡혔어요.",
-  },
-  {
-    name: "민xx",
-    category: "궁합풀이",
-    text: "좋다 나쁘다가 아니라 왜 끌리고 왜 부딪히는지 나눠줘서 좋았어요.",
-  },
-  {
-    name: "준xx",
-    category: "사업파트너",
-    text: "사람 좋은 것과 같이 돈 버는 건 다르다는 말이 기억나요.",
-  },
+  { name: "성xx", category: "직업/사업운", text: "직업군을 그냥 찍어주는 게 아니라 왜 맞는지 사주 근거로 풀어줘서 좋았어요." },
+  { name: "뿌xx", category: "재물운", text: "돈복보다 돈이 새는 구조를 말해줘서 현실적으로 와닿았어요." },
+  { name: "하xx", category: "연애운", text: "어떤 사람을 피해야 하는지까지 말해줘서 제 연애 패턴이 보였어요." },
+  { name: "우xx", category: "평생종합사주", text: "초년운부터 말년운까지 보니까 인생 큰 흐름이 잡혔어요." },
+  { name: "민xx", category: "궁합풀이", text: "좋다 나쁘다가 아니라 왜 끌리고 왜 부딪히는지 나눠줘서 좋았어요." },
+  { name: "준xx", category: "사업파트너", text: "사람 좋은 것과 같이 돈 버는 건 다르다는 말이 기억나요." },
+  { name: "지xx", category: "오늘운세", text: "처음에 1,900원이라 부담 없이 봤는데 생각보다 제 상황이랑 맞아서 놀랐어요." },
+  { name: "라xx", category: "고민풀이", text: "그냥 위로가 아니라 지금 하지 말아야 할 선택을 짚어줘서 좋았어요." },
+  { name: "동xx", category: "재물운", text: "돈복 있다 없다보다 돈이 어디서 새는지 말해주는 게 진짜 도움이 됐어요." },
+  { name: "서xx", category: "연애운", text: "처음엔 설레는데 오래 가면 힘든 사람 유형이 너무 정확했어요." },
+  { name: "강xx", category: "직업/사업운", text: "사업이 맞는지 직장이 맞는지 계속 헷갈렸는데 방향이 좀 잡혔어요." },
+  { name: "현xx", category: "결혼운", text: "결혼운을 너무 막연하게 말하지 않고 배우자 기준을 알려줘서 좋았어요." },
+  { name: "도xx", category: "인생흐름", text: "왜 같은 고민이 반복되는지 흐름으로 설명해줘서 이해가 됐어요." },
+  { name: "윤xx", category: "12개월운세", text: "월별로 조심할 달과 움직일 달이 나눠져 있어서 보기 편했어요." },
+  { name: "박xx", category: "프리미엄상담", text: "제가 쓴 질문을 제대로 받아서 답해주는 느낌이라 만족했어요." },
+  { name: "최xx", category: "오늘운세", text: "가볍게 봤는데 오늘 말 조심하라는 부분이 딱 와닿았어요." },
+  { name: "은xx", category: "재물운", text: "돈이 붙는 방식이랑 피해야 할 돈 선택을 나눠줘서 현실적이었어요." },
+  { name: "태xx", category: "직업/사업운", text: "맞는 일만 말하는 게 아니라 피해야 할 일 구조를 말해줘서 좋았어요." },
+  { name: "소xx", category: "연애운", text: "연애운에서 제가 왜 비슷한 사람에게 끌리는지 설명이 좋았어요." },
+  { name: "기xx", category: "궁합풀이", text: "둘 사이에 왜 말이 꼬이는지 알겠더라고요." },
+  { name: "혜xx", category: "가족관계", text: "가족 안에서 제가 맡는 역할을 말해줘서 마음이 좀 정리됐어요." },
+  { name: "진xx", category: "사업파트너", text: "동업 전에 봤는데 역할과 돈 기준을 먼저 정하라는 말이 도움 됐어요." },
+  { name: "수xx", category: "평생종합사주", text: "중년운부터 풀리는 흐름이라는 말이 제 상황과 맞았어요." },
+  { name: "영xx", category: "고민풀이", text: "막연한 답이 아니라 지금 정리해야 할 기준을 말해줘서 좋았어요." },
+  { name: "규xx", category: "재물운", text: "돈복은 있는데 새는 구조가 있다는 말이 너무 현실적이었어요." },
+  { name: "미xx", category: "결혼운", text: "배우자 유형과 피해야 할 상대를 나눠줘서 기준이 생겼어요." },
+  { name: "찬xx", category: "직업/사업운", text: "직장형인지 사업형인지 매번 헷갈렸는데 이번엔 고정적으로 나와서 좋았어요." },
+  { name: "아xx", category: "프리미엄상담", text: "제가 물어본 고민을 중심으로 답이 나와서 일반 운세랑 달랐어요." },
+  { name: "혁xx", category: "오늘운세", text: "짧게 볼 줄 알았는데 무료 결과도 충분히 읽을 만했어요." },
+  { name: "연xx", category: "연애운", text: "좋은 인연보다 피해야 할 사람을 말해주는 게 더 도움이 됐어요." },
+  { name: "재xx", category: "인생흐름", text: "내가 왜 늦게 풀리는 느낌인지 설명이 와닿았어요." },
+  { name: "나xx", category: "12개월운세", text: "올해 어느 달에 무리하면 안 되는지 보는 게 좋았어요." },
+  { name: "원xx", category: "평생종합사주", text: "초년운, 청년운, 중년운, 말년운이 따로 있어서 돈 낸 느낌이 있었어요." },
+  { name: "희xx", category: "궁합풀이", text: "좋다 나쁘다보다 오래 가는 조건을 알려줘서 좋았어요." },
+  { name: "석xx", category: "재물운", text: "돈이 들어오는 방식과 고정비 얘기가 진짜 현실적이었어요." },
+  { name: "로xx", category: "고민풀이", text: "혼자 생각하던 고민이 왜 반복되는지 정리됐어요." },
+  { name: "유xx", category: "결혼운", text: "결혼을 해야 하냐보다 어떤 기준으로 해야 하는지 알려줘서 좋았어요." },
+  { name: "빈xx", category: "사업파트너", text: "사람이 좋은 것과 돈을 같이 버는 건 다르다는 말이 기억에 남아요." },
+  { name: "경xx", category: "프리미엄상담", text: "결론을 피하지 않고 조건부로 가능하다고 말해줘서 좋았어요." },
+  { name: "훈xx", category: "직업/사업운", text: "맞는 직업군을 3개 이상 나눠서 설명해줘서 실용적이었어요." },
+  { name: "별xx", category: "오늘운세", text: "처음엔 1,900원이라 봤는데 다음엔 재물운도 보고 싶어졌어요." },
+  { name: "림xx", category: "평생종합사주", text: "전체 흐름을 보고 나니까 지금 왜 흔들리는지 이해가 됐어요." },
 ];
 
 const birthTimes = [
@@ -785,6 +802,7 @@ export default function Page() {
   const [categoryId, setCategoryId] = useState<CategoryId>("today");
   const [selectedPlan, setSelectedPlan] = useState("premium");
   const [paid, setPaid] = useState(false);
+  const [isLocalTest, setIsLocalTest] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -809,8 +827,8 @@ export default function Page() {
   const featuredCategories = categories.filter((item) => item.featured);
   const normalCategories = categories.filter((item) => !item.featured);
 
-  const reviewPages = Math.ceil(reviews.length / 3);
   const reviewsPerPage = 3;
+  const reviewPages = Math.ceil(reviews.length / reviewsPerPage);
   const visibleReviews = reviews.slice(
     (reviewPage - 1) * reviewsPerPage,
     reviewPage * reviewsPerPage
@@ -821,6 +839,16 @@ export default function Page() {
   }일 · ${user.calendar} · ${user.gender}`;
 
   const paidBullets = getPaidBullets(categoryId);
+
+  useEffect(() => {
+    const host = window.location.hostname;
+
+    setIsLocalTest(
+      host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.startsWith("192.168.")
+    );
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -974,7 +1002,11 @@ export default function Page() {
         throw new Error(data.error || "무료 결과 생성 실패");
       }
 
-      setAiPreview(data.preview || data.result || "[API 응답 없음] 무료 운세 결과를 불러오지 못했습니다.");
+      setAiPreview(
+        data.preview ||
+          data.result ||
+          "[API 응답 없음] 무료 운세 결과를 불러오지 못했습니다."
+      );
       setAiFull("");
     } catch (error) {
       console.error(error);
@@ -1066,6 +1098,31 @@ ${message}`);
     } finally {
       setFullLoading(false);
     }
+  };
+
+  const openFullReportForTest = async () => {
+    if (!isLocalTest) {
+      alert("로컬 테스트 환경에서만 사용할 수 있습니다.");
+      return;
+    }
+
+    if (!privacyAgreed) {
+      alert("개인정보 수집·이용에 동의해야 전체 리포트를 볼 수 있습니다.");
+      return;
+    }
+
+    setPaid(true);
+    setStep("result");
+    setAiFull("전체 리포트를 불러오는 중입니다...");
+
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 100);
+
+    await generateFullResult();
   };
 
   const generateConsultAI = async () => {
@@ -1325,12 +1382,15 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   <span className="grid h-12 w-12 place-items-center rounded-2xl border border-[#7a5b37] bg-black/40 text-2xl">
                     {item.emoji}
                   </span>
-                  <span>
+                  <span className="flex-1">
                     <span className="block font-black text-[#d8a86f]">
                       {item.title}
                     </span>
                     <span className="text-sm text-[#c8beb0]">
                       {item.subtitle}
+                    </span>
+                    <span className="mt-1 block text-sm font-black text-white">
+                      {item.price.toLocaleString()}원
                     </span>
                   </span>
                 </button>
@@ -1371,7 +1431,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <p className="mt-6 break-keep text-[18px] font-medium leading-[1.8] tracking-[-0.04em] text-[#c8beb0]">
                 무료에서는 사주의 핵심 흐름을 먼저 봅니다.
                 <br />
-                전체 리포트에서는 <span className="font-black text-[#d8a86f]">맞는 방향과 피해야 할 선택</span>까지 깊게 봅니다.
+                전체 리포트에서는{" "}
+                <span className="font-black text-[#d8a86f]">
+                  맞는 방향과 피해야 할 선택
+                </span>
+                까지 깊게 봅니다.
               </p>
 
               <button
@@ -1383,6 +1447,65 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </button>
             </section>
 
+            <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
+              <div className="rounded-full border border-[#d8a86f] bg-[#241e18] px-4 py-2 text-center text-xs font-black tracking-[0.12em] text-[#e0b36d]">
+                가볍게 시작하는 사주풀이
+              </div>
+
+              <h2 className="mt-5 break-keep text-[30px] font-black leading-tight tracking-[-0.065em] text-white">
+                큰돈 쓰기 전에,
+                <br />
+                먼저 내 흐름부터 확인하세요
+              </h2>
+
+              <p className="mt-4 break-keep text-base font-medium leading-7 text-[#c8beb0]">
+                오늘운세는{" "}
+                <span className="font-black text-[#d8a86f]">1,900원</span>.
+                <br />
+                커피 한 잔보다 가볍게,
+                <br />
+                지금 내 운의 방향을 먼저 볼 수 있습니다.
+                <br />
+                <br />
+                먼저 오늘의 흐름을 확인하고,
+                <br />
+                더 깊게 보고 싶을 때 전체 리포트를 열면 됩니다.
+              </p>
+
+              <div className="mt-5 rounded-[26px] border border-[#7a5b37] bg-black/35 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-black text-[#d8a86f]">
+                      가볍게 시작
+                    </div>
+                    <div className="mt-1 text-2xl font-black text-white">
+                      오늘운세
+                    </div>
+                    <div className="mt-2 text-sm leading-6 text-[#c8beb0]">
+                      오늘 조심할 말, 돈, 사람관계 흐름
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-[11px] font-black text-[#c8beb0]">
+                      시작가
+                    </div>
+                    <div className="text-2xl font-black text-[#e0b36d]">
+                      1,900원
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => goInput("today")}
+                  className="mt-5 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-base font-black text-black"
+                >
+                  1,900원 오늘 흐름부터 보기
+                </button>
+              </div>
+            </section>
+
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
                 소름사주는 이렇게 봅니다
@@ -1390,12 +1513,20 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <div className="mt-5 grid gap-3">
                 {[
                   ["무료", "사주상 지금 어떤 흐름인지 핵심을 먼저 보여줍니다."],
+                  ["저가 진입", "처음엔 오늘운세 1,900원으로 부담 없이 확인할 수 있습니다."],
                   ["유료", "결론부터 보고, 카테고리별 핵심 답을 깊게 봅니다."],
                   ["기준", "운영자의 예시가 아니라 개개인의 사주 구조로만 풀이합니다."],
                 ].map(([title, desc]) => (
-                  <div key={title} className="rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4">
-                    <div className="text-sm font-black text-[#d8a86f]">{title}</div>
-                    <div className="mt-1 text-sm leading-6 text-[#c8beb0]">{desc}</div>
+                  <div
+                    key={title}
+                    className="rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4"
+                  >
+                    <div className="text-sm font-black text-[#d8a86f]">
+                      {title}
+                    </div>
+                    <div className="mt-1 text-sm leading-6 text-[#c8beb0]">
+                      {desc}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1422,7 +1553,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
               <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                지금 많이 보는 상담
+                지금 많이 보는 사주
               </h2>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1451,6 +1582,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     <div className="mt-2 text-sm leading-5 text-[#c8beb0]">
                       {item.subtitle}
                     </div>
+                    <div className="mt-3 text-sm font-black text-white">
+                      {item.price.toLocaleString()}원
+                    </div>
                   </button>
                 ))}
               </div>
@@ -1473,6 +1607,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                       <div className="mt-1 text-xs leading-4 text-[#c8beb0]">
                         {item.subtitle}
                       </div>
+                      <div className="mt-2 text-xs font-black text-white">
+                        {item.price.toLocaleString()}원
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -1480,10 +1617,19 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             </section>
 
             <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                먼저 본 사람들은 이렇게 느꼈어요
-              </h2>
-              <div className="mt-2 text-sm text-[#e0b36d]">★★★★★ 4.8</div>
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
+                    먼저 본 사람들은 이렇게 느꼈어요
+                  </h2>
+                  <div className="mt-2 text-sm text-[#e0b36d]">
+                    ★★★★★ 4.8 · 후기 42개
+                  </div>
+                </div>
+                <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">
+                  {reviewPage}/14
+                </div>
+              </div>
 
               <div className="mt-4 space-y-3">
                 {visibleReviews.map((review) => (
@@ -1547,6 +1693,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     {category.title}
                   </h1>
                   <p className="text-sm text-[#c8beb0]">{category.subtitle}</p>
+                  <p className="mt-1 text-sm font-black text-white">
+                    {category.price.toLocaleString()}원
+                  </p>
                 </div>
               </div>
 
@@ -1576,7 +1725,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               >
                 {categories.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.title}
+                    {item.title} · {item.price.toLocaleString()}원
                   </option>
                 ))}
               </select>
@@ -1898,6 +2047,12 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     </div>
                   </div>
 
+                  <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/30 p-4 text-xs leading-6 text-[#c8beb0]">
+                    서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시 디지털 리포트가 생성됩니다.
+                    <br />
+                    교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이 시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될 수 있습니다.
+                  </div>
+
                   <button
                     type="button"
                     onClick={() =>
@@ -1907,6 +2062,19 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   >
                     전체 리포트 열기 {category.price.toLocaleString()}원
                   </button>
+
+                  {isLocalTest && (
+                    <button
+                      type="button"
+                      onClick={openFullReportForTest}
+                      disabled={fullLoading}
+                      className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-sm font-black text-black disabled:opacity-60"
+                    >
+                      {fullLoading
+                        ? "테스트 전체 리포트 생성 중..."
+                        : "로컬 테스트용 전체 리포트 바로 보기"}
+                    </button>
+                  )}
                 </div>
               )}
             </section>
@@ -2051,15 +2219,17 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 </article>
               )}
 
-              <button
-                type="button"
-                onClick={() =>
-                  requestTossPayment(selectedPlanInfo.title, selectedPlanInfo.price)
-                }
-                className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black"
-              >
-                토스 결제창 테스트
-              </button>
+              {isLocalTest && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    requestTossPayment(selectedPlanInfo.title, selectedPlanInfo.price)
+                  }
+                  className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black"
+                >
+                  로컬 테스트용 토스 결제창
+                </button>
+              )}
             </section>
           </div>
         )}
@@ -2083,6 +2253,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <p className="mt-4 text-xs leading-6 text-[#d8d0c6]">
                   본 서비스는 오락·참고용 콘텐츠이며 의학, 법률, 투자, 심리치료, 종교·무속 행위를 대체하지 않습니다. 중요한 결정은 현실 상황과 함께 판단해 주세요.
                 </p>
+                <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
+                  서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시 디지털 리포트가 생성됩니다.
+                </p>
               </details>
 
               <details className="rounded-2xl border border-[#7a5b37] bg-black/30 p-4">
@@ -2097,7 +2270,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   <br />
                   이메일: kkokku0@naver.com
                   <br />
-                  연락처: 고객문의 이메일로 접수
+                  대표전화번호: 010-5355-5146
                 </p>
               </details>
 
@@ -2106,14 +2279,29 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   환불 및 취소 규정
                 </summary>
                 <p className="mt-4 text-xs leading-6 text-[#d8d0c6]">
-                  유료 리포트는 결제 후 입력 정보를 바탕으로 생성되는 디지털 콘텐츠입니다. 리포트 생성이 시작되었거나 결과 열람이 가능한 상태가 된 경우 단순 변심 환불은 제한될 수 있습니다.
+                  유료 리포트는 결제 후 입력 정보를 바탕으로 생성되는 디지털 콘텐츠입니다.
+                </p>
+                <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
+                  교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이 시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될 수 있습니다.
+                </p>
+                <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
+                  단, 결제 오류, 시스템 오류, 중복 결제 등 회사 귀책 사유가 확인되는 경우에는 고객문의 접수 후 확인 절차를 거쳐 환불이 가능합니다.
                 </p>
               </details>
             </div>
 
             <div className="mt-5 border-t border-[#7a5b37] pt-4 text-[11px] leading-5 text-[#9d9388]">
-              <p>상호명: 비앤케이 컴퍼니 · 대표자: 이성국 · 사업자등록번호: 519-03-02347</p>
-              <p>통신판매업신고번호: 2024-경북구미-0959 · 고객문의: kkokku0@naver.com</p>
+              <p>
+                상호명: 비앤케이 컴퍼니 · 대표자: 이성국 · 사업자등록번호:
+                519-03-02347
+              </p>
+              <p>
+                사업장주소: 경북 구미시 백산로 4길 40, 이림스칼렛 201호
+              </p>
+              <p>
+                대표전화번호: 010-5355-5146 · 이메일: kkokku0@naver.com
+              </p>
+              <p>통신판매업신고번호: 2024-경북구미-0959</p>
               <p className="mt-2">© 소름사주. All rights reserved.</p>
             </div>
           </footer>
