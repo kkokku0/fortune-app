@@ -1749,7 +1749,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,#2b1908_0%,transparent_36%),radial-gradient(circle_at_bottom,#160d22_0%,transparent_38%)]" />
 
       <header className="sticky top-0 z-40 bg-black/82 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex max-w-[1120px] items-center justify-between px-5 py-4">
           <button
             type="button"
             onClick={() => setStep("home")}
@@ -1823,19 +1823,19 @@ ${body || "아직 생성된 결과가 없습니다."}`;
         </div>
       )}
 
-      <main className="mx-auto max-w-7xl px-4 pb-24 pt-6">
+      <main className="mx-auto max-w-[1120px] px-4 pb-24 pt-6">
         {step === "home" && (
-          <div className="home-compact space-y-12">
+          <div className="home-compact space-y-10">
             <section className="home-hero relative overflow-hidden rounded-[34px] border border-[#7a5b37] bg-[radial-gradient(circle_at_78%_30%,rgba(216,168,111,0.2),transparent_36%),linear-gradient(135deg,#050505_0%,#0b0a09_48%,#170f08_100%)] shadow-[0_42px_130px_rgba(0,0,0,0.58)]">
               <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,207,119,0.65)_1px,transparent_0)] [background-size:32px_32px]" />
 
-              <div className="relative grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="z-10 flex flex-col justify-center p-6 py-10 md:p-10 lg:py-16">
+              <div className="relative grid gap-0 lg:grid-cols-[0.92fr_0.88fr]">
+                <div className="z-10 flex flex-col justify-center p-6 py-10 md:p-8 lg:p-10 lg:py-12">
                   <div className="mb-9 max-w-[300px]">
                     <BrandLogo />
                   </div>
 
-                  <h1 className="break-keep text-[46px] font-black leading-[1.08] tracking-[-0.085em] text-white md:text-[74px]">
+                  <h1 className="break-keep text-[42px] font-black leading-[1.08] tracking-[-0.085em] text-white md:text-[62px]">
                     소름 돋게 맞는
                     <br />
                     내 <span className="text-[#e0b36d]">사주 흐름</span>
@@ -1876,10 +1876,46 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   </div>
                 </div>
 
-                <div className="relative min-h-[520px] overflow-hidden bg-black lg:min-h-[650px]">
+                <div className="relative min-h-[460px] overflow-hidden bg-black lg:min-h-[560px]">
                   <SafeImage src="/characters/dohoon-hero.png" alt="운세형 도훈 메인 이미지" fallback="🧑‍💼" />
                   <div className="absolute inset-y-0 left-0 hidden w-44 bg-gradient-to-r from-[#050505] to-transparent lg:block" />
                   <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent" />
+                </div>
+              </div>
+            </section>
+
+
+            <section className="rounded-[26px] border border-[#7a5b37] bg-[radial-gradient(circle_at_88%_18%,rgba(216,168,111,0.12),transparent_32%),linear-gradient(135deg,#10100f,#080706)] p-4 shadow-[0_18px_55px_rgba(0,0,0,0.28)] md:rounded-[30px] md:p-6">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mx-auto mb-3 w-fit rounded-full border border-[#7a5b37] bg-black/40 px-4 py-1.5 text-[10px] font-black tracking-[0.18em] text-[#d8a86f] md:text-xs">
+                  SOREUM DIFFERENCE
+                </div>
+                <h2 className="break-keep text-2xl font-black leading-tight tracking-[-0.055em] text-white md:text-3xl">
+                  왜 소름사주는<br className="md:hidden" /> 다르게 느껴질까요?
+                </h2>
+                <p className="mx-auto mt-4 max-w-xl break-keep text-base font-black leading-7 text-[#e0b36d] md:text-lg md:leading-8">
+                  좋은 말만 듣고 싶다면,<br />
+                  소름사주는 조금 불편할 수 있습니다.
+                </p>
+                <div className="mx-auto mt-5 max-w-2xl space-y-4 break-keep text-sm font-medium leading-7 text-[#d8d0c6] md:text-base md:leading-8">
+                  <p>
+                    소름사주는 “언젠가 좋아진다”보다<br className="hidden md:block" />
+                    왜 같은 문제가 반복되는지를 먼저 봅니다.
+                  </p>
+                  <p className="mx-auto max-w-xl rounded-[22px] border border-[#7a5b37] bg-black/36 p-4 text-center text-[#f4eadc] md:p-5">
+                    돈이 들어와도 남지 않는 이유,<br />
+                    좋아하는데 오래 못 가는 이유,<br />
+                    일을 시작해도 끝까지 끌고 가지 못하는 이유,<br />
+                    몸이 괜찮다가도 한 번씩 무너지는 이유.
+                  </p>
+                  <p>
+                    이 흐름은 우연이 아니라<br className="hidden md:block" />
+                    내 사주 안에서 반복되는 패턴일 수 있습니다.
+                  </p>
+                  <p className="text-base font-black leading-7 text-white md:text-lg md:leading-8">
+                    그래서 소름사주는 운세를 예쁘게 포장하지 않고,<br className="hidden md:block" />
+                    지금 내 선택이 어디서 꼬이는지부터 짚어드립니다.
+                  </p>
                 </div>
               </div>
             </section>
@@ -1908,7 +1944,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
                 사람들이 많이 보는 사주 카테고리
               </h2>
-              <div className="category-scroll grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="category-scroll grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {[
                   getCategory("money"),
                   getCategory("career"),
@@ -1938,7 +1974,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section className="quick-start-section grid gap-6 lg:grid-cols-[420px_1fr]">
+            <section className="quick-start-section grid gap-6 lg:grid-cols-[360px_1fr]">
               <div className="rounded-[34px] border border-[#7a5b37] bg-[#11100f] p-6 shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
                 <h2 className="break-keep text-3xl font-black leading-tight tracking-[-0.06em] text-white">
                   생년월일을 입력하고
