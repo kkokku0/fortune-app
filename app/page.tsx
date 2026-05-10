@@ -107,7 +107,7 @@ const categories: Category[] = [
     title: "고민풀이",
     subtitle: "지금 고민이 반복되는 사주적 이유",
     emoji: "✨",
-    price: 3900,
+    price: 6900,
     featured: true,
     badge: "가성비",
   },
@@ -132,7 +132,7 @@ const categories: Category[] = [
     title: "신년운세",
     subtitle: "올해 재물·직업·이직·건강 흐름",
     emoji: "🌅",
-    price: 12900,
+    price: 9900,
     featured: true,
     badge: "올해해운",
   },
@@ -175,7 +175,7 @@ const categories: Category[] = [
     title: "인생대운",
     subtitle: "초년·청년·중년·말년과 대운 기회",
     emoji: "👑",
-    price: 12900,
+    price: 9900,
     featured: true,
     badge: "대운분석",
   },
@@ -184,7 +184,7 @@ const categories: Category[] = [
     title: "평생종합사주",
     subtitle: "재물·직업·결혼·건강·자식까지 종합",
     emoji: "📜",
-    price: 29900,
+    price: 9900,
     featured: true,
     badge: "종합인기",
   },
@@ -207,14 +207,14 @@ const categories: Category[] = [
     title: "사업파트너",
     subtitle: "동업궁합·돈·역할·책임 구조",
     emoji: "🤝",
-    price: 12900,
+    price: 6900,
   },
   {
     id: "premium",
     title: "프리미엄상담",
     subtitle: "질문 하나를 깊게 풀어보기",
     emoji: "🔮",
-    price: 29000,
+    price: 9900,
   },
 ];
 
@@ -1572,7 +1572,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,#2b1908_0%,transparent_36%),radial-gradient(circle_at_bottom,#160d22_0%,transparent_38%)]" />
 
       <header className="sticky top-0 z-40 bg-black/82 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[460px] items-center justify-between px-5 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <button
             type="button"
             onClick={() => setStep("home")}
@@ -1646,315 +1646,251 @@ ${body || "아직 생성된 결과가 없습니다."}`;
         </div>
       )}
 
-      <main className="mx-auto max-w-[460px] px-4 pb-24 pt-6">
+      <main className="mx-auto max-w-7xl px-4 pb-24 pt-6">
         {step === "home" && (
-          <div className="space-y-8">
-            <section className="overflow-hidden rounded-[38px] border border-[#7a5b37] bg-[#171717] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.58)]">
-              <div className="mb-5 overflow-hidden rounded-[28px] border border-[#7a5b37] bg-black p-2 shadow-[0_18px_45px_rgba(216,168,111,0.08)]">
-                <BrandLogo />
-              </div>
+          <div className="space-y-12">
+            <section className="relative overflow-hidden rounded-[34px] border border-[#7a5b37] bg-[radial-gradient(circle_at_78%_30%,rgba(216,168,111,0.2),transparent_36%),linear-gradient(135deg,#050505_0%,#0b0a09_48%,#170f08_100%)] shadow-[0_42px_130px_rgba(0,0,0,0.58)]">
+              <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,207,119,0.65)_1px,transparent_0)] [background-size:32px_32px]" />
 
-              <div className="relative overflow-hidden rounded-[30px] border border-[#7a5b37] bg-black">
-                <div className="aspect-[4/5] w-full">
-                  <SafeImage src="/characters/bro.png" alt="운세형" fallback="🧑‍💼" />
-                </div>
-
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent p-5">
-                  <div className="inline-flex rounded-full border border-[#7a5b37] bg-[#28231e] px-4 py-2 text-xs font-black tracking-[0.1em] text-[#e0b36d]">
-                    형이 귀신같이 봐준다
-                  </div>
-                </div>
-              </div>
-
-              <h1 className="mt-7 text-[42px] font-black leading-[1.1] tracking-[-0.075em] text-white">
-                야, 지금 네 사주
-                <br />
-                그냥 넘기면
-                <br />
-                <span className="text-[#d8a86f]">또 반복된다</span>
-              </h1>
-
-              <p className="mt-6 break-keep text-[18px] font-medium leading-[1.8] tracking-[-0.04em] text-[#c8beb0]">
-                무료에서는 사주의 핵심 결론을 먼저 봅니다.
-                <br />
-                전체 리포트에서는{" "}
-                <span className="font-black text-[#d8a86f]">
-                  맞는 방향과 피해야 할 선택
-                </span>
-                까지 깊게 봅니다.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => goInput("today")}
-                className="mt-8 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-6 py-5 text-[21px] font-black text-white shadow-[0_20px_55px_rgba(216,168,111,0.22)]"
-              >
-                무료로 내 흐름 먼저 보기
-              </button>
-            </section>
-
-            <section className="rounded-[34px] border border-[#7a5b37] bg-[#111111] p-5">
-              <div className="rounded-full border border-[#d8a86f] bg-[#241e18] px-4 py-2 text-center text-xs font-black tracking-[0.12em] text-[#e0b36d]">
-                가볍게 시작하는 사주풀이
-              </div>
-
-              <h2 className="mt-5 break-keep text-[30px] font-black leading-tight tracking-[-0.065em] text-white">
-                큰돈 쓰기 전에,
-                <br />
-                먼저 내 흐름부터 확인하세요
-              </h2>
-
-              <p className="mt-4 break-keep text-base font-medium leading-7 text-[#c8beb0]">
-                오늘운세는{" "}
-                <span className="font-black text-[#d8a86f]">1,900원</span>.
-                <br />
-                커피 한 잔보다 가볍게,
-                <br />
-                지금 내 운의 방향을 먼저 볼 수 있습니다.
-                <br />
-                <br />
-                먼저 오늘의 흐름을 확인하고,
-                <br />
-                더 깊게 보고 싶을 때 전체 리포트를 열면 됩니다.
-              </p>
-
-              <div className="mt-5 rounded-[26px] border border-[#7a5b37] bg-black/35 p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-black text-[#d8a86f]">
-                      가볍게 시작
-                    </div>
-                    <div className="mt-1 text-2xl font-black text-white">
-                      오늘운세
-                    </div>
-                    <div className="mt-2 text-sm leading-6 text-[#c8beb0]">
-                      오늘 조심할 말, 돈, 사람관계 흐름
-                    </div>
+              <div className="relative grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="z-10 flex flex-col justify-center p-6 py-10 md:p-10 lg:py-16">
+                  <div className="mb-9 max-w-[300px]">
+                    <BrandLogo />
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-[11px] font-black text-[#c8beb0]">
-                      시작가
-                    </div>
-                    <div className="text-2xl font-black text-[#e0b36d]">
-                      1,900원
-                    </div>
+                  <h1 className="break-keep text-[46px] font-black leading-[1.08] tracking-[-0.085em] text-white md:text-[74px]">
+                    소름 돋게 맞는
+                    <br />
+                    내 <span className="text-[#e0b36d]">사주 흐름</span>
+                  </h1>
+
+                  <p className="mt-6 break-keep text-lg font-medium leading-8 text-[#e8ded2] md:text-xl">
+                    지금 막힌 이유, 돈이 새는 이유,
+                    <br />
+                    사람 때문에 힘든 이유까지
+                    <br />
+                    친한 형 도훈이가 현실적으로 풀어줄게.
+                  </p>
+
+                  <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                    {[
+                      ["🎯", "결론부터 말해줌", "핵심만 바로 이해되는 풀이"],
+                      ["🔒", "완전 비밀 보장", "입력 정보는 저장하지 않아요"],
+                      ["👑", "프리미엄 리포트", "더 깊은 흐름과 실행 전략"],
+                    ].map(([icon, title, desc]) => (
+                      <div key={title} className="rounded-[22px] border border-[#7a5b37] bg-black/35 p-4">
+                        <div className="text-2xl">{icon}</div>
+                        <div className="mt-2 font-black text-white">{title}</div>
+                        <div className="mt-1 break-keep text-xs leading-5 text-[#c8beb0]">{desc}</div>
+                      </div>
+                    ))}
                   </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => goInput("today")}
-                  className="mt-5 w-full rounded-full border border-[#d8a86f] bg-white px-5 py-4 text-base font-black text-black"
-                >
-                  1,900원 오늘 흐름부터 보기
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                올해 흐름부터 잡고 싶다면
-              </h2>
-
-              <div className="mt-5 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
-                <div className="flex items-start gap-4">
-                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl border border-[#7a5b37] bg-black/45 text-3xl">
-                    🌅
-                  </div>
-                  <div className="flex-1">
-                    <div className="inline-flex rounded-full border border-[#d8a86f] px-3 py-1 text-[11px] font-black text-[#e0b36d]">
-                      올해해운
-                    </div>
-                    <h3 className="mt-3 text-2xl font-black tracking-[-0.045em] text-white">
-                      신년운세
-                    </h3>
-                    <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
-                      올해 돈복이 들어오는지, 이직운이 있는지, 건강운은 괜찮은지,
-                      움직여야 할지 머물러야 할지까지 봅니다.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm font-semibold text-white">
-                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 재물운</div>
-                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 이직운</div>
-                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 올해 건강운</div>
-                  <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">✓ 1~12월 흐름</div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => goInput("monthly")}
-                  className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
-                >
-                  올해 신년운세 보기 12,900원
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                소름사주는 이렇게 봅니다
-              </h2>
-              <div className="mt-5 grid gap-3">
-                {[
-                  ["무료", "사주상 지금 어떤 흐름인지 핵심 결론을 먼저 보여줍니다."],
-                  ["저가 진입", "처음엔 오늘운세 1,900원으로 부담 없이 확인할 수 있습니다."],
-                  ["유료", "결론부터 보고, 카테고리별 핵심 답을 깊게 봅니다."],
-                  ["기준", "운영자의 예시가 아니라 개개인의 사주 구조로만 풀이합니다."],
-                ].map(([title, desc]) => (
-                  <div
-                    key={title}
-                    className="rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4"
+                  <button
+                    type="button"
+                    onClick={() => goInput("today")}
+                    className="mt-8 w-full max-w-xl rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#f5c66d] to-[#b78343] px-8 py-5 text-xl font-black text-black shadow-[0_20px_65px_rgba(216,168,111,0.22)]"
                   >
-                    <div className="text-sm font-black text-[#d8a86f]">
-                      {title}
-                    </div>
-                    <div className="mt-1 text-sm leading-6 text-[#c8beb0]">
-                      {desc}
-                    </div>
+                    내 사주 흐름 무료로 먼저 보기 〉
+                  </button>
+
+                  <div className="mt-3 max-w-xl text-center text-sm font-black text-[#d8a86f]">
+                    무료로 결론과 핵심까지 확인 가능
+                  </div>
+                </div>
+
+                <div className="relative min-h-[520px] overflow-hidden bg-black lg:min-h-[650px]">
+                  <SafeImage src="/characters/dohoon-hero.png" alt="운세형 도훈 메인 이미지" fallback="🧑‍💼" />
+                  <div className="absolute inset-y-0 left-0 hidden w-44 bg-gradient-to-r from-[#050505] to-transparent lg:block" />
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black to-transparent" />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
+                소름사주가 선택받는 이유
+              </h2>
+              <div className="grid gap-4 md:grid-cols-4">
+                {[
+                  ["🎯", "결론부터 말해줌", "바쁜 당신을 위한 핵심 진단 풀이"],
+                  ["📝", "카테고리별 정밀 분석", "재물·연애·직업 흐름을 따로 분석"],
+                  ["🔒", "깊은 심정 관계 분석", "돈·사람·관계의 막힘을 구체화"],
+                  ["👑", "프리미엄 전체 리포트", "더 깊고 상세한 인생 흐름 제공"],
+                ].map(([icon, title, desc]) => (
+                  <div key={title} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5 text-center shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+                    <div className="text-4xl">{icon}</div>
+                    <div className="mt-3 text-lg font-black text-[#e0b36d]">{title}</div>
+                    <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">{desc}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                누구에게 물어볼까요?
+            <section>
+              <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
+                사람들이 많이 보는 사주 카테고리
               </h2>
-              <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
-                고민에 따라 보는 관점이 달라집니다.
-              </p>
-
-              <div className="mt-5 grid grid-cols-2 gap-4">
-                {characters.map((card) => (
-                  <CharacterCard
-                    key={card.id}
-                    card={card}
-                    onSelect={() => goInput(card.categoryId)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                지금 많이 보는 사주
-              </h2>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {featuredCategories.map((item) => (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                {[
+                  getCategory("money"),
+                  getCategory("career"),
+                  getCategory("love"),
+                  getCategory("marriage"),
+                  getCategory("compatibility"),
+                  getCategory("traditional"),
+                ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => goInput(item.id)}
-                    className="min-h-[142px] rounded-[24px] border border-[#7a5b37] bg-[#15110d] p-4 text-left transition hover:border-[#e0b36d]"
+                    className="group relative min-h-[190px] rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5 text-center transition hover:-translate-y-1 hover:border-[#e0b36d] hover:bg-[#17120c]"
                   >
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#7a5b37] bg-black/45 text-2xl">
-                        {item.emoji}
+                    {item.badge ? (
+                      <div className="absolute right-3 top-3 rounded-full bg-[#f97316] px-2 py-1 text-[11px] font-black text-white">
+                        {item.badge}
                       </div>
-
-                      {item.badge ? (
-                        <span className="rounded-2xl border border-[#d8a86f] px-2 py-1 text-center text-[10px] font-black leading-tight text-[#e0b36d]">
-                          {item.badge}
-                        </span>
-                      ) : null}
+                    ) : null}
+                    <div className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] border border-[#7a5b37] bg-[#1c1712] text-4xl">
+                      {item.emoji}
                     </div>
-
-                    <div className="font-black leading-tight text-[#d8a86f]">
-                      {item.title}
-                    </div>
-                    <div className="mt-2 text-sm leading-5 text-[#c8beb0]">
-                      {item.subtitle}
-                    </div>
-                    <div className="mt-3 text-sm font-black text-white">
-                      {item.price.toLocaleString()}원
-                    </div>
+                    <div className="mt-4 text-lg font-black text-[#e0b36d]">{item.title}</div>
+                    <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">{item.hook || item.subtitle}</p>
                   </button>
                 ))}
               </div>
+            </section>
 
-              <div className="mt-5 rounded-[24px] border border-[#7a5b37] bg-black/25 p-4">
-                <div className="mb-3 text-sm font-black text-[#e0b36d]">
-                  더 보기
+            <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
+              <div className="rounded-[34px] border border-[#7a5b37] bg-[#11100f] p-6 shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
+                <h2 className="break-keep text-3xl font-black leading-tight tracking-[-0.06em] text-white">
+                  생년월일을 입력하고
+                  <br />
+                  <span className="text-[#e0b36d]">무료로 핵심을 확인해보세요</span>
+                </h2>
+
+                <div className="mt-5 space-y-3">
+                  <input
+                    value={user.name}
+                    onChange={(event) => setUser({ ...user, name: event.target.value })}
+                    placeholder="이름"
+                    className="w-full p-4"
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input value={user.year} onChange={(event) => setUser({ ...user, year: event.target.value })} placeholder="년도" className="p-4 text-center" />
+                    <input value={user.month} onChange={(event) => setUser({ ...user, month: event.target.value })} placeholder="월" className="p-4 text-center" />
+                    <input value={user.day} onChange={(event) => setUser({ ...user, day: event.target.value })} placeholder="일" className="p-4 text-center" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["양력", "음력"] as const).map((value) => (
+                      <button key={value} type="button" onClick={() => setUser({ ...user, calendar: value })} className={cx("rounded-2xl border p-4 font-black", user.calendar === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white")}>{value}</button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["남성", "여성"] as const).map((value) => (
+                      <button key={value} type="button" onClick={() => setUser({ ...user, gender: value })} className={cx("rounded-2xl border p-4 font-black", user.gender === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white")}>{value}</button>
+                    ))}
+                  </div>
+                  <select value={user.birthTime} onChange={(event) => setUser({ ...user, birthTime: event.target.value })} className="w-full p-4">
+                    {birthTimes.map((time) => <option key={time} value={time === "모름 / 선택 안 함" ? "" : time}>{time}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => goInput("today")}
+                    className="w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#f5c66d] to-[#b78343] px-6 py-5 text-lg font-black text-black"
+                  >
+                    무료로 사주 보기 〉
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {normalCategories.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => goInput(item.id)}
-                      className="rounded-2xl border border-[#7a5b37] bg-[#11100f] px-3 py-3 text-left transition hover:border-[#e0b36d]"
-                    >
-                      <div className="text-sm font-black text-[#d8a86f]">
-                        {item.emoji} {item.title}
-                      </div>
-                      <div className="mt-1 text-xs leading-4 text-[#c8beb0]">
-                        {item.subtitle}
-                      </div>
-                      <div className="mt-2 text-xs font-black text-white">
-                        {item.price.toLocaleString()}원
-                      </div>
-                    </button>
+              </div>
+
+              <div className="rounded-[34px] border border-[#7a5b37] bg-[radial-gradient(circle_at_80%_20%,rgba(216,168,111,0.16),transparent_36%),#11100f] p-6 shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
+                <h2 className="text-3xl font-black tracking-[-0.06em] text-white">
+                  여기서 끊기면
+                  <br />
+                  <span className="text-[#e0b36d]">진짜 중요한 선택 기준을 놓칠 수 있어요</span>
+                </h2>
+                <p className="mt-5 break-keep text-base leading-8 text-[#d8d0c6]">
+                  무료 결과는 결론과 핵심 흐름까지만 보여드려요. 전체 리포트에서는 돈이 들어오는 방식, 사람관계의 반복 패턴, 일과 건강의 흐름까지 이어서 확인할 수 있어요.
+                </p>
+                <p className="mt-4 break-keep text-base font-black leading-8 text-white">
+                  앞으로 무엇을 잡고,
+                  <br />
+                  무엇을 피해야 하는지까지 확인해보세요.
+                </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-5">
+                  {["돈이 들어오는 방식", "돈이 새는 구멍", "피해야 할 선택", "앞으로 흐름", "지금 해야 할 행동"].map((item) => (
+                    <div key={item} className="rounded-2xl border border-[#7a5b37] bg-black/35 p-4 text-center text-sm font-black text-[#e0b36d]">
+                      ✓
+                      <br />
+                      {item}
+                    </div>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => goInput("traditional")}
+                  className="mt-6 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#f5c66d] to-[#b78343] px-6 py-5 text-lg font-black text-black"
+                >
+                  전체 리포트 보기 〉
+                </button>
               </div>
             </section>
 
-            <section className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl font-black tracking-[-0.045em] text-[#d8a86f]">
-                    먼저 본 사람들은 이렇게 느꼈어요
-                  </h2>
-                  <div className="mt-2 text-sm text-[#e0b36d]">
-                    ★★★★★ 4.8 · 후기 42개
-                  </div>
-                </div>
-                <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">
-                  {reviewPage}/14
-                </div>
+            <section>
+              <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
+                전문가별로 골라보기
+              </h2>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {characters.map((card) => (
+                  <CharacterCard key={card.id} card={card} onSelect={() => goInput(card.categoryId)} />
+                ))}
               </div>
+            </section>
 
-              <div className="mt-4 space-y-3">
+            <section>
+              <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
+                전체 리포트 요금 안내
+              </h2>
+              <div className="grid gap-5 lg:grid-cols-3">
+                {[
+                  { title: "오늘운세 전체 리포트", desc: "오늘의 운세 흐름", price: 1900, points: ["오늘 하루 흐름", "피해야 할 선택", "좋은 시간 & 키워드"], id: "today" as CategoryId },
+                  { title: "일반 사주 전체 리포트", desc: "재물운·연애운·직업운 등", price: 6900, points: ["핵심 흐름 + 상세 풀이", "앞으로 선택 기준", "실행 전략과 조언"], id: "money" as CategoryId },
+                  { title: "프리미엄 전체 리포트", desc: "평생종합사주 · 프리미엄 상담", price: 9900, points: ["평생 흐름 + 대운 해석", "돈·일·관계·건강 전체", "가장 중요한 대운과 기회"], id: "traditional" as CategoryId },
+                ].map((plan, index) => (
+                  <button key={plan.title} type="button" onClick={() => goInput(plan.id)} className={cx("rounded-[30px] border p-6 text-left transition hover:-translate-y-1", index === 2 ? "border-[#f3cf7a] bg-[linear-gradient(135deg,#20150a,#3a280e)] shadow-[0_20px_60px_rgba(216,168,111,0.15)]" : "border-[#7a5b37] bg-[#10100f]")}>
+                    <div className="text-lg font-black text-[#e0b36d]">{plan.title}</div>
+                    <div className="mt-1 text-sm text-[#c8beb0]">{plan.desc}</div>
+                    <div className="mt-5 text-4xl font-black text-white">{plan.price.toLocaleString()}<span className="text-lg">원</span></div>
+                    <div className="mt-5 space-y-2 text-sm font-semibold text-[#e8ded2]">{plan.points.map((point) => <div key={point}>✓ {point}</div>)}</div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-6 flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-3xl font-black tracking-[-0.06em] text-white">소름사주 실제 후기</h2>
+                  <div className="mt-2 text-sm text-[#e0b36d]">★★★★★ 4.8 · 후기 42개</div>
+                </div>
+                <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">{reviewPage}/14</div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
                 {visibleReviews.map((review) => (
-                  <div
-                    key={`${review.name}-${review.category}-${review.text}`}
-                    className="rounded-3xl border border-[#7a5b37] bg-black/35 p-4"
-                  >
+                  <div key={`${review.name}-${review.category}-${review.text}`} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5">
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <div className="text-sm font-black text-[#d8a86f]">
-                        {review.name} · {review.category}
-                      </div>
+                      <div className="text-sm font-black text-[#d8a86f]">{review.name} · {review.category}</div>
                       <div className="text-xs text-[#e0b36d]">★★★★★</div>
                     </div>
-                    <p className="m-0 text-sm leading-6 text-white">
-                      “{review.text}”
-                    </p>
+                    <p className="m-0 break-keep text-sm leading-7 text-white">“{review.text}”</p>
                   </div>
                 ))}
               </div>
-
               <div className="mt-5 flex flex-wrap justify-center gap-2">
-                {Array.from({ length: reviewPages }, (_, index) => index + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setReviewPage(page)}
-                      className={cx(
-                        "grid h-9 w-9 place-items-center rounded-full border text-sm font-black",
-                        reviewPage === page
-                          ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                          : "border-[#7a5b37] bg-black/35 text-[#c8beb0]"
-                      )}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+                {Array.from({ length: reviewPages }, (_, index) => index + 1).map((page) => (
+                  <button key={page} type="button" onClick={() => setReviewPage(page)} className={cx("grid h-9 w-9 place-items-center rounded-full border text-sm font-black", reviewPage === page ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-black/35 text-[#c8beb0]")}>{page}</button>
+                ))}
               </div>
             </section>
           </div>
@@ -2330,18 +2266,27 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
               {!paid && !aiLoading && (
                 <div className="mt-6 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
-                  <div className="mb-3 text-xl font-black text-[#d8a86f]">
-                    여기까지가 무료 분석입니다
+                  <div className="mb-3 text-2xl font-black leading-tight text-[#d8a86f]">
+                    여기서 끊기면
+                    <br />
+                    진짜 중요한 선택 기준을 놓칠 수 있어요
                   </div>
 
-                  <p className="break-keep text-sm leading-6 text-[#c8beb0]">
-                    무료에서는 사주상 지금 보이는 흐름과 반복되는 문제까지만 보여드립니다.
-                    전체 리포트에서는 결론부터 보고, 카테고리별 핵심 답을 깊게 풉니다.
+                  <p className="break-keep text-sm leading-7 text-[#c8beb0]">
+                    무료 결과는 결론과 핵심 흐름까지만 보여드려요.
+                    전체 리포트에서는 돈이 들어오는 방식, 사람관계의 반복 패턴,
+                    일과 건강의 흐름까지 이어서 확인할 수 있어요.
+                  </p>
+
+                  <p className="mt-3 break-keep text-sm font-black leading-7 text-white">
+                    앞으로 무엇을 잡고,
+                    <br />
+                    무엇을 피해야 하는지까지 확인해보세요.
                   </p>
 
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/45 p-4">
                     <div className="mb-2 text-sm font-black text-[#f5efe6]">
-                      여기서 끊기면 중요한 흐름을 놓칠 수 있어요
+                      여기서 끊기면 진짜 중요한 선택 기준을 놓칠 수 있어요
                     </div>
 
                     <div className="mt-3 space-y-2 text-sm font-semibold text-white">

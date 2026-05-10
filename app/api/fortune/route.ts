@@ -72,12 +72,14 @@ type TenGodCountsLike = Partial<Record<TenGodKey, number>>;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "missing" });
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const ROUTE_VERSION = "soreum-route-v14-children-dedicated-full-report-no-shrink";
+const ROUTE_VERSION = "soreum-route-v15-deterministic-category-unique-money-v1";
 const RELATIONSHIP_LOGIC = "family-partner-compatibility-saju-risk-final";
 const YEARLY_LOGIC = "newyear-career-money-jobchange-health-final";
-const PROFILE_LOGIC = "category-profile-specific-risk-direction-v2";
+const PROFILE_LOGIC = "category-profile-specific-risk-direction-v3-money-split";
 const PREVIEW_LOGIC = "preview-1200-1700-plus-v2";
 const CHILDREN_LOGIC = "children-dedicated-report-jasik-janyeo-v2";
+const DETERMINISTIC_LOGIC = "same-birth-same-category-same-seed-v1";
+const MONEY_UNIQUE_LOGIC = "money-pattern-7type-no-copy-v1";
 const NL = String.fromCharCode(10);
 
 function safeText(value: unknown, fallback = "") {
@@ -286,6 +288,63 @@ function gradeByScore(score: number): Grade {
   if (score >= 3) return "중하";
   return "하";
 }
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(obj[key])}`)
+    .join(",")}}`;
+}
+
+function hashToSeed(input: string) {
+  let hash = 2166136261;
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return Math.abs(hash);
+}
+
+function buildFortuneSeed(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  manse: any;
+  partnerManse?: any | null;
+}) {
+  const seedSource = stableStringify({
+    routeVersion: ROUTE_VERSION,
+    deterministicLogic: DETERMINISTIC_LOGIC,
+    categoryId: params.categoryId,
+    categoryTitle: params.categoryTitle,
+    year: safeText(params.user.year),
+    month: safeText(params.user.month),
+    day: safeText(params.user.day),
+    calendar: safeText(params.user.calendar),
+    birthTime: safeText(params.user.birthTime, "모름"),
+    gender: safeText(params.user.gender),
+    partnerYear: safeText(params.user.partnerYear),
+    partnerMonth: safeText(params.user.partnerMonth),
+    partnerDay: safeText(params.user.partnerDay),
+    partnerCalendar: safeText(params.user.partnerCalendar),
+    partnerBirthTime: safeText(params.user.partnerBirthTime, "모름"),
+    partnerGender: safeText(params.user.partnerGender),
+    manse: params.manse,
+    partnerManse: params.partnerManse || null,
+  });
+
+  return hashToSeed(seedSource);
+}
+
 
 function getMoneyGrade(manse: any): Grade {
   const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
@@ -788,78 +847,133 @@ ${scoreLines}
 `;
 }
 
-function getMoneyProfile(manse: any): SajuProfile {
-  const career = getCareerArchetype(manse);
-  const moneyGrade = getMoneyGrade(manse);
+type MoneyPattern =
+  | "cashflow_manager"
+  | "small_sales_tester"
+  | "skill_price_builder"
+  | "knowledge_packager"
+  | "relationship_settlement"
+  | "slow_asset_accumulator"
+  | "high_leakage_controller";
+
+function getMoneyPattern(manse: any): MoneyPattern {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
   const tenGods = getTenGodCounts(manse);
+
   const wealth = countTenGodGroup(tenGods, ["편재", "정재"]);
   const output = countTenGodGroup(tenGods, ["식신", "상관"]);
   const authority = countTenGodGroup(tenGods, ["편관", "정관"]);
   const resource = countTenGodGroup(tenGods, ["편인", "정인"]);
   const peer = countTenGodGroup(tenGods, ["비견", "겁재"]);
 
-  if (wealth >= 3 && output >= 2) {
+  if (wealth >= 3 && output >= 2) return "small_sales_tester";
+  if (output >= 3) return "skill_price_builder";
+  if (resource >= 3 || water >= 3) return "knowledge_packager";
+  if (authority >= 3 || (earth >= 3 && metal >= 1)) return "cashflow_manager";
+  if (peer >= 3) return "relationship_settlement";
+
+  if (earth >= 4 && fire <= 1) return "slow_asset_accumulator";
+  if (water >= 3 && metal === 0) return "high_leakage_controller";
+  if (earth >= 3 && metal === 0) return "slow_asset_accumulator";
+  if (fire >= 2 && wood >= 2) return "small_sales_tester";
+  if (metal >= 2 && earth >= 2) return "cashflow_manager";
+
+  return "high_leakage_controller";
+}
+
+function getMoneyPatternLabel(pattern: MoneyPattern) {
+  const map: Record<MoneyPattern, string> = {
+    cashflow_manager: "현금흐름 관리형 재물 구조",
+    small_sales_tester: "작은 판매 테스트형 재물 구조",
+    skill_price_builder: "기술·서비스 가격표형 재물 구조",
+    knowledge_packager: "지식·정보 포장형 재물 구조",
+    relationship_settlement: "관계·협업 정산형 재물 구조",
+    slow_asset_accumulator: "느리게 모아 크게 지키는 재물 구조",
+    high_leakage_controller: "새는 돈을 막아야 살아나는 재물 구조",
+  };
+
+  return map[pattern];
+}
+
+function getMoneyProfile(manse: any): SajuProfile {
+  const career = getCareerArchetype(manse);
+  const moneyGrade = getMoneyGrade(manse);
+  const pattern = getMoneyPattern(manse);
+  const label = getMoneyPatternLabel(pattern);
+
+  if (pattern === "cashflow_manager") {
     return {
-      type: "수익화 빠른 실행형 재물 구조",
-      core: `돈복은 '${moneyGrade}'으로 보되, 돈은 실행과 판매 감각에서 붙기 쉬운 구조야. 직업 성향은 '${career.combined}'으로 고정해서 봐야 하고, 작게 팔아보고 반응이 오는 쪽을 키울 때 재물운이 살아나.`,
-      risk: "수익 신호가 보이면 너무 빨리 판을 키우거나 고정비를 먼저 키우는 게 위험해.",
-      direction: "작게 팔아보고 반복 구매나 재문의가 생기는 구조만 남겨야 해.",
-      avoid: ["수익이 보이자마자 매장, 장비, 재고, 광고비를 크게 늘리는 선택", "회수 기간을 계산하지 않고 돈부터 묶는 선택", "사람 반응은 확인하지 않고 아이디어만 믿고 시작하는 선택"],
-      action: ["먼저 1개 상품이나 서비스만 정해서 작게 팔아보기", "재문의가 생기는지 기록하기", "고정비를 쓰기 전에 손실 한도와 회수 기간 정하기"],
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 한 방으로 크게 터지는 돈보다 관리, 운영, 정산, 신뢰, 반복 거래에서 돈이 붙는 쪽이야. 직업 성향은 '${career.combined}'으로 고정해서 봐야 하고, 돈은 네가 직접 흐름을 관리할 수 있을 때 남는다.`,
+      risk: "돈을 버는 능력보다 돈이 어디서 새는지 늦게 알아차리는 게 위험해. 특히 책임감 때문에 대신 내는 돈, 관리 안 된 고정비, 정산이 흐린 협업에서 재물운이 눌릴 수 있어.",
+      direction: "수입보다 먼저 현금흐름표, 고정비, 정산일, 회수 기간을 잡아야 해. 관리가 돈이 되는 구조로 가야 재물운이 살아난다.",
+      avoid: ["정산 기준 없이 같이 돈 쓰는 선택", "고정비와 유지비를 계산하지 않고 시작하는 선택", "책임감 때문에 남의 비용까지 떠안는 선택"],
+      action: ["매달 고정비와 변동비를 분리해서 기록하기", "돈을 넣기 전에 회수 기간부터 계산하기", "관리·운영·정산 능력이 돈이 되는 구조 찾기"],
     };
   }
 
-  if (output >= 3 && wealth <= 1) {
+  if (pattern === "small_sales_tester") {
     return {
-      type: "재능은 있는데 돈길 설계가 필요한 재물 구조",
-      core: `돈복은 '${moneyGrade}'으로 보지만, 핵심은 재능을 돈으로 바꾸는 구조야. 말, 기술, 콘텐츠, 손재주, 서비스 능력은 있는데 가격표와 판매 구조가 약하면 돈이 남지 않아.`,
-      risk: "잘해주기만 하고 돈을 못 받는 구조가 제일 위험해.",
-      direction: "가격표, 상품 구성, 반복 고객 구조를 먼저 만들어야 해.",
-      avoid: ["무료로 계속 해주면서 실력만 소모하는 선택", "가격을 못 정하고 상대 반응에 끌려가는 선택", "팔릴 구조 없이 기술이나 콘텐츠만 더 쌓는 선택"],
-      action: ["가격표를 먼저 만들기", "무료와 유료의 경계를 정하기", "반복 구매가 가능한 작은 구성 만들기"],
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 생각만 오래 하는 것보다 작게 팔아보고, 반응이 오는 쪽을 빠르게 키울 때 돈이 붙는다. 직업 성향은 '${career.combined}'으로 고정해서 봐야 해.`,
+      risk: "초반 반응이 조금 왔다고 바로 광고비, 재고, 장비, 임대료를 키우는 게 위험해. 돈이 들어오기 전에 판부터 키우면 재물운이 부담으로 바뀐다.",
+      direction: "1개 상품, 1개 서비스, 1개 테스트부터 시작해서 재문의·재구매·소개가 생기는지만 봐야 해.",
+      avoid: ["검증 전에 재고부터 쌓는 선택", "반응 한두 번 보고 바로 고정비를 키우는 선택", "마진과 회전율 계산 없이 판매부터 시작하는 선택"],
+      action: ["작은 판매 테스트 1개 만들기", "문의·구매·재구매 숫자 기록하기", "반복 반응이 있는 것만 남기기"],
     };
   }
 
-  if (resource >= 3) {
+  if (pattern === "skill_price_builder") {
     return {
-      type: "지식·준비형 재물 구조",
-      core: `돈복은 '${moneyGrade}'으로 보되, 돈은 공부·정보·분석·자격·상담·정리된 지식에서 붙기 쉬워. 다만 준비만 길어지면 돈길이 늦게 열린다.`,
-      risk: "완벽해질 때까지 기다리다가 시작 타이밍을 놓치는 게 위험해.",
-      direction: "배운 것을 작은 상품이나 상담, 문서, 서비스로 바로 테스트해야 해.",
-      avoid: ["자격증과 공부만 늘리고 판매 구조를 만들지 않는 선택", "완벽한 준비를 핑계로 시작을 미루는 선택", "정보만 모으고 실제 고객 반응을 확인하지 않는 선택"],
-      action: ["배운 내용으로 작은 유료 테스트 만들기", "고객이 돈을 낼 문제를 하나만 정하기", "자료·상담·서비스 중 하나로 포장하기"],
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 기술, 말, 콘텐츠, 손재주, 서비스 능력을 가격표로 바꿀 때 돈이 남는다. 잘하는 것과 돈 받는 구조를 분리하면 계속 바쁘기만 하고 남는 게 약해질 수 있어.`,
+      risk: "무료로 많이 해주고, 가격을 못 정하고, 상대 반응에 끌려가면 재물운이 새기 쉬워.",
+      direction: "무료와 유료의 경계를 정하고, 서비스 메뉴와 가격표를 먼저 만들어야 해.",
+      avoid: ["계속 무료로 해주면서 실력만 소모하는 선택", "가격표 없이 상대가 주는 대로 받는 선택", "잘하는 일은 있는데 상품 구성이 없는 상태"],
+      action: ["서비스 메뉴 3개로 나누기", "기본가·추가비·예약금을 정하기", "무료 제공 범위와 유료 전환 기준 정하기"],
     };
   }
 
-  if (authority >= 3) {
+  if (pattern === "knowledge_packager") {
     return {
-      type: "안정 기반형 재물 구조",
-      core: `돈복은 '${moneyGrade}'으로 보며, 돈은 책임 있는 역할, 관리, 조직, 규칙 있는 구조에서 안정적으로 들어오기 쉬워. 하지만 안정만 잡으면 자기 돈길이 늦어질 수 있어.`,
-      risk: "책임은 큰데 보상은 적은 역할에 오래 묶이는 게 위험해.",
-      direction: "안정 수입은 지키되, 자기 이름으로 받을 수 있는 수익을 옆에 붙여야 해.",
-      avoid: ["남의 일만 책임지고 내 돈길은 미루는 선택", "직책이나 책임감 때문에 손해를 감수하는 선택", "수입원을 하나로만 묶어두는 선택"],
-      action: ["내가 책임지는 일 중 돈으로 바꿀 수 있는 능력 찾기", "작은 외부 수익 구조 하나 만들기", "역할 대비 보상이 맞는지 점검하기"],
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 정보, 분석, 상담, 문서, 교육, 정리된 지식을 돈으로 바꾸는 쪽에서 살아난다. 다만 준비만 길어지면 돈길이 늦게 열린다.`,
+      risk: "더 알아야 한다는 생각 때문에 시작을 미루는 게 위험해. 자료는 많은데 판매 형태가 없으면 돈으로 연결되지 않아.",
+      direction: "배운 것을 PDF, 상담, 체크리스트, 강의, 분석 리포트처럼 작게 포장해서 테스트해야 해.",
+      avoid: ["공부와 자료 수집만 계속하는 선택", "완벽해질 때까지 유료화를 미루는 선택", "고객이 돈 낼 문제를 정하지 않는 선택"],
+      action: ["사람들이 반복해서 묻는 문제 1개 정하기", "작은 유료 자료나 상담 형태로 만들기", "결과물을 저장해서 재사용 가능한 상품으로 바꾸기"],
     };
   }
 
-  if (peer >= 3) {
+  if (pattern === "relationship_settlement") {
     return {
-      type: "경쟁·동료 영향형 재물 구조",
-      core: `돈복은 '${moneyGrade}'으로 보지만, 사람과 경쟁, 협업 속에서 돈길이 열리기 쉬워. 대신 사람 때문에 돈이 새는 구조도 같이 조심해야 해.`,
-      risk: "친하다는 이유로 돈을 섞거나 비교심리 때문에 무리하는 게 위험해.",
-      direction: "사람과 돈 기준을 분리하고 정산 기준을 먼저 잡아야 해.",
-      avoid: ["친하다는 이유로 돈을 빌려주거나 같이 쓰는 선택", "정산 기준 없는 협업이나 동업", "비교심리 때문에 과하게 쓰는 소비"],
-      action: ["돈거래 기준을 문서나 메시지로 남기기", "협업 전 역할과 정산일 정하기", "사람 때문에 쓰는 돈을 따로 기록하기"],
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 사람, 협업, 소개, 공동 작업 속에서 돈길이 열릴 수 있지만 정산 기준이 없으면 돈 때문에 관계가 틀어질 수 있어.`,
+      risk: "친하다는 이유로 돈을 섞거나, 정산일 없이 같이 움직이거나, 비교심리 때문에 쓰는 돈이 커지는 게 위험해.",
+      direction: "사람과 돈 기준을 분리해야 해. 같이 벌더라도 역할, 비용, 수익 배분, 빠지는 기준을 먼저 정해야 한다.",
+      avoid: ["친분만 믿고 돈을 빌려주거나 같이 쓰는 선택", "수익 배분을 말로만 정하는 선택", "정산일 없이 협업을 시작하는 선택"],
+      action: ["협업 전 역할과 정산일을 문자로 남기기", "비용 부담과 수익 배분 기준 정하기", "사람 때문에 나가는 돈을 따로 기록하기"],
+    };
+  }
+
+  if (pattern === "slow_asset_accumulator") {
+    return {
+      type: label,
+      core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 빠르게 벌고 빠르게 쓰는 방식보다, 느리게 쌓고 크게 새지 않게 지키는 쪽에서 돈이 남는다. 현실감과 버티는 힘은 있지만, 판을 너무 무겁게 잡으면 움직임이 늦어질 수 있어.`,
+      risk: "시작부터 큰돈을 묶거나, 회수 기간이 긴 선택에 들어가면 돈도 마음도 같이 묶이는 게 위험해.",
+      direction: "작게 시작하되, 모이는 구조는 단단하게 만들어야 해. 현금흐름, 저축률, 회수 기간, 손실 한도를 먼저 잡아야 한다.",
+      avoid: ["회수 기간 긴 곳에 큰돈을 묶는 선택", "무겁고 느린 사업 구조를 처음부터 시작하는 선택", "생활비와 사업비를 섞어 쓰는 선택"],
+      action: ["손실 한도부터 정하기", "생활비와 테스트 비용 분리하기", "작게 벌어도 남는 비율을 먼저 만들기"],
     };
   }
 
   return {
-    type: `${career.combined} 기반 재물 구조`,
-    core: `돈복은 '${moneyGrade}'으로 보며, 직업 성향은 '${career.combined}' 흐름과 연결해서 봐야 해. 돈은 한 번에 크게 잡기보다 네가 직접 통제할 수 있는 구조에서 살아나.`,
-    risk: "방향 없이 이것저것 건드리다가 돈과 체력이 같이 새는 게 위험해.",
-    direction: "작게 검증하고 반복되는 돈길만 남겨야 해.",
-    avoid: ["무리한 투자", "준비 없는 사업개시", "고정비 큰 선택"],
-    action: ["손실 한도 정하기", "작게 팔아보기", "반복되는 돈길만 남기기"],
+    type: label,
+    core: `돈복은 '${moneyGrade}'으로 본다. 이 재물 구조는 돈을 버는 힘보다 새는 돈을 막는 힘이 먼저야. 직업 성향은 '${career.combined}'으로 고정해서 봐야 하고, 돈길은 네가 통제할 수 있는 작은 구조에서 살아난다.`,
+    risk: "방향이 바뀔 때마다 돈을 쓰거나, 남의 말에 흔들려 테스트 없이 들어가면 돈이 남기 어렵다.",
+    direction: "먼저 새는 구멍을 막고, 그다음 작게 벌어도 반복되는 돈길을 찾아야 해.",
+    avoid: ["남의 말만 듣고 들어가는 투자", "손실 한도 없는 사업이나 부업", "고정비와 충동지출을 동시에 키우는 선택"],
+    action: ["한 달 지출을 고정비·충동비·사람비로 나누기", "새로운 돈길은 10만 원 단위 테스트부터 하기", "반복 문의가 생기는 것만 남기기"],
   };
 }
 
@@ -1509,6 +1623,24 @@ function buildSystemPrompt() {
 - [결론부터 말하면], [하지 말아야 할 선택], [잡아야 할 방향], [형이 딱 정리해줄게]에서는 목·화·토·금·수라는 단어를 쓰지 마라.
 - 결과 본문은 가능하면 "추진력", "표현력", "현실감", "정리력", "회복력", "돈을 담는 힘", "관계를 조율하는 힘", "책임을 나누는 힘" 같은 쉬운 말로 써라.
 - 사주 용어 설명은 짧게만 하고, 사용자가 바로 이해할 수 있는 행동·관계·돈·건강 언어로 풀어라.
+
+[결과 고정성 규칙]
+- 같은 생년월일, 같은 출생시간, 같은 성별, 같은 카테고리, 같은 만세력 정보라면 결론·등급·성향·점수·핵심 유형은 절대 바꾸지 마라.
+- 문장 표현은 조금 달라질 수 있어도 돈복 등급, 건강운 등급, 직업 성향, 궁합 점수, 가족궁합 점수, 사업파트너 점수, 자식운 흐름, 인생대운 흐름은 바꾸지 마라.
+- 질문 문구가 조금 바뀌어도 사주상 고정값을 바꾸지 마라.
+- 질문은 현재 고민의 방향을 이해하는 용도이고, 사주 판정값을 바꾸는 근거가 아니다.
+- [결과 고정용 seed]가 제공되면 같은 seed에서는 같은 결론과 같은 구조로 답해라.
+
+[카테고리별 중복 방지 규칙]
+- 각 카테고리는 같은 사람이라도 다른 목적의 리포트다.
+- 재물운은 돈이 들어오는 방식, 돈이 모이는 구조, 돈이 새는 구멍만 깊게 본다.
+- 직업/사업운은 일의 구조, 맞는 역할, 피해야 할 노동/사업 구조만 깊게 본다.
+- 건강운은 몸의 리듬, 회복력, 약해지는 생활 패턴만 깊게 본다.
+- 연애운은 사람 보는 기준과 반복되는 관계 패턴만 깊게 본다.
+- 결혼운은 생활 기준, 돈 기준, 가족 거리감, 배우자 유형만 깊게 본다.
+- 인생대운은 시기별 흐름과 대운 기회만 깊게 본다.
+- 같은 문장, 같은 예시, 같은 조언을 여러 카테고리에 반복하지 마라.
+- 특히 "작게 검증하고 반복되는 돈길", "기준을 잡아야 한다", "무리하지 마라" 같은 문장을 반복하지 말고 카테고리 목적에 맞게 구체화해라.
 
 [카테고리별 사주 프로필 적용 규칙]
 - [카테고리별 사주 프로필]이 제공되면 반드시 그 프로필을 결과에 반영해라.
@@ -3793,14 +3925,16 @@ ${getFinalSummaryGuide(categoryId, categoryTitle)}
 `;
 }
 
-async function generateText(prompt: string, maxTokens: number) {
+async function generateText(prompt: string, maxTokens: number, seed: number) {
   const completion = await client.chat.completions.create({
     model: MODEL,
     messages: [
       { role: "system", content: buildSystemPrompt() },
       { role: "user", content: prompt },
     ],
-    temperature: 0.12,
+    temperature: 0,
+    top_p: 1,
+    seed,
     max_tokens: maxTokens,
   });
 
@@ -3830,6 +3964,7 @@ function responsePayload(params: {
   partnerManse?: any | null;
   fixedConclusion?: string;
   profileText?: string;
+  fortuneSeed?: number;
 }) {
   return {
     ...params,
@@ -3839,11 +3974,13 @@ function responsePayload(params: {
     worryLogic: "question-first-specific-worry-v2",
     premiumLogic: "plain-language-total-report-v2",
     childrenLogic: CHILDREN_LOGIC,
+    deterministicLogic: DETERMINISTIC_LOGIC,
+    moneyUniqueLogic: MONEY_UNIQUE_LOGIC,
     plainLanguageLogic: "no-standalone-five-elements-v2",
     fixedCareerLogic: "single-career-archetype-across-categories-v2",
     profileLogic: PROFILE_LOGIC,
     previewLogic: PREVIEW_LOGIC,
-    preserveLogic: "original-route-preserved-with-children-dedicated-structure-v2",
+    preserveLogic: "original-route-preserved-with-children-dedicated-structure-v3-no-shrink",
   };
 }
 
@@ -3884,12 +4021,14 @@ export async function POST(request: Request) {
     const globalCareer = getCareerArchetype(myManse);
     const globalMoneyGrade = getMoneyGrade(myManse);
     const globalHealthGrade = getHealthGrade(myManse);
+    const fortuneSeed = buildFortuneSeed({ user, categoryId, categoryTitle, manse: myManse, partnerManse });
 
     const manseText = `
 [전체 고정 운세 기준]
 - 돈복 등급: ${globalMoneyGrade}
 - 건강운 등급: ${globalHealthGrade}
 - 직업/사업 성향: ${globalCareer.combined}
+- 결과 고정용 seed: ${fortuneSeed}
 - 이 기준은 모든 카테고리에서 동일하게 유지한다.
 - 재물운, 신년운세, 평생종합사주, 프리미엄상담에서 돈복·건강운·직업성향을 말할 때 이 값을 절대 바꾸지 마라.
 
@@ -3907,14 +4046,14 @@ ${partnerManseText}
       const full = fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse);
 
       if (mode === "full") {
-        return NextResponse.json(responsePayload({ preview: "", full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText }));
+        return NextResponse.json(responsePayload({ preview: "", full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
       }
 
       if (mode === "both") {
-        return NextResponse.json(responsePayload({ preview, full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText }));
+        return NextResponse.json(responsePayload({ preview, full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
       }
 
-      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText }));
+      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
     }
 
     if (mode === "preview") {
@@ -3922,7 +4061,8 @@ ${partnerManseText}
       try {
         preview = await generateText(
           buildPreviewPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText }),
-          getPreviewMaxTokens(categoryId)
+          getPreviewMaxTokens(categoryId),
+          fortuneSeed
         );
       } catch (error) {
         console.error("preview generation error:", error);
@@ -3940,6 +4080,7 @@ ${partnerManseText}
           partnerManse,
           fixedConclusion: fixedConclusionText,
           profileText,
+          fortuneSeed,
         })
       );
     }
@@ -3949,7 +4090,8 @@ ${partnerManseText}
       try {
         full = await generateText(
           buildFullPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText }),
-          getFullMaxTokens(categoryId)
+          getFullMaxTokens(categoryId),
+          fortuneSeed
         );
       } catch (error) {
         console.error("full generation error:", error);
@@ -3967,6 +4109,7 @@ ${partnerManseText}
           partnerManse,
           fixedConclusion: fixedConclusionText,
           profileText,
+          fortuneSeed,
         })
       );
     }
@@ -3977,7 +4120,8 @@ ${partnerManseText}
     try {
       preview = await generateText(
         buildPreviewPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText }),
-        getPreviewMaxTokens(categoryId)
+        getPreviewMaxTokens(categoryId),
+        fortuneSeed
       );
     } catch (error) {
       console.error("preview generation error:", error);
@@ -3987,7 +4131,8 @@ ${partnerManseText}
     try {
       full = await generateText(
         buildFullPrompt({ user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText }),
-        getFullMaxTokens(categoryId)
+        getFullMaxTokens(categoryId),
+        fortuneSeed
       );
     } catch (error) {
       console.error("full generation error:", error);
@@ -4047,6 +4192,8 @@ export async function GET() {
     worryLogic: "question-first-specific-worry-v2",
     premiumLogic: "plain-language-total-report-v2",
     childrenLogic: CHILDREN_LOGIC,
+    deterministicLogic: DETERMINISTIC_LOGIC,
+    moneyUniqueLogic: MONEY_UNIQUE_LOGIC,
     profileLogic: PROFILE_LOGIC,
     previewLogic: PREVIEW_LOGIC,
   });
