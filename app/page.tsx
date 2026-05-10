@@ -45,6 +45,7 @@ type Category = {
   id: CategoryId;
   title: string;
   subtitle: string;
+  hook?: string;
   emoji: string;
   price: number;
   featured?: boolean;
