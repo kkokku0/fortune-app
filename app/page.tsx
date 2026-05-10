@@ -1568,6 +1568,159 @@ ${body || "아직 생성된 결과가 없습니다."}`;
           background: #111111 !important;
           color: #ffffff !important;
         }
+
+
+        @media (max-width: 767px) {
+          .fortune-page main {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+            padding-top: 10px !important;
+          }
+
+          .home-compact {
+            gap: 18px !important;
+          }
+
+          .home-hero {
+            border-radius: 26px !important;
+            min-height: 640px !important;
+          }
+
+          .home-hero > div:nth-child(2) {
+            display: block !important;
+            min-height: 640px !important;
+          }
+
+          .home-hero > div:nth-child(2) > div:first-child {
+            position: absolute !important;
+            inset: 0 !important;
+            z-index: 10 !important;
+            justify-content: flex-end !important;
+            padding: 18px !important;
+            padding-top: 90px !important;
+            background: linear-gradient(90deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.72) 52%, rgba(0,0,0,0.14) 100%) !important;
+          }
+
+          .home-hero > div:nth-child(2) > div:last-child {
+            min-height: 640px !important;
+            height: 640px !important;
+          }
+
+          .home-hero h1 {
+            font-size: 42px !important;
+            line-height: 1.05 !important;
+          }
+
+          .home-hero p {
+            font-size: 15px !important;
+            line-height: 1.65 !important;
+          }
+
+          .home-hero img {
+            object-position: 67% center !important;
+          }
+
+          .home-hero .max-w-\[300px\] {
+            max-width: 170px !important;
+            margin-bottom: 18px !important;
+          }
+
+          .home-hero .mt-7.grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .home-hero .mt-7.grid > div {
+            padding: 9px !important;
+            border-radius: 16px !important;
+          }
+
+          .home-hero .mt-7.grid .text-2xl {
+            font-size: 18px !important;
+          }
+
+          .home-hero .mt-7.grid .font-black {
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+          }
+
+          .home-hero .mt-7.grid .text-xs {
+            display: none !important;
+          }
+
+          .trust-reasons {
+            display: none !important;
+          }
+
+          .category-section h2,
+          .expert-section h2,
+          .price-section h2,
+          .review-section h2 {
+            font-size: 22px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .category-scroll,
+          .expert-scroll,
+          .price-scroll,
+          .review-scroll {
+            display: flex !important;
+            overflow-x: auto !important;
+            scroll-snap-type: x mandatory !important;
+            gap: 10px !important;
+            padding: 2px 2px 10px !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          .category-scroll > * {
+            flex: 0 0 148px !important;
+            min-height: 152px !important;
+            padding: 14px !important;
+            scroll-snap-align: start !important;
+          }
+
+          .category-scroll .h-16 {
+            height: 48px !important;
+            width: 48px !important;
+            font-size: 26px !important;
+            border-radius: 16px !important;
+          }
+
+          .category-scroll .text-lg {
+            font-size: 15px !important;
+          }
+
+          .quick-start-section {
+            display: grid !important;
+            gap: 12px !important;
+          }
+
+          .quick-start-section > div,
+          .quick-start-section > section {
+            border-radius: 26px !important;
+            padding: 18px !important;
+          }
+
+          .quick-start-section h2 {
+            font-size: 24px !important;
+          }
+
+          .expert-scroll > * {
+            flex: 0 0 180px !important;
+            scroll-snap-align: start !important;
+          }
+
+          .price-scroll > * {
+            flex: 0 0 250px !important;
+            scroll-snap-align: start !important;
+          }
+
+          .review-scroll > * {
+            flex: 0 0 260px !important;
+            scroll-snap-align: start !important;
+          }
+        }
       `}</style>
 
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,#2b1908_0%,transparent_36%),radial-gradient(circle_at_bottom,#160d22_0%,transparent_38%)]" />
@@ -1649,8 +1802,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-6">
         {step === "home" && (
-          <div className="space-y-12">
-            <section className="relative overflow-hidden rounded-[34px] border border-[#7a5b37] bg-[radial-gradient(circle_at_78%_30%,rgba(216,168,111,0.2),transparent_36%),linear-gradient(135deg,#050505_0%,#0b0a09_48%,#170f08_100%)] shadow-[0_42px_130px_rgba(0,0,0,0.58)]">
+          <div className="home-compact space-y-12">
+            <section className="home-hero relative overflow-hidden rounded-[34px] border border-[#7a5b37] bg-[radial-gradient(circle_at_78%_30%,rgba(216,168,111,0.2),transparent_36%),linear-gradient(135deg,#050505_0%,#0b0a09_48%,#170f08_100%)] shadow-[0_42px_130px_rgba(0,0,0,0.58)]">
               <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,207,119,0.65)_1px,transparent_0)] [background-size:32px_32px]" />
 
               <div className="relative grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
@@ -1708,7 +1861,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section>
+            <section className="trust-reasons">
               <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
                 소름사주가 선택받는 이유
               </h2>
@@ -1728,11 +1881,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section>
+            <section className="category-section">
               <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
                 사람들이 많이 보는 사주 카테고리
               </h2>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="category-scroll grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
                 {[
                   getCategory("money"),
                   getCategory("career"),
@@ -1762,7 +1915,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
+            <section className="quick-start-section grid gap-6 lg:grid-cols-[420px_1fr]">
               <div className="rounded-[34px] border border-[#7a5b37] bg-[#11100f] p-6 shadow-[0_18px_55px_rgba(0,0,0,0.35)]">
                 <h2 className="break-keep text-3xl font-black leading-tight tracking-[-0.06em] text-white">
                   생년월일을 입력하고
@@ -1838,22 +1991,22 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section>
+            <section className="expert-section">
               <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
                 전문가별로 골라보기
               </h2>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="expert-scroll grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {characters.map((card) => (
                   <CharacterCard key={card.id} card={card} onSelect={() => goInput(card.categoryId)} />
                 ))}
               </div>
             </section>
 
-            <section>
+            <section className="price-section">
               <h2 className="mb-6 text-center text-3xl font-black tracking-[-0.06em] text-white">
                 전체 리포트 요금 안내
               </h2>
-              <div className="grid gap-5 lg:grid-cols-3">
+              <div className="price-scroll grid gap-5 lg:grid-cols-3">
                 {[
                   { title: "오늘운세 전체 리포트", desc: "오늘의 운세 흐름", price: 1900, points: ["오늘 하루 흐름", "피해야 할 선택", "좋은 시간 & 키워드"], id: "today" as CategoryId },
                   { title: "일반 사주 전체 리포트", desc: "재물운·연애운·직업운 등", price: 6900, points: ["핵심 흐름 + 상세 풀이", "앞으로 선택 기준", "실행 전략과 조언"], id: "money" as CategoryId },
@@ -1869,7 +2022,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-            <section>
+            <section className="review-section">
               <div className="mb-6 flex items-end justify-between gap-3">
                 <div>
                   <h2 className="text-3xl font-black tracking-[-0.06em] text-white">소름사주 실제 후기</h2>
@@ -1877,7 +2030,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 </div>
                 <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">{reviewPage}/14</div>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="review-scroll grid gap-4 md:grid-cols-3">
                 {visibleReviews.map((review) => (
                   <div key={`${review.name}-${review.category}-${review.text}`} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5">
                     <div className="mb-2 flex items-center justify-between gap-2">
