@@ -1652,7 +1652,28 @@ ${body || "아직 생성된 결과가 없습니다."}`;
           }
 
           .trust-reasons {
-            display: none !important;
+            display: block !important;
+          }
+
+          .trust-reasons h2 {
+            font-size: 22px !important;
+            margin-bottom: 12px !important;
+          }
+
+          .trust-reasons > div {
+            display: flex !important;
+            overflow-x: auto !important;
+            scroll-snap-type: x mandatory !important;
+            gap: 10px !important;
+            padding: 2px 2px 10px !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          .trust-reasons > div > * {
+            flex: 0 0 220px !important;
+            scroll-snap-align: start !important;
+            padding: 16px !important;
+            border-radius: 22px !important;
           }
 
           .category-section h2,
