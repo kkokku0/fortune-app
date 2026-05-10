@@ -946,7 +946,7 @@ function ReportSection({
   const accent = getSectionAccent(title);
 
   return (
-    <article className="relative overflow-hidden rounded-[28px] border border-[#7a5b37] bg-[#121217] p-5 shadow-[0_20px_55px_rgba(0,0,0,0.28)]">
+    <article className="relative overflow-hidden rounded-[28px] border border-[#7a5b37] bg-[#121217] p-5 shadow-[0_20px_55px_rgba(0,0,0,0.28)] md:p-7">
       <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#d8a86f]/10 blur-3xl" />
 
       <div className="mb-4">
@@ -955,7 +955,7 @@ function ReportSection({
         </div>
         <h3
           className={cx(
-            "mt-2 break-keep text-[22px] font-black leading-tight tracking-[-0.045em]",
+            "mt-2 break-keep text-[22px] font-black leading-tight tracking-[-0.045em] md:text-[26px]",
             accent
           )}
         >
@@ -966,14 +966,14 @@ function ReportSection({
 
       {firstLine ? (
         <div className="rounded-[22px] border border-[#7a5b37] bg-black/45 p-4">
-          <p className="break-keep text-[18px] font-black leading-[1.65] tracking-[-0.035em] text-white">
+          <p className="break-keep text-[18px] font-black leading-[1.75] tracking-[-0.035em] text-white md:text-[20px]">
             {firstLine}
           </p>
         </div>
       ) : null}
 
       {restLines.length > 0 ? (
-        <div className="mt-4 space-y-4 break-keep text-[15px] font-medium leading-8 text-[#d8d0c6]">
+        <div className="mt-4 space-y-5 break-keep text-[16px] font-medium leading-9 text-[#d8d0c6]">
           {restLines.map((line, lineIndex) => (
             <p
               key={`${title}-${index}-${lineIndex}`}
@@ -2397,7 +2397,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
         )}
 
         {step === "result" && (
-          <div className="space-y-5">
+          <div className="mx-auto max-w-[760px] space-y-5">
             <button
               type="button"
               onClick={() => setStep("input")}

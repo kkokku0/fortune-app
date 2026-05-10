@@ -72,10 +72,10 @@ type TenGodCountsLike = Partial<Record<TenGodKey, number>>;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "missing" });
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const ROUTE_VERSION = "soreum-route-v15-deterministic-category-unique-money-v1";
+const ROUTE_VERSION = "soreum-route-v19-marriage-timing-spouse-specific-v1";
 const RELATIONSHIP_LOGIC = "family-partner-compatibility-saju-risk-final";
 const YEARLY_LOGIC = "newyear-career-money-jobchange-health-final";
-const PROFILE_LOGIC = "category-profile-specific-risk-direction-v3-money-split";
+const PROFILE_LOGIC = "category-profile-specific-risk-direction-v5-love-timing-partner-job-split";
 const PREVIEW_LOGIC = "preview-1200-1700-plus-v2";
 const CHILDREN_LOGIC = "children-dedicated-report-jasik-janyeo-v2";
 const DETERMINISTIC_LOGIC = "same-birth-same-category-same-seed-v1";
@@ -1104,6 +1104,7 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
   const authority = countTenGodGroup(tenGods, ["편관", "정관"]);
   const resource = countTenGodGroup(tenGods, ["편인", "정인"]);
   const peer = countTenGodGroup(tenGods, ["비견", "겁재"]);
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
 
   if (mode === "children") {
     if (output >= 3) {
@@ -1182,13 +1183,325 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
     };
   }
 
+  if (mode === "love" && fire >= 2) {
+    return {
+      type: "빠르게 끌리고 식기 쉬운 연애운",
+      core: "연애운은 초반 분위기와 말의 온도에 빨리 반응하는 구조야. 끌림은 빠르게 생길 수 있지만, 상대가 꾸준한 사람인지 확인하지 않으면 감정 소모가 커질 수 있어.",
+      risk: "처음 설레는 말, 빠른 연락, 강한 표현만 보고 관계를 밀어붙이는 게 위험해. 뜨거운 시작보다 식은 뒤에도 남는 태도를 봐야 해.",
+      direction: "연락 속도보다 약속을 지키는지, 말보다 반복 행동이 일정한지, 감정이 올라왔을 때 상대가 책임 있게 반응하는지를 봐야 해.",
+      avoid: ["초반 설렘만 보고 확정하기", "말 잘하는 사람에게 바로 마음 주기", "감정이 올라온 날 관계를 결정하기"],
+      action: ["최소 세 번의 약속 태도 보기", "연락 빈도보다 약속 이행 보기", "상대가 불편한 대화를 피하는지 확인하기"],
+    };
+  }
+
+  if (mode === "love" && water >= 2 && fire <= 1) {
+    return {
+      type: "속마음을 늦게 여는 신중형 연애운",
+      core: "연애운은 쉽게 마음을 여는 쪽이 아니라, 오래 관찰하고 안전하다고 느낄 때 깊어지는 구조야. 그래서 겉으로는 괜찮아 보여도 속으로는 상대를 계속 재고 있을 수 있어.",
+      risk: "혼자 생각이 많아져서 상대를 시험하거나, 확인하지 않고 마음을 접는 게 위험해. 말하지 않은 불안은 상대가 알아차리기 어렵다.",
+      direction: "상대가 꾸준히 안심을 주는지, 감정 기복을 받아줄 수 있는지, 애매한 관계를 오래 끌지 않는지를 봐야 해.",
+      avoid: ["혼자 결론 내리고 멀어지기", "상대 마음을 떠보는 식의 대화", "애매한 관계를 오래 유지하기"],
+      action: ["불안한 지점을 직접 질문하기", "관계 정의를 미루지 않기", "말보다 오래 유지되는 태도 보기"],
+    };
+  }
+
+  if (mode === "love" && earth >= 3) {
+    return {
+      type: "정들면 오래 가지만 부담도 커지는 연애운",
+      core: "연애운은 쉽게 시작하기보다 정이 들면 오래 붙잡는 구조야. 안정감은 장점이지만, 맞지 않는 사람도 책임감 때문에 오래 끌고 갈 수 있어.",
+      risk: "상대를 챙기다가 내 생활 리듬과 돈, 시간을 잃는 게 위험해. 연애가 편안함이 아니라 의무처럼 변하면 피로가 커진다.",
+      direction: "나를 편하게 해주는 사람인지, 책임을 나눌 줄 아는 사람인지, 생활 기준이 비슷한지를 먼저 봐야 해.",
+      avoid: ["불쌍해서 붙잡는 관계", "내가 다 맞춰주는 연애", "돈과 시간을 계속 떠안는 관계"],
+      action: ["초반부터 돈과 시간 기준 세우기", "상대가 책임을 나누는지 보기", "내 생활 루틴을 깨는 관계는 멈춰보기"],
+    };
+  }
+
+  if (mode === "love" && metal >= 2) {
+    return {
+      type: "기준이 높고 쉽게 정리하는 연애운",
+      core: "연애운은 마음이 없어서가 아니라, 기준이 맞지 않으면 빠르게 선을 긋는 구조야. 그래서 좋은 사람을 만나도 작은 불편함이 크게 보일 수 있어.",
+      risk: "상대를 너무 빨리 판단하거나, 완벽한 사람을 기다리다가 실제로 맞춰볼 기회를 놓치는 게 위험해.",
+      direction: "절대 안 되는 기준과 맞춰볼 수 있는 기준을 분리해야 해. 말투, 돈 기준, 생활 습관 중 무엇이 정말 중요한지 먼저 정리해야 한다.",
+      avoid: ["작은 단점 하나로 바로 끊기", "완벽한 사람만 기다리기", "감정을 표현하지 않고 평가만 하기"],
+      action: ["절대 기준 3개만 정하기", "한 번의 실수와 반복 습관 구분하기", "좋으면 좋다고 표현하기"],
+    };
+  }
+
+  if (mode === "love" && wood >= 2) {
+    return {
+      type: "새로운 인연에 열리지만 방향이 중요한 연애운",
+      core: "연애운은 새로운 사람, 새로운 분위기, 대화가 잘 통하는 사람에게 열리기 쉬워. 다만 방향이 맞지 않으면 시작은 빨라도 오래 끌고 가기 어렵다.",
+      risk: "가능성만 보고 현실 조건을 늦게 확인하는 게 위험해. 말이 잘 통한다고 생활 기준까지 맞는 건 아니다.",
+      direction: "함께 성장할 수 있는 사람인지, 미래 계획의 속도가 맞는지, 관계 안에서 서로를 키워주는지를 봐야 해.",
+      avoid: ["가능성만 보고 시작하기", "미래 얘기를 피하는 사람", "말은 통하지만 행동이 없는 관계"],
+      action: ["초반에 관계 방향 묻기", "미래 계획의 속도 확인하기", "말보다 실제 행동 변화 보기"],
+    };
+  }
+
   return {
-    type: mode === "marriage" ? "기준 조율형 결혼운" : "기준 조율형 연애운",
-    core: "이 관계운은 끌림보다 기준을 먼저 잡을 때 안정돼.",
-    risk: "외로움이나 분위기 때문에 기준을 낮추는 게 위험해.",
-    direction: "상대의 말보다 반복되는 태도와 생활 리듬을 봐야 해.",
-    avoid: ["외로움 때문에 시작", "생활 리듬 무시", "불편한 점을 미루기"],
-    action: ["상대의 반복 행동 보기", "돈과 시간 기준 확인", "불편한 점 빨리 말하기"],
+    type: mode === "marriage" ? "생활 기준 조율형 결혼운" : "거리 조절이 중요한 현실형 연애운",
+    core: mode === "marriage" ? "결혼운은 설렘보다 생활 기준, 돈 기준, 가족과의 거리감이 맞을 때 안정되는 구조야." : "연애운은 감정이 없는 게 아니라, 가까워질수록 거리와 생활 리듬을 잘 맞춰야 안정되는 구조야.",
+    risk: mode === "marriage" ? "좋아하는 마음만 믿고 돈, 가족, 역할 분담을 나중으로 미루는 게 위험해." : "처음엔 괜찮아도 연락 방식, 시간 사용, 말투가 맞지 않으면 같은 문제로 피로가 쌓일 수 있어.",
+    direction: mode === "marriage" ? "결혼 전에는 돈 쓰는 방식, 가족 개입 범위, 집안일과 책임 분담을 구체적으로 맞춰야 해." : "상대가 내 생활 리듬을 존중하는지, 불편한 이야기를 피하지 않는지, 관계 속도가 맞는지를 봐야 해.",
+    avoid: mode === "marriage" ? ["돈 기준 없이 결혼 결정", "가족 문제를 나중으로 미루기", "역할 분담 없이 같이 살기"] : ["외로움 때문에 시작하기", "연락 방식이 안 맞는데 참기", "불편한 점을 계속 미루기"],
+    action: mode === "marriage" ? ["생활비 기준 정하기", "가족 거리감 대화하기", "역할 분담을 말로 끝내지 않기"] : ["연락 기준을 초반에 맞추기", "불편한 점을 작은 말로 바로 꺼내기", "상대의 반복 행동을 3번 이상 확인하기"],
+  };
+}
+
+function getLoveTimingProfile(manse: any) {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  const tenGods = getTenGodCounts(manse);
+  const output = countTenGodGroup(tenGods, ["식신", "상관"]);
+  const resource = countTenGodGroup(tenGods, ["편인", "정인"]);
+  const authority = countTenGodGroup(tenGods, ["편관", "정관"]);
+  const peer = countTenGodGroup(tenGods, ["비견", "겁재"]);
+  const currentYear = new Date().getFullYear();
+
+  let strength = 0;
+  if (wood >= 2) strength += 2;
+  if (fire >= 2) strength += 2;
+  if (water >= 2) strength += 1;
+  if (output >= 2) strength += 2;
+  if (authority >= 2) strength += 1;
+  if (resource >= 3) strength -= 1;
+  if (peer >= 3) strength -= 1;
+  if (earth >= 4 && fire <= 1) strength -= 1;
+
+  let chance = "올해 인연운은 없는 해가 아니라, 사람을 만날 기회는 들어오는 편이야.";
+  if (strength >= 5) chance = "올해 인연운은 비교적 열리는 편이야. 가만히 있으면 약하지만, 사람을 만나는 자리에 나가면 반응이 생기기 쉬워.";
+  else if (strength >= 3) chance = "올해 인연운은 중간 이상이야. 갑자기 강하게 들어오기보다 소개, 모임, 일상 동선에서 천천히 살아나는 흐름이야.";
+  else if (strength >= 1) chance = "올해 인연운은 약하게 열리는 편이야. 큰 기대보다 사람 보는 기준을 정리하고 작은 만남을 늘릴 때 살아나.";
+  else chance = "올해 인연운은 강하게 터지는 해라기보다, 애매한 관계를 정리하고 다음 인연을 받을 자리를 만드는 해에 가까워.";
+
+  let timing = "3~5월, 9~10월";
+  let reason = "새로운 대화가 생기고 관계를 다시 정리하기 좋은 시기야.";
+
+  if (fire >= 2 && wood >= 1) {
+    timing = "5~8월";
+    reason = "표현력과 분위기가 살아나는 때라 썸, 만남, 연락 흐름이 빨라지기 쉬워.";
+  } else if (wood >= 2) {
+    timing = "3~5월";
+    reason = "새로운 사람, 새로운 모임, 소개운이 열리기 쉬운 시기야.";
+  } else if (metal >= 2) {
+    timing = "8~10월";
+    reason = "관계가 정리되고 진지한 사람을 고르기 좋은 시기야.";
+  } else if (water >= 2) {
+    timing = "11~2월";
+    reason = "속마음을 천천히 나누는 인연, 오래 알고 지낸 사람과의 흐름이 살아나기 쉬워.";
+  } else if (earth >= 3) {
+    timing = "4월, 7월, 10월 전후";
+    reason = "갑작스러운 만남보다 주변 소개, 익숙한 환경, 생활권 안의 인연이 들어오기 쉬워.";
+  }
+
+  return {
+    year: currentYear,
+    chance,
+    timing,
+    reason,
+  };
+}
+
+function getLovePartnerProfile(manse: any) {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  const love = getRelationshipProfile(manse, "love");
+
+  if (fire >= 2) {
+    return {
+      good: "감정 표현은 따뜻하지만 생활이 일정한 사람",
+      avoid: "말은 뜨겁고 연락은 빠른데 약속과 책임이 들쭉날쭉한 사람",
+      jobs: "운영관리, 기획, 교육, 공공기관, 회계·총무, 안정적인 기술직처럼 생활 리듬이 일정한 직업군",
+      reason: "네 연애운은 초반 분위기에 빨리 반응하기 쉬워서, 설레게 하는 사람보다 꾸준히 지키는 사람이 오래 맞아.",
+      check: "약속 시간, 말 바꾸는 빈도, 화났을 때 태도, 돈 쓰는 방식",
+      type: love.type,
+    };
+  }
+
+  if (water >= 2 && fire <= 1) {
+    return {
+      good: "기다려줄 줄 알고 말로 안심을 주는 사람",
+      avoid: "애매하게 굴면서 확답을 피하거나, 네 불안을 가볍게 넘기는 사람",
+      jobs: "상담, 교육, 연구, 문서·기획, 디자인, 개발, 전문기술직처럼 차분히 쌓아가는 직업군",
+      reason: "네 연애운은 마음을 여는 데 시간이 필요해서, 감정 속도를 강요하지 않는 사람이 맞아.",
+      check: "관계 정의를 피하는지, 불편한 질문에 답하는지, 연락이 끊겼을 때 회복 태도",
+      type: love.type,
+    };
+  }
+
+  if (earth >= 3) {
+    return {
+      good: "생활력 있고 책임을 나눌 줄 아는 사람",
+      avoid: "챙김만 받으려 하거나 경제적·감정적 책임을 너에게 미루는 사람",
+      jobs: "공무직, 생산·설비, 물류·관리, 회계, 자영업 운영자, 안정적인 회사원처럼 생활 기반이 있는 직업군",
+      reason: "네 연애운은 정이 들면 오래 가지만 부담도 같이 커질 수 있어서, 책임을 나누는 사람이 맞아.",
+      check: "생활비 기준, 시간 약속, 가족 거리감, 힘든 일을 함께 나누는 태도",
+      type: love.type,
+    };
+  }
+
+  if (metal >= 2) {
+    return {
+      good: "깔끔하고 약속이 분명하며 말과 행동이 일치하는 사람",
+      avoid: "핑계가 많고 사과가 늦거나, 관계를 대충 흘려보내는 사람",
+      jobs: "금융, 법무, 품질관리, 의료·보건, IT, 행정, 분석직처럼 기준과 책임이 분명한 직업군",
+      reason: "네 연애운은 기준이 맞지 않으면 빨리 식을 수 있어서, 애매함이 적은 사람이 오래 맞아.",
+      check: "약속 이행, 정리된 소비 습관, 말투의 예의, 갈등 후 사과 방식",
+      type: love.type,
+    };
+  }
+
+  if (wood >= 2) {
+    return {
+      good: "같이 성장하고 미래 이야기를 피하지 않는 사람",
+      avoid: "가능성만 말하고 실제 행동이 없거나, 방향 없이 분위기만 좋은 사람",
+      jobs: "교육, 콘텐츠, 마케팅, 영업, 기획, 창업 초기 멤버, 성장형 전문직처럼 움직임과 성장성이 있는 직업군",
+      reason: "네 연애운은 새로움에 열리지만 방향이 없으면 오래 가지 않아서, 같이 커지는 사람이 맞아.",
+      check: "미래 계획, 일관된 행동 변화, 자기 생활 관리, 말한 것을 실행하는지",
+      type: love.type,
+    };
+  }
+
+  return {
+    good: "감정이 편하고 생활 리듬을 존중해주는 사람",
+    avoid: "가까워질수록 네 생활을 흔들고 눈치 보게 만드는 사람",
+    jobs: "정해진 리듬이 있는 회사원, 전문기술직, 교육·상담, 운영·관리직처럼 생활 패턴이 안정적인 직업군",
+    reason: "네 연애운은 감정만으로 오래 가는 구조가 아니라 거리와 생활 리듬을 맞춰야 안정돼.",
+    check: "연락 방식, 쉬는 방식, 돈과 시간 기준, 불편한 대화를 피하지 않는지",
+    type: love.type,
+  };
+}
+
+function getMarriageTimingProfile(manse: any) {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  const tenGods = getTenGodCounts(manse);
+  const authority = countTenGodGroup(tenGods, ["편관", "정관"]);
+  const resource = countTenGodGroup(tenGods, ["편인", "정인"]);
+  const output = countTenGodGroup(tenGods, ["식신", "상관"]);
+  const wealth = countTenGodGroup(tenGods, ["편재", "정재"]);
+  const currentYear = new Date().getFullYear();
+
+  let strength = 0;
+  if (authority >= 2) strength += 2;
+  if (earth >= 2) strength += 2;
+  if (metal >= 1) strength += 1;
+  if (water >= 1) strength += 1;
+  if (resource >= 3) strength += 1;
+  if (fire >= 2 && earth <= 1) strength -= 1;
+  if (output >= 3 && authority === 0) strength -= 1;
+  if (wealth >= 3 && earth <= 1) strength -= 1;
+
+  let chance = "올해 결혼운은 약하게라도 움직이는 편이지만, 바로 확정하기보다 상대의 생활 기준을 확인해야 안정돼.";
+  if (strength >= 6) chance = "올해 결혼운은 비교적 현실적으로 열리는 편이야. 연애 감정보다 결혼 조건, 생활 기준, 가족 거리감이 맞는 사람이 들어오면 진지하게 볼 수 있어.";
+  else if (strength >= 4) chance = "올해 결혼운은 중간 이상이야. 갑자기 결혼이 확정되는 흐름보다, 기존 인연이나 소개를 통해 진지한 관계로 넘어갈 가능성이 더 커.";
+  else if (strength >= 2) chance = "올해 결혼운은 강하게 터지는 해라기보다, 결혼 기준을 정리하고 맞지 않는 관계를 걸러내는 흐름이야.";
+  else chance = "올해 결혼운은 서두르면 흔들리기 쉬운 흐름이야. 결혼 자체보다 먼저 사람 보는 기준과 생활 조건을 정리해야 해.";
+
+  let timing = "4~6월, 9~11월";
+  let timingReason = "생활 기준을 맞추고 현실적인 대화가 오가기 좋은 시기야.";
+  let longFlow = "결혼은 빠르게 결정할수록 흔들리고, 시간을 두고 기준을 확인할수록 안정되는 흐름이야.";
+
+  if (earth >= 3 && fire <= 1) {
+    timing = "9~11월, 또는 내년 초까지 이어지는 흐름";
+    timingReason = "이 사주는 초반 설렘보다 현실 조건이 맞을 때 결혼운이 살아나서, 하반기처럼 정리와 결정이 필요한 시기가 더 맞아.";
+    longFlow = "결혼은 늦게 안정되는 쪽이 강해. 서두르는 결혼보다 생활 기반과 돈 기준을 맞춘 뒤 하는 결혼이 훨씬 편해.";
+  } else if (fire >= 2 && wood >= 1) {
+    timing = "3~6월, 7~8월 전후";
+    timingReason = "표현과 만남의 기운이 살아나는 때라 소개, 썸, 진지한 대화가 빠르게 붙기 쉬워.";
+    longFlow = "인연은 빨리 들어올 수 있지만, 결혼은 감정이 식은 뒤에도 책임이 남는지를 봐야 해.";
+  } else if (metal >= 2) {
+    timing = "8~10월";
+    timingReason = "사람을 고르는 기준이 선명해지고, 진지한 조건을 확인하기 좋은 시기야.";
+    longFlow = "결혼은 애매한 사람과 오래 끌기보다, 기준이 맞는 사람을 만났을 때 빠르게 정리되는 흐름이야.";
+  } else if (water >= 2) {
+    timing = "11~2월";
+    timingReason = "속마음과 현실 대화를 천천히 나누면서 관계가 깊어지기 쉬운 시기야.";
+    longFlow = "결혼은 오래 보고 신뢰가 쌓인 뒤 안정되는 쪽이 강해.";
+  } else if (wood >= 2) {
+    timing = "3~5월";
+    timingReason = "새로운 소개나 모임, 이동, 배움의 자리에서 인연이 열리기 쉬워.";
+    longFlow = "결혼은 같이 성장할 방향이 맞을 때 살아나지만, 미래 계획이 다르면 오래 가기 어렵다.";
+  }
+
+  return {
+    year: currentYear,
+    chance,
+    timing,
+    timingReason,
+    longFlow,
+  };
+}
+
+function getMarriagePartnerProfile(manse: any) {
+  const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
+  const marriage = getRelationshipProfile(manse, "marriage");
+
+  if (earth >= 3) {
+    return {
+      good: "생활력 있고 책임을 나눌 줄 아는 사람",
+      avoid: "말은 좋지만 경제적·감정적 책임을 상대에게 미루는 사람",
+      jobs: "공무직, 안정적인 회사원, 회계·총무, 생산·설비 관리, 운영관리, 자영업 운영자처럼 생활 기반과 책임이 분명한 직업군",
+      family: "가족과 너무 붙어 있지 않고, 배우자와 원가족 사이의 선을 정할 줄 아는 사람이 좋아.",
+      money: "수입의 크기보다 돈을 모으고 쓰는 기준이 일정한 사람이 맞아.",
+      check: "생활비 기준, 가족 지원 범위, 집안일 분담, 힘든 일을 함께 나누는 태도",
+      type: marriage.type,
+    };
+  }
+
+  if (metal >= 2) {
+    return {
+      good: "약속이 정확하고 말과 행동이 일치하는 사람",
+      avoid: "핑계가 많고 사과가 늦거나, 돈과 약속을 대충 넘기는 사람",
+      jobs: "금융, 법무, 행정, 의료·보건, 품질관리, IT, 분석직처럼 기준과 책임이 분명한 직업군",
+      family: "가족 문제도 감정으로 끌고 가지 않고 원칙과 대화로 정리하는 사람이 맞아.",
+      money: "공동 지출, 저축, 대출, 큰돈 사용 기준을 숫자로 맞출 수 있어야 해.",
+      check: "약속 이행, 소비 습관, 갈등 후 사과 방식, 가족 개입을 선 긋는 능력",
+      type: marriage.type,
+    };
+  }
+
+  if (water >= 2 && fire <= 1) {
+    return {
+      good: "조용히 신뢰를 쌓고 감정을 안정적으로 받아주는 사람",
+      avoid: "확답을 피하거나 애매한 말로 관계를 오래 끄는 사람",
+      jobs: "상담, 교육, 연구, 기획, 개발, 디자인, 전문기술직처럼 차분히 쌓아가는 직업군",
+      family: "부부 사이의 속마음을 밖으로 쉽게 흘리지 않고, 둘만의 대화를 지킬 줄 아는 사람이 좋아.",
+      money: "큰소리치는 사람보다 꾸준히 벌고 꾸준히 관리하는 사람이 맞아.",
+      check: "관계 정의를 피하는지, 불편한 대화에 답하는지, 감정 기복을 어떻게 회복하는지",
+      type: marriage.type,
+    };
+  }
+
+  if (fire >= 2) {
+    return {
+      good: "표현은 따뜻하지만 생활은 일정하게 유지하는 사람",
+      avoid: "초반에는 뜨겁지만 약속과 책임이 들쭉날쭉한 사람",
+      jobs: "교육, 영업관리, 서비스 운영, 기획, 공공기관, 안정적인 기술직처럼 사람을 상대하되 생활 리듬이 잡힌 직업군",
+      family: "감정적으로 가족 편만 드는 사람보다, 배우자를 먼저 세워주는 사람이 맞아.",
+      money: "기분으로 쓰는 돈보다 미래 계획에 맞춰 쓰는 돈 기준이 필요해.",
+      check: "화났을 때 말투, 약속 시간, 돈 쓰는 습관, 결혼 이야기를 피하지 않는지",
+      type: marriage.type,
+    };
+  }
+
+  if (wood >= 2) {
+    return {
+      good: "같이 성장하고 미래 계획을 구체적으로 말하는 사람",
+      avoid: "가능성만 말하고 실제 준비나 행동이 없는 사람",
+      jobs: "교육, 콘텐츠, 마케팅, 기획, 영업, 성장형 전문직, 창업 초기 멤버처럼 움직임과 방향성이 있는 직업군",
+      family: "부부가 같이 성장하려면 양가 가족보다 두 사람의 계획을 먼저 세우는 사람이 좋아.",
+      money: "벌 가능성보다 실제 실행력, 저축 습관, 미래 계획을 봐야 해.",
+      check: "미래 계획, 주거 계획, 일과 가정의 균형, 말한 것을 실행하는지",
+      type: marriage.type,
+    };
+  }
+
+  return {
+    good: "감정이 편하고 생활 리듬을 존중해주는 사람",
+    avoid: "가까워질수록 내 생활과 돈 기준을 흔드는 사람",
+    jobs: "정해진 리듬이 있는 회사원, 전문기술직, 교육·상담, 운영·관리직처럼 생활 패턴이 안정적인 직업군",
+    family: "가족과 배우자 사이의 선을 지킬 줄 아는 사람이 맞아.",
+    money: "소비 성향, 저축 기준, 큰돈 결정 방식을 초반에 확인해야 해.",
+    check: "돈과 시간 기준, 쉬는 방식, 집안일 분담, 불편한 대화를 피하지 않는지",
+    type: marriage.type,
   };
 }
 
@@ -1384,6 +1697,9 @@ function getFixedConclusionBlock(
   const majorLuckCount = getMajorLuckChanceCount(manse);
   const majorLuckPhase = getMostImportantLuckPhase(manse);
   const title = categoryTitle || "";
+  const loveProfile = getRelationshipProfile(manse, "love");
+  const marriageTiming = getMarriageTimingProfile(manse);
+  const marriagePartner = getMarriagePartnerProfile(manse);
 
   if (isCompatibilityCategory(categoryId, title)) {
     const compatibility = getCompatibilityScore(manse, partnerManse || null);
@@ -1550,8 +1866,20 @@ AI는 이 결론을 절대 바꾸지 마라.
 [고정 결론]
 결론부터 말하면, ${name}, 네 결혼운은 '${marriageFlow}'으로 본다.
 
-AI는 이 결론을 절대 바꾸지 마라.
+올해 결혼운 판단: ${marriageTiming.chance}
+결혼운이 살아나는 시기: ${marriageTiming.timing}
+시기 이유: ${marriageTiming.timingReason}
+장기 결혼 흐름: ${marriageTiming.longFlow}
+잘 맞는 배우자 유형: ${marriagePartner.good}
+피해야 할 배우자 유형: ${marriagePartner.avoid}
+잘 맞는 상대의 직업군/생활 분위기: ${marriagePartner.jobs}
+가족 거리감 기준: ${marriagePartner.family}
+돈 기준: ${marriagePartner.money}
+결혼 전 반드시 확인할 것: ${marriagePartner.check}
+
+AI는 이 결론, 결혼운 흐름, 결혼 시기, 배우자 유형, 피해야 할 유형, 상대 직업군/생활 분위기를 절대 바꾸지 마라.
 결혼운에서는 직업 성향, 부업형, 사업형 이야기를 절대 하지 마라.
+사용자가 가장 궁금해하는 순서대로 답해라: 1) 결혼운이 있는지 2) 언제 들어오는지 3) 어떤 사람과 결혼하면 좋은지 4) 피해야 할 배우자 유형 5) 상대의 직업군/생활 분위기 6) 결혼 후 돈·가족·역할 기준.
 첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
 `;
   }
@@ -1582,13 +1910,27 @@ AI는 이 결론을 절대 바꾸지 마라.
   }
 
   if (categoryId === "love" || title.includes("연애")) {
+    const loveTiming = getLoveTimingProfile(manse);
+    const lovePartner = getLovePartnerProfile(manse);
     return `
 [고정 결론]
-결론부터 말하면, ${name}, 네 연애운은 '끌림보다 기준을 먼저 잡아야 살아나는 흐름'이다.
+결론부터 말하면, ${name}, 네 연애운은 '${loveProfile.type}'으로 본다.
 
-AI는 이 결론을 절대 바꾸지 마라.
-연애운에서는 직업 성향, 사업형, 부업형 이야기를 절대 하지 마라.
-첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
+올해 인연운 판단: ${loveTiming.chance}
+올해 인연이 살아나기 쉬운 시기: ${loveTiming.timing}
+시기 판단 이유: ${loveTiming.reason}
+잘 맞는 상대 유형: ${lovePartner.good}
+피해야 할 상대 유형: ${lovePartner.avoid}
+잘 맞는 상대의 직업/생활 분위기: ${lovePartner.jobs}
+연애운 핵심 이유: ${lovePartner.reason}
+확인해야 할 현실 기준: ${lovePartner.check}
+가장 조심할 부분: ${loveProfile.risk}
+
+AI는 이 연애운 유형, 올해 인연운 판단, 인연 시기, 잘 맞는 상대 유형, 피해야 할 상대 유형을 절대 바꾸지 마라.
+연애운에서는 사용자의 직업 성향, 사업형, 부업형 이야기를 하지 마라.
+단, 잘 맞는 상대의 직업군·생활 분위기·성향은 반드시 말해도 된다.
+첫 문장은 반드시 올해 연애운이 있는지와 언제 인연 흐름이 살아나는지를 먼저 말해라.
+"끌림보다 기준", "반복 행동", "생활 리듬" 같은 공통 문장만 반복하지 마라.
 `;
   }
 
@@ -1636,11 +1978,20 @@ function buildSystemPrompt() {
 - 재물운은 돈이 들어오는 방식, 돈이 모이는 구조, 돈이 새는 구멍만 깊게 본다.
 - 직업/사업운은 일의 구조, 맞는 역할, 피해야 할 노동/사업 구조만 깊게 본다.
 - 건강운은 몸의 리듬, 회복력, 약해지는 생활 패턴만 깊게 본다.
-- 연애운은 사람 보는 기준과 반복되는 관계 패턴만 깊게 본다.
-- 결혼운은 생활 기준, 돈 기준, 가족 거리감, 배우자 유형만 깊게 본다.
+- 연애운은 올해 인연운, 들어오기 쉬운 시기, 사람 보는 기준, 어울리는 상대, 피해야 할 상대, 상대의 생활 리듬과 직업군을 깊게 본다.
+- 결혼운은 결혼운이 있는지, 언제 들어오는지, 배우자 유형, 상대 직업군/생활 분위기, 돈 기준, 가족 거리감, 역할 분담을 깊게 본다.
 - 인생대운은 시기별 흐름과 대운 기회만 깊게 본다.
 - 같은 문장, 같은 예시, 같은 조언을 여러 카테고리에 반복하지 마라.
 - 특히 "작게 검증하고 반복되는 돈길", "기준을 잡아야 한다", "무리하지 마라" 같은 문장을 반복하지 말고 카테고리 목적에 맞게 구체화해라.
+- 아래 문장들은 공통 fallback 문장이라서 어떤 카테고리에서도 그대로 쓰지 마라.
+  1) "타고난 장점을 현실의 기준으로 바꿔라"
+  2) "반복해서 흔들리는 상황을 줄여라"
+  3) "지금 카테고리에서 먼저 정해야 할 기준을 잡아라"
+  4) "감정이 아니라 반복되는 패턴을 보고 선택해라"
+- 건강운에서는 반드시 수면, 위장·소화·장, 순환, 피로, 스트레스성 긴장, 회복 루틴 중 사주상 맞는 흐름으로 써라.
+- 연애운에서는 반드시 끌림, 연락, 말투, 감정 회복 방식, 피해야 할 상대, 반복되는 관계 패턴으로 써라.
+- 결혼운에서는 반드시 생활 기준, 돈 기준, 가족 거리감, 역할 분담, 배우자 유형으로 써라.
+- 인생대운에서는 반드시 초년·청년·중년·말년과 대운 기회, 준비 조건으로 써라.
 
 [카테고리별 사주 프로필 적용 규칙]
 - [카테고리별 사주 프로필]이 제공되면 반드시 그 프로필을 결과에 반영해라.
@@ -1695,7 +2046,7 @@ function buildSystemPrompt() {
 - 직업/사업운에서는 일 구조, 맞는 직업군, 피해야 할 일 구조, 자기수익 구조만 깊게 봐라.
 - 신년운세는 올해해운 카테고리다. 올해 전체 흐름, 올해 재물운, 올해 직업/사업운, 올해 이직운, 올해 건강운, 올해 관계운, 1~3개월/4~6개월/7~9개월/10~12개월 흐름을 반드시 포함해라.
 - 건강운에서는 몸의 흐름, 체질적 약점, 무리하면 탈 나는 패턴만 깊게 봐라.
-- 연애운에서는 사람 보는 기준, 어울리는 상대, 피해야 할 상대만 깊게 봐라.
+- 연애운에서는 올해 연애운이 있는지, 언제 인연이 들어오기 쉬운지, 어울리는 상대, 피해야 할 상대, 잘 맞는 상대의 직업군/생활 분위기를 깊게 봐라.
 - 결혼운에서는 생활 기준, 배우자 유형, 돈 기준, 가족 거리감만 깊게 봐라.
 - 자식운에서는 자식 인연, 자식복, 자식과 나의 관계, 자식과 가족관계, 자식의 가능성과 성장 방향, 부모 역할만 깊게 봐라.
 - 자식운 유료 리포트는 일반 운세 구조로 쓰지 마라.
@@ -1977,22 +2328,31 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
   if (categoryId === "love" || title.includes("연애")) {
     return `
 [연애운 전용 지침]
-- 연애운은 어울리는 상대, 피해야 할 상대, 반복되는 연애 패턴, 인연 흐름 중심으로 써라.
-- 직업군, 사업형, 부업형 이야기를 하지 마라.
+- 연애운은 사용자가 가장 궁금해하는 순서대로 써라: 1) 올해 연애운이 있는지 2) 언제 인연이 들어오기 쉬운지 3) 어떤 사람과 연애하면 좋은지 4) 피해야 할 사람은 어떤 유형인지 5) 잘 맞는 상대의 직업군/생활 분위기는 어떤지.
+- 첫 문장부터 "올해 연애운은 있다/약하게 있다/정리 후 들어온다"처럼 분명히 말해라. 단, 100% 보장처럼 말하지 말고 사주상 흐름으로 표현해라.
+- 반드시 [고정 결론]에 제공된 올해 인연운 판단, 인연 시기, 잘 맞는 상대 유형, 피해야 할 상대 유형, 상대 직업/생활 분위기를 그대로 반영해라.
+- 사용자의 직업 성향, 사업형, 부업형 이야기는 하지 마라. 단, 잘 맞는 상대의 직업군·생활 분위기·성향은 반드시 말해도 된다.
 - 썸, 재회, 결혼 가능성은 질문이 있을 때만 보조적으로 다뤄라.
+- [고정 결론]의 연애운 유형을 첫 문장 또는 첫 섹션에 반드시 반영해라.
+- [카테고리별 사주 프로필]의 type, core, risk, direction, avoid, action 중 최소 4개를 결과에 녹여라.
+- "끌림보다 기준", "반복 행동", "생활 리듬", "안정감" 같은 말만 반복하면 안 된다.
+- 반드시 연락 방식, 말투, 관계 속도, 돈/시간 사용, 피해야 할 상대 유형 중 최소 3가지를 구체적으로 말해라.
 - 어떤 사람에게 끌리지만 오래 가면 힘든지 구체적으로 말해라.
-- [카테고리별 사주 프로필]을 반드시 반영해서 연애 패턴을 구체화해라.
+- 같은 생년월일이 아니면 연애운 유형, 인연 시기, 맞는 상대 직업군, 피해야 할 상대가 다르게 나와야 한다.
 `;
   }
 
   if (categoryId === "marriage" || title.includes("결혼")) {
     return `
 [결혼운 전용 지침]
-- 결혼운은 배우자 유형, 결혼 시기 흐름, 결혼 후 생활 기준, 돈 기준, 가족 거리감 중심으로 써라.
-- 직업운, 사업운, 직장형/사업형/부업형 판정 금지.
-- 결혼을 하면 좋은지, 늦게 안정되는지, 어떤 사람과 해야 덜 흔들리는지 말해라.
-- 결혼 후 부딪히는 지점을 돈, 생활, 가족, 말투, 책임으로 나눠라.
-- [카테고리별 사주 프로필]을 반드시 반영해서 결혼 기준을 구체화해라.
+- 결혼운은 사용자가 가장 궁금해하는 순서대로 써라: 1) 결혼운이 있는지 2) 언제 결혼운/진지한 인연운이 들어오는지 3) 어떤 사람과 결혼하면 좋은지 4) 피해야 할 배우자 유형 5) 잘 맞는 상대의 직업군/생활 분위기 6) 결혼 후 돈·가족·역할 기준.
+- 첫 문장부터 "결혼운은 있다/늦게 안정된다/올해는 기준 정리의 해다"처럼 분명히 말해라. 단, 100% 보장처럼 말하지 말고 사주상 흐름으로 표현해라.
+- 반드시 [고정 결론]에 제공된 결혼운 판단, 결혼 시기, 장기 결혼 흐름, 잘 맞는 배우자 유형, 피해야 할 배우자 유형, 상대 직업군/생활 분위기, 가족 거리감 기준, 돈 기준을 그대로 반영해라.
+- 사용자의 직업 성향, 사업형, 부업형 이야기는 하지 마라. 단, 잘 맞는 상대의 직업군·생활 분위기·경제관념·가족관계 태도는 반드시 말해도 된다.
+- 결혼 후 부딪히는 지점을 돈, 생활, 가족, 말투, 책임, 집안일, 미래 계획으로 나눠라.
+- "생활 기준이 중요하다"만 반복하지 말고 실제 확인 질문으로 풀어라: 생활비, 저축, 빚, 가족 지원, 명절, 주거, 집안일, 갈등 후 사과 방식.
+- [카테고리별 사주 프로필]의 type, core, risk, direction, avoid, action 중 최소 4개를 결과에 녹여라.
+- 같은 생년월일이 아니면 결혼 시기, 배우자 유형, 피해야 할 유형, 상대 직업군이 다르게 나와야 한다.
 `;
   }
 
@@ -2669,20 +3029,124 @@ function getDirectionChoices(categoryId: CategoryId, categoryTitle: string) {
 `;
   }
 
+  if (categoryId === "health" || title.includes("건강")) {
+    return `
+[건강운이 살아나는 조건]
+1. 수면 시간을 먼저 고정해라
+- 건강운은 의지로 버티는 것보다 회복 리듬을 먼저 잡을 때 살아나.
+- 늦게 자고 늦게 일어나는 패턴이 반복되면 피로와 판단력이 같이 무너질 수 있어.
+
+2. 위장·소화·장 리듬을 가볍게 보지 마라
+- 사주상 긴장과 책임이 몸에 쌓이면 속, 장, 소화 흐름으로 먼저 드러날 수 있어.
+- 야식, 과식, 자극적인 음식, 불규칙한 식사를 줄이는 게 운을 살리는 현실적인 방법이야.
+
+3. 스트레스를 몸 밖으로 빼는 루틴을 만들어라
+- 생각만 많고 표현이 막히면 목, 어깨, 가슴 답답함, 수면 흐름에 부담이 갈 수 있어.
+- 걷기, 스트레칭, 호흡, 짧은 기록처럼 몸 밖으로 빼는 루틴이 필요해.
+
+4. 한 번에 몰아서 무리하지 마라
+- 이 건강운은 몰아서 운동하고 몰아서 쉬는 방식보다 매일 조금씩 회복시키는 쪽이 맞아.
+- 일, 운동, 약속 모두 회복 시간을 빼고 잡으면 건강운이 쉽게 꺾일 수 있어.
+
+5. 이상 신호는 운으로 넘기지 말고 검진으로 확인해라
+- 사주는 몸의 흐름을 보는 참고용이지 의료 진단이 아니야.
+- 실제 증상이 있으면 병원 검진과 전문가 상담은 따로 받아야 해.
+`;
+  }
+
+  if (categoryId === "love" || title.includes("연애")) {
+    return `
+[연애운에서 잡아야 할 방향]
+1. 올해 인연이 들어오는 시기를 놓치지 마라
+- [고정 결론]의 인연 시기를 반드시 다시 짚어라.
+- 그 시기에는 소개, 모임, 연락 재개, 일상 동선의 새 만남 중 어디가 맞는지 구체적으로 말해라.
+
+2. 잘 맞는 상대 유형을 먼저 정해라
+- [고정 결론]의 잘 맞는 상대 유형을 그대로 반영해라.
+- 성격, 말투, 연락 방식, 생활 리듬, 돈과 시간 쓰는 방식으로 구체화해라.
+
+3. 피해야 할 사람을 분명하게 말해라
+- [고정 결론]의 피해야 할 상대 유형을 그대로 반영해라.
+- 단순히 나쁜 사람이라고 하지 말고, 어떤 말투·연락·회피·소비·책임 문제로 힘들어지는지 말해라.
+
+4. 잘 맞는 상대의 직업군과 생활 분위기를 말해라
+- [고정 결론]의 상대 직업/생활 분위기를 반드시 반영해라.
+- 직업명은 예시로만 말하고, 핵심은 그 직업군이 가진 생활 리듬과 책임감이라고 설명해라.
+
+5. 시작보다 유지 조건을 봐라
+- 썸이 생기는 것과 오래 가는 것은 다르다.
+- 올해 연애운은 만남 가능성, 유지 조건, 피해야 할 패턴을 나눠서 봐야 한다.
+`;
+  }
+
+  if (categoryId === "marriage" || title.includes("결혼")) {
+    return `
+[결혼운이 살아나는 조건]
+1. 결혼 전 돈 기준을 먼저 맞춰라
+- 수입보다 중요한 건 돈을 쓰고 모으고 책임지는 방식이야.
+- 생활비, 저축, 가족 지원, 빚, 큰 지출 기준을 미리 말해야 해.
+
+2. 가족 거리감을 확인해라
+- 결혼운은 두 사람만 보는 게 아니라 양가 가족과의 거리도 같이 봐야 해.
+- 부모, 형제, 명절, 경제적 지원 문제가 흐리면 결혼 후 피로가 커질 수 있어.
+
+3. 역할 분담을 말로 정해라
+- 사랑한다고 자동으로 생활이 굴러가진 않아.
+- 집안일, 돈 관리, 가족 대응, 미래 계획을 말로 맞춰야 결혼운이 안정돼.
+
+4. 상대를 바꾸려는 결혼은 피하라
+- 결혼 후 바뀔 거라고 기대하는 부분은 대부분 더 크게 드러난다.
+- 지금 불편한 말투, 소비 습관, 책임 회피는 결혼 전에 확인해야 해.
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `
+[인생대운을 잡는 조건]
+1. 초년의 답답함을 평생 운으로 단정하지 마라
+- 이 흐름은 초년에 막혀도 중년 이후에 판이 바뀔 수 있어.
+- 초반 실패를 기준으로 인생 전체를 포기하면 대운을 못 잡아.
+
+2. 대운 전에 그릇을 먼저 만들어라
+- 운이 들어와도 돈 관리, 몸 관리, 사람 정리가 안 되어 있으면 기회가 부담으로 바뀐다.
+- 대운은 준비된 사람에게는 확장이고, 준비 안 된 사람에게는 압박이야.
+
+3. 사람과 돈의 기준을 바꿔라
+- 대운이 바뀔 때는 인연과 돈 흐름도 같이 바뀌어.
+- 계속 같은 사람, 같은 지출, 같은 일 방식에 묶이면 새 운이 들어와도 못 받아.
+
+4. 건강 리듬을 대운의 기반으로 봐라
+- 인생대운은 체력이 받쳐줘야 오래 끌고 간다.
+- 잠, 소화, 피로, 스트레스 루틴을 잡는 게 대운을 붙잡는 현실적인 준비야.
+`;
+  }
+
+  if (categoryId === "traditional" || title.includes("평생")) {
+    return `
+[평생종합사주에서 잡아야 할 방향]
+1. 초년·청년·중년·말년의 역할을 나눠 봐라
+- 평생운은 한 시기만 보고 좋다 나쁘다 말하는 풀이가 아니야.
+- 초년은 기초, 청년은 실험, 중년은 자리, 말년은 안정으로 나눠 봐야 해.
+
+2. 돈·일·관계를 따로 보지 마라
+- 돈이 막히면 일이 흔들리고, 사람이 흔들리면 건강과 판단이 같이 흔들릴 수 있어.
+- 평생종합사주는 각 운이 서로 어떻게 연결되는지를 봐야 한다.
+
+3. 건강운을 생활 기준으로 바꿔라
+- 평생운에서 건강은 마지막에 보는 부록이 아니야.
+- 몸이 버텨야 돈도 일도 관계도 오래 끌고 갈 수 있어.
+
+4. 중년 이후의 기준을 미리 만들어라
+- 이 사주는 시간이 지나면서 더 선명해지는 부분이 있어.
+- 중년 이후에 돈과 일이 안정되려면 지금부터 사람, 지출, 일 구조를 정리해야 해.
+`;
+  }
+
   return `
 [잡아야 할 방향]
-1. 타고난 장점을 현실의 기준으로 바꿔라
-- 장점도 기준 없이 쓰면 고집이나 무리수가 될 수 있어.
-
-2. 반복해서 흔들리는 상황을 줄여라
-- 약한 부분은 같은 문제로 다시 드러나기 쉬워.
-- 그 부분을 생활 기준과 선택 기준으로 보완해야 해.
-
-3. 지금 카테고리에서 먼저 정해야 할 기준을 잡아라
-- 돈이면 돈 기준, 관계면 거리감, 일이면 역할과 구조를 먼저 봐야 해.
-
-4. 감정이 아니라 반복되는 패턴을 보고 선택해라
-- 운은 한 번의 기분보다 반복되는 흐름에서 더 잘 보여.
+- 이 카테고리는 공통 문장으로 마무리하지 마라.
+- 반드시 [카테고리별 사주 프로필]의 유형, 위험, 실행 방향을 중심으로 다시 써라.
+- 사용자의 만세력에서 강한 부분과 약한 부분을 현실 언어로 바꾸고, 선택 카테고리에 맞는 행동으로만 정리해라.
 `;
 }
 
@@ -2783,9 +3247,10 @@ function getFinalSummaryGuide(categoryId: CategoryId, categoryTitle: string) {
 [형이 딱 정리해줄게]
 - 연애운 결론을 다시 말해라.
 - [카테고리별 사주 프로필]의 관계 유형, 위험, 실행 방향을 반드시 다시 정리해라.
-- 외로움 때문에 시작하는 관계, 초반 설렘만 보는 관계, 생활 리듬이 안 맞는 사람을 조심하라고 말해라.
-- 맞는 방향은 끌림보다 기준, 감정보다 반복되는 태도, 설렘보다 안정감이라고 말해라.
-- 마지막 문장은 "네 연애운은 사람을 잘 고를 때 살아나는 운이야."로 끝내라.
+- 피해야 할 상대 유형을 하나로 특정해라. 예: 말만 빠른 사람, 책임을 떠넘기는 사람, 연락 기준이 안 맞는 사람, 돈과 시간을 계속 기대는 사람, 감정 대화를 피하는 사람.
+- 맞는 방향은 [카테고리별 사주 프로필]의 action 항목을 현실 행동으로 바꿔 말해라.
+- "끌림보다 기준", "반복되는 태도", "안정감"만 반복하지 마라.
+- 마지막 문장은 "네 연애운은 아무나 오래 보는 운이 아니라, 맞는 사람을 고를 때 살아나는 운이야."로 끝내라.
 `;
   }
 
@@ -3426,6 +3891,14 @@ ${getCategoryGuide(categoryId, categoryTitle)}
 [무료 결과 작성 지시]
 무료 결과를 작성해라.
 
+[개인화 강제 규칙]
+- [카테고리별 사주 프로필]의 type, core, risk, direction을 반드시 반영해라.
+- 같은 카테고리라도 프로필 type이 다르면 첫 문장, 조심할 부분, 전체 리포트 예고가 달라져야 한다.
+- "기준을 잡아라", "반복되는 패턴을 봐라", "안정적인 관계" 같은 공통어만으로 문단을 채우지 마라.
+- 연애운은 반드시 상대 유형, 연락/말투/관계 속도 중 2개 이상을 넣어라.
+- 건강운은 반드시 수면, 소화, 장, 순환, 피로, 스트레스 중 프로필에 맞는 2개 이상을 넣어라.
+- 재물운은 반드시 돈이 들어오는 방식과 돈이 새는 구멍을 구분해라.
+
 반드시 아래 4개 섹션만 써라.
 다른 제목 추가 금지.
 
@@ -3888,36 +4361,350 @@ function fallbackFull(categoryId: CategoryId, categoryTitle: string, user: UserI
 
   const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse).replace("[고정 결론]", "").trim();
   const profileText = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
+  const health = getHealthProfile(manse);
+  const money = getMoneyProfile(manse);
+  const career = getCareerProfile(manse);
+  const relationLove = getRelationshipProfile(manse, "love");
+  const relationMarriage = getRelationshipProfile(manse, "marriage");
+  const life = getLifeProfile(manse);
+  const name = getName(user);
+  const title = categoryTitle || "운세";
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `[결론부터 말하면]
+
+${fixed}
+
+[건강 흐름을 먼저 보면]
+
+${name}, 이 건강운은 성격 조언으로 볼 게 아니라 몸이 어디서 먼저 신호를 보내는지를 봐야 해.
+
+${health.core}
+
+${profileText}
+
+[사주상 약해지기 쉬운 흐름]
+
+${health.risk}
+
+위장·소화·장 리듬, 순환, 피로 누적, 수면, 스트레스성 긴장 중 어디가 먼저 흔들리는지 생활에서 확인해야 해.
+
+[무리하면 탈 나는 패턴]
+
+밤낮이 무너지거나, 속이 불편한데도 참고, 스트레스를 말로 풀지 못하고 몸에 쌓아두면 건강운이 눌릴 수 있어.
+
+몰아서 운동하고 몰아서 쉬는 방식도 맞지 않아. 이 운은 꾸준히 회복시키는 루틴이 있어야 살아나.
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+[앞으로 참고 흐름]
+
+앞으로는 큰 변화보다 수면, 식사, 걷기, 스트레스 배출처럼 몸이 버티는 기본 리듬을 먼저 잡는 게 좋아.
+
+컨디션이 좋아지면 돈과 일의 판단도 같이 선명해진다.
+
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
+  }
+
+  if (categoryId === "love" || title.includes("연애")) {
+    const loveTiming = getLoveTimingProfile(manse);
+    const lovePartner = getLovePartnerProfile(manse);
+    return `[결론부터 말하면]
+
+${fixed}
+
+[올해 연애운이 있냐고 묻는다면]
+
+${loveTiming.chance}
+
+올해 인연 흐름이 살아나기 쉬운 시기는 ${loveTiming.timing} 쪽으로 본다.
+
+이 시기는 ${loveTiming.reason}
+
+[언제 사람을 만나기 쉬운지]
+
+${name}, 이 연애운은 가만히 있는데 갑자기 완성형 인연이 떨어지는 구조로 보면 안 돼.
+
+${loveTiming.timing} 전후에는 소개, 모임, 연락 재개, 평소 가던 장소의 새 인연처럼 현실적인 접점이 생기기 쉬워.
+
+이 시기에는 마음에 드는 사람이 있으면 기다리기만 하지 말고, 짧은 대화나 가벼운 약속을 만들어보는 쪽이 좋아.
+
+[어떤 사람과 연애하면 좋은지]
+
+너한테 잘 맞는 사람은 ${lovePartner.good}이다.
+
+${lovePartner.reason}
+
+연애가 오래 가려면 설레는 말보다 ${lovePartner.check}을 봐야 해.
+
+[잘 맞는 상대의 직업과 생활 분위기]
+
+직업으로 보면 ${lovePartner.jobs} 쪽 사람이 비교적 잘 맞을 수 있어.
+
+이건 그 직업을 가진 사람이 무조건 좋다는 뜻이 아니라, 그 직업군이 가진 생활 리듬, 책임감, 말과 행동의 일관성이 네 연애운과 맞기 쉽다는 뜻이야.
+
+[피해야 할 사람 유형]
+
+피해야 할 사람은 ${lovePartner.avoid}이다.
+
+${relationLove.risk}
+
+초반에 설레도 연락이 들쭉날쭉하거나, 돈과 시간 기준이 흐리거나, 불편한 대화를 피하는 사람은 오래 갈수록 네 에너지를 많이 빼앗을 수 있어.
+
+[연애에서 반복되는 패턴]
+
+${relationLove.core}
+
+${profileText}
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+[형이 딱 정리해줄게]
+
+올해 연애운은 아예 닫힌 운으로 보면 안 돼.
+
+다만 아무 사람이나 들어오는 운이 아니라, ${loveTiming.timing} 전후에 현실적인 접점을 만들고 ${lovePartner.good}을 알아보는 눈을 가져야 살아나는 운이야.
+
+${lovePartner.avoid}은 피하고, ${lovePartner.check}이 안정적인 사람을 봐라.
+
+네 연애운은 설렘 하나로 결정하는 운이 아니라, 맞는 사람을 고를 때 진짜 살아나는 운이야.
+`;
+  }
+
+  if (categoryId === "marriage" || title.includes("결혼")) {
+    const marriageTiming = getMarriageTimingProfile(manse);
+    const marriagePartner = getMarriagePartnerProfile(manse);
+
+    return `[결론부터 말하면]
+
+${fixed}
+
+올해 결혼운을 보자면, ${marriageTiming.chance}
+
+결혼운이 살아나는 시기는 ${marriageTiming.timing} 흐름으로 본다. ${marriageTiming.timingReason}
+
+[결혼운의 핵심]
+
+${relationMarriage.core}
+
+${marriageTiming.longFlow}
+
+${profileText}
+
+[언제 결혼운이 들어오는지]
+
+결혼운은 단순히 "언제 결혼한다"로 보는 게 아니라, 진지한 인연이 들어오고 결혼 이야기가 현실화되기 쉬운 시기로 봐야 해.
+
+이 사주에서는 ${marriageTiming.timing} 전후가 가장 눈여겨볼 시기야.
+
+이때 소개, 오래 알고 지낸 사람과의 진전, 현실적인 결혼 대화, 가족이나 돈 문제를 맞춰보는 흐름이 생기기 쉽다.
+
+[어떤 사람과 결혼하면 좋은지]
+
+잘 맞는 배우자 유형은 ${marriagePartner.good}이야.
+
+${marriagePartner.family}
+
+${marriagePartner.money}
+
+결혼은 설렘이 아니라 같이 사는 생활이기 때문에, 이 사람의 말투보다 반복되는 생활 태도를 봐야 해.
+
+[잘 맞는 상대의 직업군과 생활 분위기]
+
+잘 맞는 상대의 직업군은 ${marriagePartner.jobs} 쪽으로 볼 수 있어.
+
+직업명 자체가 정답이라는 뜻은 아니야. 핵심은 그 직업군이 가진 생활 리듬, 책임감, 돈을 대하는 태도야.
+
+[피해야 할 배우자 유형]
+
+피해야 할 사람은 ${marriagePartner.avoid}이야.
+
+처음에는 좋아 보여도 결혼 후에는 돈, 가족, 역할 분담에서 피로가 커질 수 있어.
+
+특히 ${marriagePartner.check}은 결혼 전에 반드시 확인해야 해.
+
+[결혼 전에 확인할 부분]
+
+${relationMarriage.risk}
+
+상대를 바꾸겠다는 기대보다, 지금 이미 보이는 생활 습관과 책임감을 봐야 해.
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+[형이 딱 정리해줄게]
+
+네 결혼운은 ${marriageTiming.timing} 전후를 특히 봐야 하고, 급하게 확정하는 결혼보다 돈·가족·역할 기준이 맞는 결혼이 훨씬 안정돼.
+
+${marriagePartner.good}을 만나야 결혼운이 편하게 살아나고, ${marriagePartner.avoid}은 피하는 게 좋아.
+
+네 결혼운은 설렘보다 생활 기준이 맞을 때 안정된다.
+`;
+  }
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return `[결론부터 말하면]
+
+${fixed}
+
+[돈이 들어오는 방식]
+
+${money.core}
+
+${profileText}
+
+[돈이 새는 구조]
+
+${money.risk}
+
+이 재물운은 돈복이 있냐 없냐로만 보면 안 돼. 어떤 방식으로 들어오고, 어디서 새는지를 같이 봐야 해.
+
+[맞는 수익 구조]
+
+${money.direction}
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+[앞으로 재물 흐름]
+
+앞으로는 큰돈을 한 번에 벌겠다는 생각보다, 반복적으로 돈이 들어오는 구조를 찾는 게 좋아.
+
+고정비, 회수 기간, 정산 기준이 잡히면 재물운이 훨씬 덜 흔들린다.
+
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
+  }
+
+  if (isCareerCategory(categoryId, title)) {
+    return `[결론부터 말하면]
+
+${fixed}
+
+[일이 풀리는 구조]
+
+${career.core}
+
+${profileText}
+
+[피해야 할 일 구조]
+
+${career.risk}
+
+이 직업운은 직업 이름보다 돈과 역할이 만들어지는 구조를 봐야 해.
+
+[맞는 방향]
+
+${career.direction}
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+[앞으로 일 흐름]
+
+앞으로는 남들이 좋다는 일보다 네가 통제할 수 있고 반복 수요가 생기는 일을 봐야 해.
+
+생활 기반을 무너뜨리지 않으면서 자기 수익 구조를 조금씩 만들어야 한다.
+
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `[결론부터 말하면]
+
+${fixed}
+
+[인생대운의 큰 흐름]
+
+${life.core}
+
+${profileText}
+
+[초년운]
+
+초년은 결과가 빨리 잡히기보다 시행착오와 기준을 만드는 흐름으로 봐야 해.
+
+[청년운]
+
+청년운은 방향을 찾고, 돈과 사람관계에서 기준을 세우는 시기야.
+
+[중년운]
+
+중년운은 지금까지 쌓은 기준이 실제 돈과 일의 구조로 바뀌는 시기로 봐야 해.
+
+[말년운]
+
+말년운은 무리한 확장보다 안정, 건강, 가족 거리감, 돈 관리가 중요해.
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
+  }
+
+  if (categoryId === "traditional" || title.includes("평생")) {
+    return `[결론부터 말하면]
+
+${fixed}
+
+[평생 사주의 큰 구조]
+
+이 평생종합사주는 한 가지 운만 보는 게 아니라 돈, 일, 관계, 건강, 가족, 자식운이 서로 어떻게 엮이는지 봐야 해.
+
+${profileText}
+
+[재물운]
+
+${money.core}
+
+[직업운과 사업운]
+
+${career.core}
+
+[건강운]
+
+${health.core}
+
+[인연·가족·자식운]
+
+가까운 사람과의 관계에서는 기대치, 말투, 돈 기준, 책임 분담을 어떻게 잡는지가 중요해.
+
+[초년·청년·중년·말년 흐름]
+
+초년은 기준을 만들고, 청년은 방향을 시험하고, 중년은 자기 판을 키우고, 말년은 안정과 건강 관리로 흐름을 잡는 구조야.
+
+${getRiskChoices(categoryId, categoryTitle)}
+
+${getDirectionChoices(categoryId, categoryTitle)}
+
+${getFinalSummaryGuide(categoryId, categoryTitle)}
+`;
+  }
 
   return `[결론부터 말하면]
 
 ${fixed}
 
-[왜 그렇게 보냐면]
-
-제공된 만세력 기준으로 보면 이 결론은 일간, 월지, 사주 흐름의 균형에서 나온 방향이야.
-
-타고난 장점도 과하면 부담이 되고, 약한 부분은 반복되는 문제로 나타날 수 있어.
+[이 카테고리에서 먼저 봐야 할 핵심]
 
 ${profileText}
 
-[타고난 ${categoryTitle}]
-
-이 운은 없는 운이라기보다, 맞는 방식으로 써야 살아나는 운이야.
-
-[이 운이 막히는 패턴]
-
-급하게 결정하거나, 반복해서 흔들리는 약점을 무시하고 밀어붙이면 같은 문제가 반복될 수 있어.
-
-[이 운이 살아나는 조건]
-
-타고난 장점은 살리고, 부족하게 반복되는 부분은 생활과 선택으로 보완해야 해.
-
-[앞으로 1년 참고 흐름]
-
-앞으로 1년은 결론을 바꾸는 시기가 아니라, 이미 나온 결론을 현실에서 확인하고 기준을 잡는 흐름이야.
+[조심할 부분]
 
 ${getRiskChoices(categoryId, categoryTitle)}
+
+[잡아야 할 방향]
 
 ${getDirectionChoices(categoryId, categoryTitle)}
 
