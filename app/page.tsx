@@ -1583,32 +1583,34 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
           .home-hero {
             border-radius: 26px !important;
-            min-height: 640px !important;
+            min-height: 0 !important;
           }
 
           .home-hero > div:nth-child(2) {
-            display: block !important;
-            min-height: 640px !important;
+            display: flex !important;
+            flex-direction: column-reverse !important;
+            min-height: 0 !important;
           }
 
           .home-hero > div:nth-child(2) > div:first-child {
-            position: absolute !important;
-            inset: 0 !important;
+            position: relative !important;
+            inset: auto !important;
             z-index: 10 !important;
-            justify-content: flex-end !important;
+            justify-content: flex-start !important;
             padding: 18px !important;
-            padding-top: 90px !important;
-            background: linear-gradient(90deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.72) 52%, rgba(0,0,0,0.14) 100%) !important;
+            padding-top: 18px !important;
+            background: linear-gradient(180deg, rgba(5,5,5,0.98) 0%, rgba(9,7,5,0.98) 100%) !important;
           }
 
           .home-hero > div:nth-child(2) > div:last-child {
-            min-height: 640px !important;
-            height: 640px !important;
+            min-height: 360px !important;
+            height: 360px !important;
+            border-bottom: 1px solid rgba(216,168,111,0.55) !important;
           }
 
           .home-hero h1 {
-            font-size: 42px !important;
-            line-height: 1.05 !important;
+            font-size: 38px !important;
+            line-height: 1.08 !important;
           }
 
           .home-hero p {
@@ -1617,12 +1619,12 @@ ${body || "아직 생성된 결과가 없습니다."}`;
           }
 
           .home-hero img {
-            object-position: 67% center !important;
+            object-position: center top !important;
           }
 
           .home-hero .max-w-\[300px\] {
-            max-width: 170px !important;
-            margin-bottom: 18px !important;
+            max-width: 180px !important;
+            margin-bottom: 16px !important;
           }
 
           .home-hero .mt-7.grid {
