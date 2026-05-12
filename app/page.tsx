@@ -98,6 +98,7 @@ const categories: Category[] = [
     id: "today",
     title: "오늘운세",
     subtitle: "오늘 말·돈·사람관계에서 조심할 것",
+    hook: "오늘 피해야 할 말과 돈 선택을 먼저 확인",
     emoji: "🌙",
     price: 1900,
     featured: true,
@@ -107,6 +108,7 @@ const categories: Category[] = [
     id: "worry",
     title: "고민풀이",
     subtitle: "지금 고민이 반복되는 사주적 이유",
+    hook: "왜 같은 고민이 반복되는지 흐름 확인",
     emoji: "✨",
     price: 6900,
     featured: true,
@@ -116,6 +118,7 @@ const categories: Category[] = [
     id: "money",
     title: "재물운",
     subtitle: "돈복 등급과 돈이 붙는 구조",
+    hook: "돈이 안 남는 이유와 새는 구멍 확인",
     emoji: "💰",
     price: 6900,
     featured: true,
@@ -124,6 +127,7 @@ const categories: Category[] = [
     id: "career",
     title: "직업/사업운",
     subtitle: "직장형·사업형·부업형 판정",
+    hook: "나는 직장형일까, 사업형일까?",
     emoji: "💼",
     price: 6900,
     featured: true,
@@ -132,6 +136,7 @@ const categories: Category[] = [
     id: "monthly",
     title: "신년운세",
     subtitle: "올해 재물·직업·이직·건강 흐름",
+    hook: "올해 움직일지 머물지 기준 확인",
     emoji: "🌅",
     price: 9900,
     featured: true,
@@ -141,6 +146,7 @@ const categories: Category[] = [
     id: "health",
     title: "건강운",
     subtitle: "인생 건강운과 체질적 약점",
+    hook: "무리하면 약해지는 생활 패턴 확인",
     emoji: "🩺",
     price: 6900,
     featured: true,
@@ -150,6 +156,7 @@ const categories: Category[] = [
     id: "love",
     title: "연애운",
     subtitle: "어울리는 상대와 피해야 할 상대",
+    hook: "올해 인연이 들어오는 시기와 상대 유형",
     emoji: "❤️",
     price: 6900,
     featured: true,
@@ -158,6 +165,7 @@ const categories: Category[] = [
     id: "marriage",
     title: "결혼운",
     subtitle: "배우자 유형과 결혼 후 생활 기준",
+    hook: "언제 결혼운이 들어오고 어떤 사람과 맞는지",
     emoji: "💍",
     price: 6900,
     featured: true,
@@ -166,6 +174,7 @@ const categories: Category[] = [
     id: "children",
     title: "자식운",
     subtitle: "자식 인연·자식복·관계 흐름",
+    hook: "자식 인연과 부모 역할 흐름 확인",
     emoji: "🧒",
     price: 6900,
     featured: true,
@@ -175,6 +184,7 @@ const categories: Category[] = [
     id: "lifeFlow",
     title: "인생대운",
     subtitle: "초년·청년·중년·말년과 대운 기회",
+    hook: "내 인생에서 크게 열리는 시기 확인",
     emoji: "👑",
     price: 9900,
     featured: true,
@@ -184,6 +194,7 @@ const categories: Category[] = [
     id: "traditional",
     title: "평생종합사주",
     subtitle: "재물·직업·결혼·건강·자식까지 종합",
+    hook: "돈·일·관계·건강·자식운 전체 흐름",
     emoji: "📜",
     price: 9900,
     featured: true,
@@ -193,6 +204,7 @@ const categories: Category[] = [
     id: "compatibility",
     title: "궁합풀이",
     subtitle: "궁합 점수·끌림·충돌·결혼 가능성",
+    hook: "좋아하는데 왜 자꾸 부딪히는지 확인",
     emoji: "👥",
     price: 6900,
   },
@@ -200,6 +212,7 @@ const categories: Category[] = [
     id: "family",
     title: "가족관계",
     subtitle: "가족궁합·책임·서운함·거리 조절",
+    hook: "가족 사이가 왜 힘든지 사주적으로 확인",
     emoji: "🏠",
     price: 6900,
   },
@@ -207,6 +220,7 @@ const categories: Category[] = [
     id: "partner",
     title: "사업파트너",
     subtitle: "동업궁합·돈·역할·책임 구조",
+    hook: "같이 돈 벌어도 되는 사람인지 확인",
     emoji: "🤝",
     price: 6900,
   },
@@ -214,6 +228,7 @@ const categories: Category[] = [
     id: "premium",
     title: "프리미엄상담",
     subtitle: "질문 하나를 깊게 풀어보기",
+    hook: "현재 고민 하나를 길고 구체적으로 분석",
     emoji: "🔮",
     price: 9900,
   },
@@ -487,19 +502,19 @@ const consultPlans: ConsultPlan[] = [
   {
     id: "basic",
     title: "일반 상담권",
-    price: 19000,
+    price: 9900,
     desc: "고민 1개 · 현실적인 선택 방향",
   },
   {
     id: "premium",
     title: "프리미엄 상담권",
-    price: 29000,
+    price: 19900,
     desc: "깊은 고민 1개 · 긴 상담 리포트",
   },
   {
     id: "couple",
     title: "궁합 상담권",
-    price: 39000,
+    price: 19900,
     desc: "두 사람 관계/궁합 집중 풀이",
   },
 ];
@@ -1928,7 +1943,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 {[
                   ["🎯", "결론부터 말해줌", "바쁜 당신을 위한 핵심 진단 풀이"],
                   ["📝", "카테고리별 정밀 분석", "재물·연애·직업 흐름을 따로 분석"],
-                  ["🔒", "깊은 심정 관계 분석", "돈·사람·관계의 막힘을 구체화"],
+                  ["🔒", "반복 패턴 분석", "돈·사람·일에서 반복되는 막힘을 짚어드려요"],
                   ["👑", "프리미엄 전체 리포트", "더 깊고 상세한 인생 흐름 제공"],
                 ].map(([icon, title, desc]) => (
                   <div key={title} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5 text-center shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
@@ -2499,7 +2514,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/45 p-4">
                     <div className="mb-2 text-sm font-black text-[#f5efe6]">
-                      여기서 끊기면 진짜 중요한 선택 기준을 놓칠 수 있어요
+                      전체 리포트에서 이어지는 내용
                     </div>
 
                     <div className="mt-3 space-y-2 text-sm font-semibold text-white">
@@ -2707,6 +2722,23 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </p>
             </div>
 
+            <div className="mb-4 rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4">
+              <div className="text-sm font-black text-[#e0b36d]">
+                제공하지 않는 서비스
+              </div>
+              <p className="mt-3 break-keep text-xs leading-6 text-[#d8d0c6]">
+                소름사주는 사주·운세 기반의 디지털 콘텐츠를 제공하며, 아래 서비스는 제공하지 않습니다.
+              </p>
+              <ul className="mt-3 space-y-1 text-xs leading-6 text-[#d8d0c6]">
+                <li>- 의료 진단, 질병 예측, 치료 지시</li>
+                <li>- 투자 종목 추천, 수익 보장, 손실 보전</li>
+                <li>- 법률 자문, 소송·계약 판단 대행</li>
+                <li>- 심리치료, 정신건강 진단, 상담 치료</li>
+                <li>- 종교·무속 행위, 굿, 부적, 기도 대행</li>
+                <li>- 결혼·임신·합격·취업·재회 확정 보장</li>
+              </ul>
+            </div>
+
             <div className="space-y-3">
               <details className="rounded-2xl border border-[#7a5b37] bg-black/30 p-4">
                 <summary className="cursor-pointer text-sm font-black text-[#e0b36d]">
@@ -2753,16 +2785,13 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             </div>
 
             <div className="mt-5 border-t border-[#7a5b37] pt-4 text-[11px] leading-5 text-[#9d9388]">
-              <p>
-                상호명: 비앤케이 컴퍼니 · 대표자: 이성국 · 사업자등록번호:
-                519-03-02347
-              </p>
-              <p>
-                사업장주소: 경북 구미시 백산로 4길 40, 이림스칼렛 201호
-              </p>
-              <p>
-                대표전화번호: 010-5355-5146 · 이메일: kkokku0@naver.com
-              </p>
+              <div className="mb-2 text-sm font-black text-[#e0b36d]">회사정보</div>
+              <p>상호명: 비앤케이 컴퍼니</p>
+              <p>대표자: 이성국</p>
+              <p>사업자등록번호: 519-03-02347</p>
+              <p>사업장주소: 경북 구미시 백산로 4길 40, 이림스칼렛 201호</p>
+              <p>대표전화번호: 010-5355-5146</p>
+              <p>이메일: kkokku0@naver.com</p>
               <p>통신판매업신고번호: 2024-경북구미-0959</p>
               <p className="mt-2">© 소름사주. All rights reserved.</p>
             </div>
