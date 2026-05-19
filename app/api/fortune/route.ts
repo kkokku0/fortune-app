@@ -323,7 +323,6 @@ function buildFortuneSeed(params: {
   partnerManse?: any | null;
 }) {
   const seedSource = stableStringify({
-    routeVersion: ROUTE_VERSION,
     deterministicLogic: DETERMINISTIC_LOGIC,
     categoryId: params.categoryId,
     categoryTitle: params.categoryTitle,
@@ -1758,9 +1757,10 @@ function getCategoryProfileText(categoryId: CategoryId, categoryTitle: string, m
 
   return `
 [카테고리별 사주 프로필]
-- 이 카테고리는 관계/점수형 또는 공통형 카테고리다.
-- [고정 결론]과 [카테고리 전용 지침]을 우선 적용해라.
-- 추상적인 조언으로 끝내지 말고 선택 카테고리에 맞는 현실 행동으로 풀어라.
+- 프로필: 관계/점수형 또는 공통형 카테고리
+- 핵심 해석: 이 카테고리는 점수, 등급, 관계 구조, 현실에서 부딪히는 지점을 중심으로 봐야 하는 흐름이다.
+- 가장 조심할 점: 감정이나 좋은 말로만 넘기면 실제 생활, 돈 기준, 책임 구조에서 같은 문제가 반복될 수 있다.
+- 잡아야 할 방향: 선택 카테고리에 맞춰 관계의 거리, 돈 기준, 말투, 역할, 책임 범위를 현실적으로 정리해야 한다.
 `;
 }
 
@@ -2038,6 +2038,9 @@ function buildSystemPrompt() {
 
 [가장 중요한 규칙]
 - 모든 결과는 반드시 결론부터 시작한다.
+- [내부 작성 규칙 - 결과에 절대 출력 금지] 아래 내용은 작성 참고용이다. 결과 본문에 절대 쓰지 마라.
+- "AI는", "절대 바꾸지 마라", "첫 문장은 반드시", "오늘운세에서는 사주 용어를", "카테고리 전용 지침", "우선 적용해라" 같은 내부 지시문 표현을 결과에 절대 출력하지 마라.
+- 결과에는 사용자가 읽을 운세 풀이만 써라.
 - 절대 "야 이름, 사주명리학으로 우선 네 일간과 오행 흐름부터..."로 시작하지 마라.
 - 일간, 월주, 월지, 오행 설명은 결론을 말한 뒤 두 번째 섹션에서만 설명해라.
 - 단, 자식운 유료 리포트는 [왜 그렇게 보냐면] 섹션을 쓰지 않고, 자식운 전용 섹션에서 사주 근거를 자연스럽게 녹여라.
@@ -3959,6 +3962,86 @@ function getFullSections(categoryId: CategoryId, categoryTitle: string) {
 `;
 }
 
+
+function makeInternalReferenceText(text: string) {
+  return (text || "")
+    .replace(/\[[^\]]+\]/g, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line) return false;
+      if (/^(AI는|첫 문장은|반드시|절대|다른 제목|마크다운|출력|작성|무료 결과|전체 리포트|질문 사용 제한)/.test(line)) return false;
+      if (line.includes("그대로 복붙")) return false;
+      if (line.includes("참고만 하고")) return false;
+      if (line.includes("출력 구조")) return false;
+      if (line.includes("섹션")) return false;
+      if (line.includes("마라")) return false;
+      if (line.includes("해라")) return false;
+      if (line.includes("써라")) return false;
+      if (line.includes("반드시")) return false;
+      if (line.includes("절대")) return false;
+      if (line.includes("복붙")) return false;
+      if (line.includes("금지")) return false;
+      if (line.includes("카테고리별 사주 프로필")) return false;
+      if (line.includes("고정 결론")) return false;
+      if (line.includes("고정 직업 성향 판정")) return false;
+      return true;
+    })
+    .join(NL)
+    .replace(/\n{3,}/g, NL + NL)
+    .trim();
+}
+
+function makeOutputStructureText(text: string) {
+  return (text || "")
+    .replace(/\[출력 구조\]/g, "출력할 섹션 구조")
+    .replace(/\[중복 금지\]/g, "중복 방지 규칙")
+    .replace(/\[자식운 필수 규칙\]/g, "자식운 필수 규칙")
+    .replace(/\[자식운에서 절대 쓰면 안 되는 섹션\]/g, "자식운에서 쓰지 않을 섹션")
+    .replace(/\[프리미엄상담 핵심\]/g, "프리미엄상담 핵심")
+    .replace(/\[평생종합사주 필수 규칙\]/g, "평생종합사주 필수 규칙")
+    .trim();
+}
+
+
+function getAllowedFullSectionTitles(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+
+  if (isChildrenCategory(categoryId, title)) {
+    return "[결론부터 말하면]\n[자식 인연의 강약]\n[자식복의 성격]\n[자식과 나의 관계]\n[자식과 가족관계]\n[자식의 가능성과 성공운]\n[부모로서 조심할 부분]\n[형이 딱 정리해줄게]";
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    return "[결론부터 말하면]\n[올해 전체 흐름]\n[올해 돈·일·이직운]\n[올해 건강·관계운]\n[1~3개월 / 4~6개월 / 7~9개월 / 10~12개월]\n[올해 피해야 할 선택]\n[올해 잡아야 할 방향]";
+  }
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return "[결론부터 말하면]\n[왜 그렇게 보냐면]\n[돈이 들어오는 방식]\n[돈이 새는 구조]\n[맞는 수익 구조]\n[앞으로 1년 재물 흐름]\n[형이 딱 정리해줄게]";
+  }
+
+  if (isCareerCategory(categoryId, title)) {
+    return "[결론부터 말하면]\n[고정 직업 성향]\n[맞는 일 구조]\n[피해야 할 일 구조]\n[앞으로 1년 일 흐름]\n[지금 테스트할 방향]\n[형이 딱 정리해줄게]";
+  }
+
+  if (categoryId === "premium" || title.includes("프리미엄")) {
+    return "[결론부터 말하면]\n[질문의 진짜 핵심]\n[사주상 이 문제가 반복되는 이유]\n[지금 판단에서 가장 중요하게 봐야 할 기준]\n[선택지별 흐름]\n[이 방향으로 가면 생기는 일]\n[반대로 가면 생기는 일]\n[앞으로 1년 실행법]\n[인생 전반 실행법]\n[형이 딱 정리해줄게]";
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return "[결론부터 말하면]\n[초년운]\n[청년운]\n[중년운]\n[말년운]\n[내 인생의 대운 기회]\n[가장 중요한 대운]\n[대운을 잡으려면]";
+  }
+
+  if (categoryId === "traditional" || title.includes("평생")) {
+    return "[결론부터 말하면]\n[타고난 사주 핵심]\n[초년운]\n[청년운]\n[중년운]\n[말년운]\n[재물운]\n[직업운·사업운]\n[건강운]\n[인연·가족·자식운]\n[대운과 인생이 풀리는 시기]\n[최종적으로 안정되는 시기]\n[형이 딱 정리해줄게]";
+  }
+
+  if (isCompatibilityCategory(categoryId, title) || isFamilyCategory(categoryId, title) || isPartnerCategory(categoryId, title)) {
+    return "[결론부터 말하면]\n[점수 해석]\n[맞는 부분]\n[부딪히는 부분]\n[같이 가면 생길 수 있는 문제]\n[좋아지는 조건]\n[형이 딱 정리해줄게]";
+  }
+
+  return "[결론부터 말하면]\n[왜 그렇게 보냐면]\n[이 운이 막히는 패턴]\n[이 운이 살아나는 조건]\n[앞으로 1년 참고 흐름]\n[형이 딱 정리해줄게]";
+}
+
 function buildPreviewPrompt(params: {
   user: UserInfo;
   categoryId: CategoryId;
@@ -3969,69 +4052,58 @@ function buildPreviewPrompt(params: {
   profileText: string;
 }) {
   const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText } = params;
+  const safeProfileText = makeInternalReferenceText(profileText);
+  const safeCategoryGuide = makeInternalReferenceText(getCategoryGuide(categoryId, categoryTitle));
 
   return `
+역할: 너는 소름사주의 사주명리학 기반 운세 리포트 작성자다.
+말투: 친한 형이 현실적으로 짚어주는 말투. 존댓말 보고서체 금지.
+
+아래 INTERNAL_DATA는 만세력과 코드가 계산한 고정값이다.
+INTERNAL_DATA는 절대 그대로 출력하지 말고, 고객이 읽을 자연스러운 사주풀이로 다시 풀어라.
+
+사용자 입력:
 ${buildUserInfoText(user)}
 
-${manseText}
+만세력과 고정 기준:
+${makeInternalReferenceText(manseText)}
 
+고정 결론:
 ${fixedConclusionText}
 
-${profileText}
+카테고리 내부 프로필:
+${safeProfileText}
 
-[선택 카테고리]
-${categoryTitle}
+카테고리 작성 참고:
+${safeCategoryGuide}
 
-[사용자 질문]
-${question || "없음"}
+선택 카테고리: ${categoryTitle}
+사용자 질문: ${question || "없음"}
 
-[질문 사용 제한]
-- 위 사용자 질문은 현재 고민을 이해하는 용도로만 사용해라.
-- 질문에 나온 직업, 부업, 사업, 지역, 과거 대화 맥락을 사주상 고정 성향으로 학습하거나 반영하지 마라.
-- 직업 성향, 돈복 등급, 건강운 등급, 궁합 점수는 반드시 [고정 결론]과 [고정 직업 성향 판정]만 따른다.
+절대 출력 금지:
+- INTERNAL_DATA, 내부 작성 규칙, 작성 참고, 프로필, 고정 결론, 출력 구조, 질문 사용 제한이라는 말
+- "AI는", "절대 바꾸지 마라", "반드시", "~해라", "~마라", "복붙", "섹션", "카테고리별 사주 프로필" 같은 작성 지시문
+- 만세력 원문 표를 그대로 나열하는 방식
 
-${getCategoryGuide(categoryId, categoryTitle)}
-
-[무료 결과 작성 지시]
-무료 결과를 작성해라.
-
-[개인화 강제 규칙]
-- [카테고리별 사주 프로필]의 type, core, risk, direction을 반드시 반영해라.
-- 같은 카테고리라도 프로필 type이 다르면 첫 문장, 조심할 부분, 전체 리포트 예고가 달라져야 한다.
-- "기준을 잡아라", "반복되는 패턴을 봐라", "안정적인 관계" 같은 공통어만으로 문단을 채우지 마라.
-- 연애운은 반드시 상대 유형, 연락/말투/관계 속도 중 2개 이상을 넣어라.
-- 건강운은 반드시 수면, 소화, 장, 순환, 피로, 스트레스 중 프로필에 맞는 2개 이상을 넣어라.
-- 재물운은 반드시 돈이 들어오는 방식과 돈이 새는 구멍을 구분해라.
-
-반드시 아래 4개 섹션만 써라.
-다른 제목 추가 금지.
-
+무료 결과는 정확히 아래 4개 제목만 사용한다.
 [결론부터 말하면]
-- 첫 문장은 반드시 [고정 결론]과 같은 의미로 시작해라.
-- 만세력 설명부터 시작하지 마라.
-- 첫 문장은 사용자가 바로 이해할 수 있는 현실어로 써라.
-- 등급 표현은 "중다", "상다"처럼 쓰지 말고 "중으로 본다", "상으로 본다"처럼 써라.
-
 [왜 그렇게 보냐면]
-- 여기서 일간, 월지, 오행 분포를 설명해라.
-- [본인 만세력]에 있는 값만 사용해라.
-- 궁합풀이, 가족관계, 사업파트너에서는 [본인 만세력]과 [상대방 만세력]을 비교해라.
-- 어려운 명리학 용어는 현실 언어로 풀어라.
-- 오행 용어를 길게 쓰지 말고 현실 단어로 번역해라.
-
 [이 운에서 조심할 부분]
-- 이 카테고리에서 반복될 수 있는 문제를 말해라.
-- 겁주지 말고, 왜 그런 패턴이 나오는지 사주 근거로 말해라.
-- 궁합/가족관계/사업파트너에서는 공통 fallback 문구를 쓰지 말고 두 사람의 사주 구조 기반으로 말해라.
-- 재물운/직업운/건강운/연애운/결혼운/자식운/신년운세/고민풀이/프리미엄은 [카테고리별 사주 프로필]의 위험 요소를 반드시 반영해라.
-
 [전체 리포트에서 이어지는 핵심]
-${getPreviewTease(categoryId, categoryTitle)}
 
-길이:
-- 1200~1700자.
-- 문단 사이에 빈 줄을 넣어라.
-- 말투는 친한 형처럼.
+작성 규칙:
+- 첫 문장은 고정 결론과 같은 의미로 시작한다.
+- 사주 용어부터 시작하지 말고 현실 언어로 시작한다.
+- [왜 그렇게 보냐면]에서만 만세력 근거를 짧게 풀고, 어려운 용어는 바로 쉬운 말로 번역한다.
+- ${categoryTitle} 카테고리의 목적에 맞는 내용만 쓴다.
+- 재물운은 돈이 들어오는 방식과 새는 구조를 구분한다.
+- 오늘운세는 오늘 하루의 말, 돈, 사람관계, 몸 컨디션, 피해야 할 선택만 다룬다.
+- 궁합/가족/사업파트너는 점수와 등급을 먼저 말하고 관계 구조를 푼다.
+- 문단 사이에는 빈 줄을 넣는다.
+- 길이 1200~1700자.
+
+[전체 리포트에서 이어지는 핵심]에는 아래 내용을 고객용 문장으로 자연스럽게 반영한다.
+${getPreviewTease(categoryId, categoryTitle)}
 `;
 }
 
@@ -4257,11 +4329,118 @@ function getFullReportStructure(categoryId: CategoryId, categoryTitle: string) {
 }
 
 function cleanGeneratedText(text: string) {
-  return (text || "")
+  let source = text || "";
+
+  // AI가 내부 프롬프트 제목을 본문처럼 따라 쓴 경우, 섹션 단위로 제거한다.
+  const internalSectionTitles = [
+    "카테고리별 사주 프로필",
+    "내부 작성 규칙",
+    "내부 규칙",
+    "프롬프트",
+    "개인화 강제 규칙",
+    "무료 결과 작성 지시",
+    "전체 리포트 작성 지시",
+    "출력 구조",
+    "카테고리 세부 참고",
+    "질문 사용 제한",
+  ];
+
+  for (const title of internalSectionTitles) {
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    source = source.replace(new RegExp(`\\n?\\[${escaped}\\][\\s\\S]*?(?=\\n\\[[^\\]]+\\]|$)`, "g"), "");
+  }
+
+  const forbiddenExactIncludes = [
+    "AI는 이 결론을 절대 바꾸지 마라",
+    "AI는 이 돈복 등급을 절대 바꾸지 마라",
+    "AI는 이 건강운 등급을 절대 바꾸지 마라",
+    "AI는 이 직업 성향을 절대 바꾸지 마라",
+    "AI는 이 궁합 점수와 등급을 절대 바꾸지 마라",
+    "AI는 이 가족관계 점수와 등급을 절대 바꾸지 마라",
+    "AI는 이 사업파트너 점수와 등급을 절대 바꾸지 마라",
+    "첫 문장은 반드시 위 결론과 같은 의미로 시작해라",
+    "오늘운세에서는 사주 용어를 첫 문장에 쓰지 마라",
+    "오늘운세에서는 인생 전체 조언을 하지 말고",
+    "고정 결론과",
+    "카테고리 전용 지침",
+    "우선 적용해라",
+    "결과에 절대 출력하지 마라",
+    "출력 금지",
+    "결제 유도 문구 금지",
+    "다른 제목 추가 금지",
+    "마크다운 제목 기호",
+  ];
+
+  const forbiddenLinePatterns = [
+    /^\s*\[?내부.*규칙.*\]?\s*$/,
+    /^\s*\[?내부.*출력.*금지.*\]?\s*$/,
+    /^\s*\[?프롬프트.*\]?\s*$/,
+    /^\s*AI는\s.+(마라|해라)\.?\s*$/,
+    /^\s*첫 문장은 반드시\s.+$/,
+    /^\s*(오늘운세|신년운세|프리미엄 상담|고민풀이|궁합풀이|가족관계|사업파트너|재물운|직업\/사업운|건강운|자식운|결혼운|연애운|인생대운|평생종합사주)에서는\s.+(마라|해라)\.?\s*$/,
+    /^\s*-\s*반드시\s*$/,
+    /^\s*-\s*반드시\s.+(마라|해라|써라)\.?\s*$/,
+    /^\s*-\s*.*(출력|작성|사용자|만세력|프로필|섹션|제목).*(마라|해라|써라|금지)\.?\s*$/,
+    /^\s*-\s*이 카테고리는 공통 문장으로 마무리하지 마라\.?\s*$/,
+    /^\s*-\s*사용자의 만세력에서.*$/,
+  ];
+
+  const cleanedLines = source
     .replace(/^#{1,6}\s*/gm, "")
     .replace(/^\s*#\s*$/gm, "")
+    .split(/\r?\n/)
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (forbiddenExactIncludes.some((item) => trimmed.includes(item))) return false;
+      if (forbiddenLinePatterns.some((pattern) => pattern.test(trimmed))) return false;
+      return true;
+    })
+    .join(NL);
+
+  return cleanedLines
     .replace(/\n{4,}/g, NL + NL + NL)
+    .replace(/\[결론부터 말하면\]\s*\n\s*\[결론부터 말하면\]/g, "[결론부터 말하면]")
+    .replace(/(결론부터 말하면,\s*[^\n]+)\n\s*\1/g, "$1")
     .trim();
+}
+
+function getPublicFixedConclusionText(block: string) {
+  const withoutTitle = (block || "").replace("[고정 결론]", "").trim();
+  const aiIndex = withoutTitle.indexOf("AI는 ");
+  const publicPart = aiIndex >= 0 ? withoutTitle.slice(0, aiIndex) : withoutTitle;
+
+  return publicPart
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join(NL + NL)
+    .trim();
+}
+
+function getInternalFixedRules(block: string) {
+  const withoutTitle = (block || "").replace("[고정 결론]", "").trim();
+  const aiIndex = withoutTitle.indexOf("AI는 ");
+  if (aiIndex < 0) return "";
+
+  return withoutTitle.slice(aiIndex).trim();
+}
+
+function buildSafeFixedConclusionBlock(block: string) {
+  const publicPart = getPublicFixedConclusionText(block);
+  const internalRules = getInternalFixedRules(block);
+
+  if (!internalRules) {
+    return `고객에게 보여줄 고정 결론:
+${publicPart}`.trim();
+  }
+
+  return `고객에게 보여줄 고정 결론:
+${publicPart}
+
+내부 작성 규칙 시작 - 아래 내용은 결과 본문에 절대 쓰지 말고, 의미만 반영한다.
+${internalRules}
+내부 작성 규칙 끝`.trim();
 }
 
 function buildFullPrompt(params: {
@@ -4274,519 +4453,435 @@ function buildFullPrompt(params: {
   profileText: string;
 }) {
   const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText } = params;
-  const categorySections = getFullSections(categoryId, categoryTitle);
+  const categorySections = makeInternalReferenceText(getFullSections(categoryId, categoryTitle));
+  const safeProfileText = makeInternalReferenceText(profileText);
+  const safeCategoryGuide = makeInternalReferenceText(getCategoryGuide(categoryId, categoryTitle));
+  const safeRisk = makeInternalReferenceText(getRiskChoices(categoryId, categoryTitle));
+  const safeDirection = makeInternalReferenceText(getDirectionChoices(categoryId, categoryTitle));
+  const safeSummary = makeInternalReferenceText(getFinalSummaryGuide(categoryId, categoryTitle));
+  const outputStructure = getAllowedFullSectionTitles(categoryId, categoryTitle);
 
   return `
+역할: 너는 소름사주의 사주명리학 기반 운세 리포트 작성자다.
+말투: 친한 형이 현실적으로 길게 풀어주는 말투. 존댓말 보고서체 금지.
+
+아래 INTERNAL_DATA는 만세력과 코드가 계산한 고정값이다.
+INTERNAL_DATA는 절대 그대로 출력하지 말고, 고객이 읽을 자연스러운 전체 리포트로 다시 풀어라.
+
+사용자 입력:
 ${buildUserInfoText(user)}
 
-${manseText}
+만세력과 고정 기준:
+${makeInternalReferenceText(manseText)}
 
+고정 결론:
 ${fixedConclusionText}
 
-${profileText}
+카테고리 내부 프로필:
+${safeProfileText}
 
-[선택 카테고리]
-${categoryTitle}
+카테고리 작성 참고:
+${safeCategoryGuide}
 
-[사용자 질문]
-${question || "없음"}
+선택 카테고리: ${categoryTitle}
+사용자 질문: ${question || "없음"}
 
-[질문 사용 제한]
-- 위 사용자 질문은 현재 고민을 이해하는 용도로만 사용해라.
-- 질문에 나온 직업, 부업, 사업, 지역, 과거 대화 맥락을 사주상 고정 성향으로 학습하거나 반영하지 마라.
-- 직업 성향, 돈복 등급, 건강운 등급, 궁합 점수는 반드시 [고정 결론]과 [고정 직업 성향 판정]만 따른다.
+출력할 리포트 구조:
+${outputStructure}
 
-${getCategoryGuide(categoryId, categoryTitle)}
-
-[전체 리포트 작성 지시]
-전체 유료 리포트를 작성해라.
-결제 유도 문구 금지.
-다른 카테고리 추천 금지.
-등급 표현은 "중다", "상다"처럼 쓰지 말고 "중으로 본다", "상으로 본다"처럼 자연스럽게 써라.
-궁합/가족관계/사업파트너에서는 "불안해서 급하게 결정", "남이 좋다는 이유", "이미 아닌 걸 알면서" 같은 공통 fallback 문구 금지.
-재물운/직업운/건강운/연애운/결혼운/자식운/신년운세/고민풀이/프리미엄/인생대운은 [카테고리별 사주 프로필]의 유형, 위험, 실행 방향을 반드시 반영해라.
-
-자식운일 경우에는 반드시 자식운 전용 출력 구조만 사용해라.
-자식운일 경우 [왜 그렇게 보냐면], [이 운이 막히는 패턴], [이 운이 살아나는 조건], [앞으로 1년 참고 흐름] 섹션을 절대 쓰지 마라.
-자식운일 경우 [자식 인연의 강약], [자식복의 성격], [자식과 나의 관계], [자식과 가족관계], [자식의 가능성과 성공운], [부모로서 조심할 부분]을 반드시 써라.
-자식운은 일반 운세처럼 쓰지 말고 부모와 자식 관계 리포트처럼 써라.
-자식운에서는 "자식이 들어온다면"이라는 표현을 여러 번 반복하지 마라.
-자식운에서는 같은 문장을 섹션마다 반복하지 마라.
-
-마크다운 제목 기호 # 를 절대 쓰지 마라. 제목은 [결론부터 말하면]처럼 대괄호만 써라.
-빈 제목, # 단독 줄, 의미 없는 장식 문자를 출력하지 마라.
-
-${getFullReportStructure(categoryId, categoryTitle)}
-
-[카테고리 세부 참고]
-아래 내용은 참고만 하고, 출력 구조의 섹션 수를 늘리지 마라.
+사주풀이에 반영할 참고 내용:
 ${categorySections}
-${getRiskChoices(categoryId, categoryTitle)}
-${getDirectionChoices(categoryId, categoryTitle)}
-${getFinalSummaryGuide(categoryId, categoryTitle)}
 
-길이:
-- 일반 카테고리: 3500~6500자.
-- 프리미엄상담: 5000~8000자.
-- 평생종합사주: 6500~9500자.
-- 자식운: 3500~6500자. 단, 반드시 자식운 전용 8개 섹션으로 구체적으로 작성해라.
-- 문단 사이에 빈 줄을 넣어라.
+조심할 선택 참고:
+${safeRisk}
+
+잡아야 할 방향 참고:
+${safeDirection}
+
+마무리 참고:
+${safeSummary}
+
+절대 출력 금지:
+- INTERNAL_DATA, 내부 작성 규칙, 작성 참고, 프로필, 출력 구조, 질문 사용 제한이라는 말
+- "AI는", "절대 바꾸지 마라", "반드시", "~해라", "~마라", "복붙", "섹션", "카테고리별 사주 프로필" 같은 작성 지시문
+- "아래 항목을 그대로", "출력 금지", "다른 제목 추가 금지" 같은 프롬프트 문장
+- 만세력 원문 표를 그대로 나열하는 방식
+
+작성 규칙:
+- 첫 문장은 고정 결론과 같은 의미로 시작한다.
+- 결제 유도 문구를 쓰지 않는다.
+- 출력할 리포트 구조에 적힌 제목만 사용한다.
+- 마크다운 # 제목 기호를 쓰지 않는다.
+- 각 섹션은 고객에게 읽히는 사주풀이 문장으로만 쓴다.
+- 내부 참고 내용을 "프로필/핵심 해석/위험/방향" 같은 라벨로 출력하지 말고 자연스러운 해설로 풀어라.
+- 재물운은 돈복 등급, 돈이 들어오는 방식, 돈이 새는 구조, 맞는 수익 구조를 깊게 푼다.
+- 직업/사업운은 고정 직업 성향을 바꾸지 않는다.
+- 건강운은 의료 진단이 아니라 위장·소화·장·순환·피로·수면·스트레스성 긴장 중 맞는 흐름으로 설명한다.
+- 궁합/가족/사업파트너는 점수와 등급을 먼저 말하고, 말투·돈 기준·책임·거리감·역할 구조를 푼다.
+- 자식운은 자식 유무/수/성별을 단정하지 않는다.
+- 문단 사이에는 빈 줄을 넣는다.
+- 일반 카테고리는 3500~6500자, 프리미엄은 5000~8000자, 평생종합사주는 6500~9500자.
 `;
 }
 
 function fallbackPreview(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
-  const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse).replace("[고정 결론]", "").trim();
-  const profileText = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
+  const fixed = getPublicFixedConclusionText(getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse));
+  const title = categoryTitle || "";
+  const profile = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
+  const safeProfile = makeInternalReferenceText(profile);
+  const flow = getReadableElementFlow(manse);
+  const name = getName(user);
 
-  return `[결론부터 말하면]
+  let why = `제공된 만세력 기준으로 보면 ${name}에게는 ${flow.strongestText}이 비교적 강하게 잡히고, ${flow.weakestText}은 생활에서 보완해야 하는 흐름이야.`;
+  let caution = "오늘이나 지금 이 운을 무리하게 밀어붙이면 장점이 오히려 고집이나 부담으로 바뀔 수 있어.";
+
+  if (categoryId === "today" || title.includes("오늘")) {
+    why = `오늘은 말, 돈, 약속에서 속도를 조금 늦춰야 하는 흐름이야. 특히 바로 답장하거나 급하게 결제하거나 불편한 부탁을 바로 받아들이는 건 한 번 더 보고 움직이는 게 좋아.`;
+    caution = "기분 상한 상태에서 바로 말하는 것, 필요 없는 지출, 누가 재촉한다고 바로 결정하는 걸 조심해야 해.";
+  } else if (categoryId === "money" || title.includes("재물")) {
+    const money = getMoneyProfile(manse);
+    why = money.core;
+    caution = money.risk;
+  } else if (isCareerCategory(categoryId, title)) {
+    const career = getCareerProfile(manse);
+    why = career.core;
+    caution = career.risk;
+  } else if (categoryId === "health" || title.includes("건강")) {
+    const health = getHealthProfile(manse);
+    why = health.core;
+    caution = health.risk;
+  } else if (categoryId === "love" || title.includes("연애")) {
+    const love = getRelationshipProfile(manse, "love");
+    why = love.core;
+    caution = love.risk;
+  } else if (categoryId === "marriage" || title.includes("결혼")) {
+    const marriage = getRelationshipProfile(manse, "marriage");
+    why = marriage.core;
+    caution = marriage.risk;
+  } else if (isCompatibilityCategory(categoryId, title)) {
+    const score = getCompatibilityScore(manse, partnerManse || null);
+    why = `두 사람은 ${score.summary}으로 보는 흐름이야. 점수만 좋고 나쁨으로 끝내기보다 말투, 생활 리듬, 돈 기준을 같이 봐야 해.`;
+    caution = score.risk;
+  } else if (isFamilyCategory(categoryId, title)) {
+    const score = getFamilyScore(manse, partnerManse || null);
+    why = `이 가족관계는 ${score.summary}으로 보는 흐름이야. 가족이라는 이유로 모든 걸 감당하기보다 책임과 거리의 선을 잡아야 해.`;
+    caution = score.risk;
+  } else if (isPartnerCategory(categoryId, title)) {
+    const score = getBusinessPartnerScore(manse, partnerManse || null);
+    why = `이 사업파트너 관계는 ${score.summary}으로 보는 흐름이야. 좋은 사람인지보다 같이 돈을 만들고 나눌 기준이 맞는지가 중요해.`;
+    caution = score.risk;
+  }
+
+  return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
 
 [왜 그렇게 보냐면]
 
-제공된 만세력 기준으로 보면 이 결론은 타고난 성향과 사주 흐름에서 나온 방향이야.
+${why}
 
-이번 카테고리에서는 아래 흐름을 같이 봐야 해.
-
-${profileText}
+${safeProfile ? safeProfile.split(NL).slice(0, 4).join(NL + NL) : "이 흐름은 만세력에서 보이는 강한 부분과 약한 부분을 선택 카테고리에 맞춰 현실적으로 풀어본 방향이야."}
 
 [이 운에서 조심할 부분]
 
-이 운은 무리하게 밀어붙인다고 바로 좋아지는 흐름은 아니야.
+${caution}
 
-타고난 장점은 살리고, 반복해서 흔들리는 약점은 생활 기준으로 보완해야 같은 문제가 줄어들어.
+지금은 좋은 말로만 넘기기보다 실제로 손해가 생기는 장면을 먼저 줄여야 해. 돈이면 새는 구멍, 일이면 무리한 구조, 관계면 말투와 거리감, 건강이면 피로와 회복 리듬을 봐야 해.
 
 [전체 리포트에서 이어지는 핵심]
 
-${getPreviewTease(categoryId, categoryTitle)}`;
-}
-
-function fallbackChildrenFull(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
-  const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse)
-    .replace("[고정 결론]", "")
-    .trim();
-  const profileText = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
-
-  return `[결론부터 말하면]
-
-${fixed}
-
-[자식 인연의 강약]
-
-자식운은 자식이 있다 없다를 확정하는 풀이가 아니야.
-
-이 흐름은 자식 인연이 어떤 방식으로 들어오고, 들어온 인연을 부모가 어떤 관계로 키워가느냐를 보는 거야.
-
-${profileText}
-
-자식 인연이 강하게 보이면 그만큼 기쁨도 커질 수 있지만, 동시에 부모 역할도 선명해져.
-
-반대로 자식운이 늦게 드러나는 구조라면 조급하게 단정할 게 아니라, 관계를 만들어가는 속도와 가족 안의 준비 상태를 같이 봐야 해.
-
-[자식복의 성격]
-
-자식복은 단순히 편하게 들어오는 복만 뜻하지 않아.
-
-기쁨으로 드러날 수도 있고, 책임으로 먼저 들어왔다가 시간이 지나면서 가족 안에서 복으로 느껴질 수도 있어.
-
-중요한 건 자식이 부모에게 어떤 의미로 들어오느냐야.
-
-마음의 기쁨이 커지는 구조인지, 책임과 현실 부담이 같이 커지는 구조인지, 늦게 고마움으로 돌아오는 구조인지까지 봐야 해.
-
-자식복이 좋다는 말도 아무 부담이 없다는 뜻은 아니야.
-
-오히려 자식과의 관계를 잘 다듬을수록 나중에 정서적인 보람과 가족 안의 안정감으로 돌아오는 흐름에 가깝다.
-
-[자식과 나의 관계]
-
-자식과의 관계는 말투, 기대치, 거리감이 핵심이야.
-
-가까운 관계가 될 수 있어도 부모가 너무 앞서가면 자식 입장에서는 사랑보다 압박으로 느껴질 수 있어.
-
-통제와 방임 사이의 균형이 중요해.
-
-아이를 완전히 놔두는 것도 아니고, 부모 기준으로만 끌고 가는 것도 아니야.
-
-자식과의 관계에서 제일 중요한 건 반복되는 말투야.
-
-부모는 조언이라고 생각해도 자식은 평가로 받아들일 수 있고, 부모는 걱정이라고 생각해도 자식은 간섭으로 느낄 수 있어.
-
-[자식과 가족관계]
-
-자식은 가족 안에서 기쁨이 될 수 있지만, 동시에 돈, 교육, 기대치, 책임 문제가 모이는 지점이 될 수도 있어.
-
-배우자와 교육 방향이 다르거나, 조부모의 기대가 섞이거나, 형제자매 사이에서 비교가 생기면 자식운이 무거워질 수 있어.
-
-그래서 자식운은 아이 하나만 보는 게 아니라 가족 전체의 말투와 기준을 같이 봐야 해.
-
-가족 안에서 누가 어디까지 책임질지, 돈과 기대를 어디까지 둘지 미리 정해야 관계가 덜 흔들려.
-
-자식이 가족 분위기를 밝히는 역할로 들어올 수도 있지만, 가족의 욕심과 기대가 한곳에 모이면 아이에게 부담이 될 수 있어.
-
-그러니까 가족들이 아이를 중심으로 뭉치는 건 좋지만, 아이를 가족 기대의 중심에 세우는 건 조심해야 해.
-
-[자식의 가능성과 성공운]
-
-자식의 성공운은 보장처럼 말하면 안 돼.
-
-대신 부모 사주에서 보이는 방향으로 보면, 자식의 가능성은 맞는 환경을 만들어줄 때 살아나는 쪽이야.
-
-공부형인지, 기술형인지, 예술/표현형인지, 사업감각형인지, 안정형인지, 독립형인지를 봐야 해.
-
-중요한 건 부모가 원하는 방향으로 밀어붙이는 게 아니라, 아이가 반복해서 힘을 내는 환경을 찾아주는 거야.
-
-만약 표현력이 살아나는 아이면 말, 예술, 콘텐츠, 사람 앞에서 드러내는 경험이 도움이 될 수 있어.
-
-안정형 아이면 규칙적인 환경과 차분한 루틴이 필요하고, 독립형 아이면 너무 많이 간섭하지 않을 때 가능성이 더 잘 살아날 수 있어.
-
-[부모로서 조심할 부분]
-
-첫째, 자식을 부모의 대리만족으로 끌고 가면 안 돼.
-
-부모가 못 이룬 걸 아이에게 대신 시키려 하면 자식운은 복이 아니라 부담으로 바뀔 수 있어.
-
-둘째, 경제적 책임을 혼자 다 떠안는 구조를 조심해야 해.
-
-교육비, 지원, 생활비, 가족 도움의 선이 흐려지면 사랑이 부담으로 바뀌기 쉬워.
-
-셋째, 말투와 기대치를 조심해야 해.
-
-좋은 뜻으로 하는 말도 반복되면 아이에게는 평가나 통제로 느껴질 수 있어.
-
-넷째, 비교를 조심해야 해.
-
-형제, 친척, 친구 자녀와 비교하는 순간 자식운은 성장보다 부담으로 흐르기 쉽다.
-
-[형이 딱 정리해줄게]
-
-자식운은 있다 없다로 끝나는 운이 아니야.
-
-자식 인연이 어떤 방식으로 들어오고, 그 인연을 부모가 어떤 말투와 기준으로 키워가느냐가 핵심이야.
-
-자식복은 기쁨만 보는 게 아니라 책임, 가족 안의 역할, 돈과 기대치, 부모의 거리감까지 같이 봐야 해.
-
-자식의 가능성과 성공운도 보장처럼 보는 게 아니라, 어떤 환경에서 가능성이 살아나는지를 봐야 해.
-
-기대보다 기준, 통제보다 거리, 감정보다 말의 온도, 그리고 부모 자신의 삶을 지키는 게 중요해.
-
-자식운은 붙잡는 운이 아니라, 관계의 온도와 성장 환경을 맞춰야 살아나는 운이야.`;
+${getPreviewTease(categoryId, categoryTitle)}`);
 }
 
 function fallbackFull(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
-  if (isChildrenCategory(categoryId, categoryTitle)) {
-    return fallbackChildrenFull(categoryId, categoryTitle, user, manse, partnerManse);
-  }
-
-  const fixed = getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse).replace("[고정 결론]", "").trim();
-  const profileText = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
-  const health = getHealthProfile(manse);
+  const fixed = getPublicFixedConclusionText(getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse));
+  const title = categoryTitle || "";
+  const name = getName(user);
   const money = getMoneyProfile(manse);
   const career = getCareerProfile(manse);
-  const relationLove = getRelationshipProfile(manse, "love");
-  const relationMarriage = getRelationshipProfile(manse, "marriage");
+  const health = getHealthProfile(manse);
+  const relation = getRelationshipProfile(manse, "love");
   const life = getLifeProfile(manse);
-  const name = getName(user);
-  const title = categoryTitle || "운세";
-
-  if (categoryId === "health" || title.includes("건강")) {
-    return `[결론부터 말하면]
-
-${fixed}
-
-[건강 흐름을 먼저 보면]
-
-${name}, 이 건강운은 성격 조언으로 볼 게 아니라 몸이 어디서 먼저 신호를 보내는지를 봐야 해.
-
-${health.core}
-
-${profileText}
-
-[사주상 약해지기 쉬운 흐름]
-
-${health.risk}
-
-위장·소화·장 리듬, 순환, 피로 누적, 수면, 스트레스성 긴장 중 어디가 먼저 흔들리는지 생활에서 확인해야 해.
-
-[무리하면 탈 나는 패턴]
-
-밤낮이 무너지거나, 속이 불편한데도 참고, 스트레스를 말로 풀지 못하고 몸에 쌓아두면 건강운이 눌릴 수 있어.
-
-몰아서 운동하고 몰아서 쉬는 방식도 맞지 않아. 이 운은 꾸준히 회복시키는 루틴이 있어야 살아나.
-
-${getRiskChoices(categoryId, categoryTitle)}
-
-${getDirectionChoices(categoryId, categoryTitle)}
-
-[앞으로 참고 흐름]
-
-앞으로는 큰 변화보다 수면, 식사, 걷기, 스트레스 배출처럼 몸이 버티는 기본 리듬을 먼저 잡는 게 좋아.
-
-컨디션이 좋아지면 돈과 일의 판단도 같이 선명해진다.
-
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
-  }
-
-  if (categoryId === "love" || title.includes("연애")) {
-    const loveTiming = getLoveTimingProfile(manse);
-    const lovePartner = getLovePartnerProfile(manse);
-    return `[결론부터 말하면]
-
-${fixed}
-
-[올해 연애운이 있냐고 묻는다면]
-
-${loveTiming.chance}
-
-올해 인연 흐름이 살아나기 쉬운 시기는 ${loveTiming.timing} 쪽으로 본다.
-
-이 시기는 ${loveTiming.reason}
-
-[언제 사람을 만나기 쉬운지]
-
-${name}, 이 연애운은 가만히 있는데 갑자기 완성형 인연이 떨어지는 구조로 보면 안 돼.
-
-${loveTiming.timing} 전후에는 소개, 모임, 연락 재개, 평소 가던 장소의 새 인연처럼 현실적인 접점이 생기기 쉬워.
-
-이 시기에는 마음에 드는 사람이 있으면 기다리기만 하지 말고, 짧은 대화나 가벼운 약속을 만들어보는 쪽이 좋아.
-
-[어떤 사람과 연애하면 좋은지]
-
-너한테 잘 맞는 사람은 ${lovePartner.good}이다.
-
-${lovePartner.reason}
-
-연애가 오래 가려면 설레는 말보다 ${lovePartner.check}을 봐야 해.
-
-[잘 맞는 상대의 직업과 생활 분위기]
-
-직업으로 보면 ${lovePartner.jobs} 쪽 사람이 비교적 잘 맞을 수 있어.
-
-이건 그 직업을 가진 사람이 무조건 좋다는 뜻이 아니라, 그 직업군이 가진 생활 리듬, 책임감, 말과 행동의 일관성이 네 연애운과 맞기 쉽다는 뜻이야.
-
-[피해야 할 사람 유형]
-
-피해야 할 사람은 ${lovePartner.avoid}이다.
-
-${relationLove.risk}
-
-초반에 설레도 연락이 들쭉날쭉하거나, 돈과 시간 기준이 흐리거나, 불편한 대화를 피하는 사람은 오래 갈수록 네 에너지를 많이 빼앗을 수 있어.
-
-[연애에서 반복되는 패턴]
-
-${relationLove.core}
-
-${profileText}
-
-${getRiskChoices(categoryId, categoryTitle)}
-
-${getDirectionChoices(categoryId, categoryTitle)}
-
-[형이 딱 정리해줄게]
-
-올해 연애운은 아예 닫힌 운으로 보면 안 돼.
-
-다만 아무 사람이나 들어오는 운이 아니라, ${loveTiming.timing} 전후에 현실적인 접점을 만들고 ${lovePartner.good}을 알아보는 눈을 가져야 살아나는 운이야.
-
-${lovePartner.avoid}은 피하고, ${lovePartner.check}이 안정적인 사람을 봐라.
-
-네 연애운은 설렘 하나로 결정하는 운이 아니라, 맞는 사람을 고를 때 진짜 살아나는 운이야.
-`;
-  }
-
-  if (categoryId === "marriage" || title.includes("결혼")) {
-    const marriageTiming = getMarriageTimingProfile(manse);
-    const marriagePartner = getMarriagePartnerProfile(manse);
-
-    return `[결론부터 말하면]
-
-${fixed}
-
-올해 결혼운을 보자면, ${marriageTiming.chance}
-
-결혼운이 살아나는 시기는 ${marriageTiming.timing} 흐름으로 본다. ${marriageTiming.timingReason}
-
-[결혼운의 핵심]
-
-${relationMarriage.core}
-
-${marriageTiming.longFlow}
-
-${profileText}
-
-[언제 결혼운이 들어오는지]
-
-결혼운은 단순히 "언제 결혼한다"로 보는 게 아니라, 진지한 인연이 들어오고 결혼 이야기가 현실화되기 쉬운 시기로 봐야 해.
-
-이 사주에서는 ${marriageTiming.timing} 전후가 가장 눈여겨볼 시기야.
-
-이때 소개, 오래 알고 지낸 사람과의 진전, 현실적인 결혼 대화, 가족이나 돈 문제를 맞춰보는 흐름이 생기기 쉽다.
-
-[어떤 사람과 결혼하면 좋은지]
-
-잘 맞는 배우자 유형은 ${marriagePartner.good}이야.
-
-${marriagePartner.family}
-
-${marriagePartner.money}
-
-결혼은 설렘이 아니라 같이 사는 생활이기 때문에, 이 사람의 말투보다 반복되는 생활 태도를 봐야 해.
-
-[잘 맞는 상대의 직업군과 생활 분위기]
-
-잘 맞는 상대의 직업군은 ${marriagePartner.jobs} 쪽으로 볼 수 있어.
-
-직업명 자체가 정답이라는 뜻은 아니야. 핵심은 그 직업군이 가진 생활 리듬, 책임감, 돈을 대하는 태도야.
-
-[피해야 할 배우자 유형]
-
-피해야 할 사람은 ${marriagePartner.avoid}이야.
-
-처음에는 좋아 보여도 결혼 후에는 돈, 가족, 역할 분담에서 피로가 커질 수 있어.
-
-특히 ${marriagePartner.check}은 결혼 전에 반드시 확인해야 해.
-
-[결혼 전에 확인할 부분]
-
-${relationMarriage.risk}
-
-상대를 바꾸겠다는 기대보다, 지금 이미 보이는 생활 습관과 책임감을 봐야 해.
-
-${getRiskChoices(categoryId, categoryTitle)}
-
-${getDirectionChoices(categoryId, categoryTitle)}
-
-[형이 딱 정리해줄게]
-
-네 결혼운은 ${marriageTiming.timing} 전후를 특히 봐야 하고, 급하게 확정하는 결혼보다 돈·가족·역할 기준이 맞는 결혼이 훨씬 안정돼.
-
-${marriagePartner.good}을 만나야 결혼운이 편하게 살아나고, ${marriagePartner.avoid}은 피하는 게 좋아.
-
-네 결혼운은 설렘보다 생활 기준이 맞을 때 안정된다.
-`;
-  }
+  const flow = getReadableElementFlow(manse);
+  const risk = makeInternalReferenceText(getRiskChoices(categoryId, categoryTitle)).split(NL).slice(0, 12).join(NL + NL);
+  const direction = makeInternalReferenceText(getDirectionChoices(categoryId, categoryTitle)).split(NL).slice(0, 12).join(NL + NL);
 
   if (categoryId === "money" || title.includes("재물")) {
-    return `[결론부터 말하면]
+    return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
 
-[돈이 들어오는 방식]
+[왜 그렇게 보냐면]
 
 ${money.core}
 
-${profileText}
+만세력 흐름상 ${flow.strongestText}은 돈을 담는 방식으로 쓰이기 쉽고, ${flow.weakestText}은 지출 기준이나 실행 속도에서 보완해야 할 부분으로 보여.
+
+[돈이 들어오는 방식]
+
+${money.direction}
+
+이 재물운은 한 번에 크게 치는 방식보다 돈이 들어오는 이유를 작게 확인하고, 반복되는 반응을 남기는 쪽에서 살아나.
 
 [돈이 새는 구조]
 
 ${money.risk}
 
-이 재물운은 돈복이 있냐 없냐로만 보면 안 돼. 어떤 방식으로 들어오고, 어디서 새는지를 같이 봐야 해.
+특히 준비만 길어지거나, 회수 기준 없이 돈을 묶거나, 정산 기준 없이 사람과 돈을 섞으면 돈복이 있어도 남는 돈이 약해질 수 있어.
 
 [맞는 수익 구조]
 
+${money.action.map((item) => `- ${item}`).join(NL)}
+
+[앞으로 1년 재물 흐름]
+
+앞으로 1년은 큰돈을 한 번에 벌겠다는 생각보다, 작게 팔아보고 반복 문의가 생기는 구조를 찾는 게 좋아.
+
+고정비, 회수 기간, 정산 기준이 잡히면 재물운이 훨씬 덜 흔들려.
+
+[형이 딱 정리해줄게]
+
+${name}, 네 재물운은 들어오는 힘만 보는 게 아니라 남기는 구조를 같이 봐야 해.
+
+지금은 무리한 투자, 지인 말만 듣고 들어가는 돈, 준비 없는 사업, 고정비 큰 시작을 조심해야 해.
+
 ${money.direction}
 
-${getRiskChoices(categoryId, categoryTitle)}
-
-${getDirectionChoices(categoryId, categoryTitle)}
-
-[앞으로 재물 흐름]
-
-앞으로는 큰돈을 한 번에 벌겠다는 생각보다, 반복적으로 돈이 들어오는 구조를 찾는 게 좋아.
-
-고정비, 회수 기간, 정산 기준이 잡히면 재물운이 훨씬 덜 흔들린다.
-
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
+그게 네 사주에서 재물운을 살리는 방식이야.`);
   }
 
   if (isCareerCategory(categoryId, title)) {
-    return `[결론부터 말하면]
+    return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
 
-[일이 풀리는 구조]
+[고정 직업 성향]
 
 ${career.core}
 
-${profileText}
+[맞는 일 구조]
+
+${career.direction}
+
+맞는 직업군은 이름보다 구조가 중요해. 네가 통제할 수 있고, 경험이 쌓일수록 단가나 신뢰가 올라가는 일이 좋아.
 
 [피해야 할 일 구조]
 
 ${career.risk}
 
-이 직업운은 직업 이름보다 돈과 역할이 만들어지는 구조를 봐야 해.
+${career.avoid.map((item) => `- ${item}`).join(NL)}
 
-[맞는 방향]
+[앞으로 1년 일 흐름]
 
-${career.direction}
+앞으로 1년은 한 번에 방향을 바꾸기보다 현재 기반을 흔들지 않는 선에서 작은 자기 수익 구조를 확인하는 흐름이 좋아.
 
-${getRiskChoices(categoryId, categoryTitle)}
+[지금 테스트할 방향]
 
-${getDirectionChoices(categoryId, categoryTitle)}
+${career.action.map((item) => `- ${item}`).join(NL)}
 
-[앞으로 일 흐름]
+[형이 딱 정리해줄게]
 
-앞으로는 남들이 좋다는 일보다 네가 통제할 수 있고 반복 수요가 생기는 일을 봐야 해.
+일은 직업명보다 돈과 역할이 만들어지는 구조를 봐야 해. 준비 없이 크게 벌리는 선택보다 작게 검증하고 되는 방향만 남기는 게 맞아.`);
+  }
 
-생활 기반을 무너뜨리지 않으면서 자기 수익 구조를 조금씩 만들어야 한다.
+  if (categoryId === "health" || title.includes("건강")) {
+    return cleanGeneratedText(`[결론부터 말하면]
 
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
+${fixed}
+
+[왜 그렇게 보냐면]
+
+${health.core}
+
+[이 운이 막히는 패턴]
+
+${health.risk}
+
+건강운은 의료 진단이 아니라 몸이 약해지는 생활 흐름을 보는 거야. 실제 증상이 있으면 검진은 따로 받아야 해.
+
+[이 운이 살아나는 조건]
+
+${health.direction}
+
+${health.action.map((item) => `- ${item}`).join(NL)}
+
+[앞으로 1년 참고 흐름]
+
+앞으로 1년은 수면, 식사, 피로 누적, 스트레스 배출을 먼저 잡아야 컨디션이 덜 흔들려.
+
+[형이 딱 정리해줄게]
+
+몸은 버티는 게 답이 아니야. 네 건강운은 회복 리듬을 먼저 잡을 때 좋아져.`);
+  }
+
+  if (categoryId === "love" || title.includes("연애")) {
+    const timing = getLoveTimingProfile(manse);
+    const partner = getLovePartnerProfile(manse);
+    return cleanGeneratedText(`[결론부터 말하면]
+
+${fixed}
+
+[왜 그렇게 보냐면]
+
+${relation.core}
+
+올해 인연 흐름은 ${timing.chance}
+
+인연이 살아나기 쉬운 시기는 ${timing.timing} 쪽으로 봐.
+
+[이 운이 막히는 패턴]
+
+${relation.risk}
+
+[이 운이 살아나는 조건]
+
+잘 맞는 상대는 ${partner.good}이고, 피해야 할 상대는 ${partner.avoid} 쪽이야.
+
+잘 맞는 상대의 생활 분위기는 ${partner.jobs} 쪽으로 보면 좋아.
+
+[앞으로 1년 참고 흐름]
+
+연락 속도보다 반복 행동, 말투, 감정 회복 방식, 돈과 시간 쓰는 기준을 봐야 해.
+
+[형이 딱 정리해줄게]
+
+연애운은 있어도 아무 사람이나 잡는 운은 아니야. 설레는 말보다 오래 유지되는 태도를 봐야 해.`);
+  }
+
+  if (categoryId === "marriage" || title.includes("결혼")) {
+    const timing = getMarriageTimingProfile(manse);
+    const partner = getMarriagePartnerProfile(manse);
+    return cleanGeneratedText(`[결론부터 말하면]
+
+${fixed}
+
+[왜 그렇게 보냐면]
+
+${timing.chance}
+
+결혼운이 살아나는 시기는 ${timing.timing} 쪽으로 보고, 이유는 ${timing.timingReason}
+
+[이 운이 막히는 패턴]
+
+피해야 할 배우자 유형은 ${partner.avoid} 쪽이야.
+
+[이 운이 살아나는 조건]
+
+잘 맞는 배우자 유형은 ${partner.good}이고, 생활 분위기는 ${partner.jobs} 쪽이 좋아.
+
+돈 기준은 ${partner.money}
+
+가족 거리감은 ${partner.family}
+
+[앞으로 1년 참고 흐름]
+
+결혼운은 감정보다 생활비, 저축, 가족 거리감, 역할 분담, 갈등 후 사과 방식을 확인해야 안정돼.
+
+[형이 딱 정리해줄게]
+
+결혼은 좋아하는 마음만으로 결정하면 안 돼. 생활 기준과 돈 기준, 가족 거리감이 맞아야 오래 간다.`);
+  }
+
+  if (isCompatibilityCategory(categoryId, title) || isFamilyCategory(categoryId, title) || isPartnerCategory(categoryId, title)) {
+    const score = isCompatibilityCategory(categoryId, title)
+      ? getCompatibilityScore(manse, partnerManse || null)
+      : isFamilyCategory(categoryId, title)
+      ? getFamilyScore(manse, partnerManse || null)
+      : getBusinessPartnerScore(manse, partnerManse || null);
+
+    return cleanGeneratedText(`[결론부터 말하면]
+
+${fixed}
+
+[점수 해석]
+
+${score.summary}
+
+[맞는 부분]
+
+서로의 부족한 부분을 보완할 수 있는 지점이 있어. 다만 이 보완이 자연스럽게 되려면 말투와 역할 기준이 분명해야 해.
+
+[부딪히는 부분]
+
+${score.risk}
+
+[같이 가면 생길 수 있는 문제]
+
+돈 기준, 책임 범위, 가족 거리감, 결정권이 흐려지면 좋은 마음과 별개로 피로가 커질 수 있어.
+
+[좋아지는 조건]
+
+역할과 돈 기준을 말로만 넘기지 말고 실제 기준으로 정해야 해.
+
+[형이 딱 정리해줄게]
+
+이 관계는 감정만으로 판단하면 안 돼. 같이 가려면 말투, 돈 기준, 책임 범위부터 맞춰야 해.`);
   }
 
   if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
-    return `[결론부터 말하면]
+    return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
-
-[인생대운의 큰 흐름]
-
-${life.core}
-
-${profileText}
 
 [초년운]
 
-초년은 결과가 빨리 잡히기보다 시행착오와 기준을 만드는 흐름으로 봐야 해.
+초년은 빨리 완성되기보다 기준을 만들고 시행착오를 겪는 흐름이 강해.
 
 [청년운]
 
-청년운은 방향을 찾고, 돈과 사람관계에서 기준을 세우는 시기야.
+청년운은 방향을 시험하고, 돈과 일에서 맞는 구조를 찾는 시기야.
 
 [중년운]
 
-중년운은 지금까지 쌓은 기준이 실제 돈과 일의 구조로 바뀌는 시기로 봐야 해.
+${life.core}
 
 [말년운]
 
-말년운은 무리한 확장보다 안정, 건강, 가족 거리감, 돈 관리가 중요해.
+말년운은 무리한 확장보다 건강, 가족 거리감, 돈 관리가 중요해.
 
-${getRiskChoices(categoryId, categoryTitle)}
+[내 인생의 대운 기회]
 
-${getDirectionChoices(categoryId, categoryTitle)}
+대운은 그냥 기다린다고 잡히는 게 아니라 준비된 구조가 있을 때 들어와.
 
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
+[가장 중요한 대운]
+
+돈, 일, 건강, 사람 중 무엇을 먼저 정리해야 하는지 알 때 가장 중요한 시기를 놓치지 않아.
+
+[대운을 잡으려면]
+
+${life.direction}`);
   }
 
   if (categoryId === "traditional" || title.includes("평생")) {
-    return `[결론부터 말하면]
+    return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
 
-[평생 사주의 큰 구조]
+[타고난 사주 핵심]
 
-이 평생종합사주는 한 가지 운만 보는 게 아니라 돈, 일, 관계, 건강, 가족, 자식운이 서로 어떻게 엮이는지 봐야 해.
+${flow.strongestText}은 장점으로 쓰이고, ${flow.weakestText}은 인생 전반에서 보완해야 할 흐름이야.
 
-${profileText}
+[초년운]
+
+초년은 빨리 자리 잡기보다 기준을 만들고 시행착오를 겪는 운이야.
+
+[청년운]
+
+청년운은 일과 돈의 방향을 시험하고, 맞지 않는 사람과 구조를 걸러내는 시기야.
+
+[중년운]
+
+중년운은 자기 수익 구조와 생활 기반이 맞물릴 때 풀리는 흐름이 강해.
+
+[말년운]
+
+말년운은 건강, 가족 거리감, 안정적인 돈 관리가 중요해.
 
 [재물운]
 
 ${money.core}
 
-[직업운과 사업운]
+[직업운·사업운]
 
 ${career.core}
 
@@ -4796,38 +4891,44 @@ ${health.core}
 
 [인연·가족·자식운]
 
-가까운 사람과의 관계에서는 기대치, 말투, 돈 기준, 책임 분담을 어떻게 잡는지가 중요해.
+가까운 관계에서는 기대치, 말투, 돈 기준, 책임 분담을 어떻게 잡느냐가 중요해.
 
-[초년·청년·중년·말년 흐름]
+[대운과 인생이 풀리는 시기]
 
-초년은 기준을 만들고, 청년은 방향을 시험하고, 중년은 자기 판을 키우고, 말년은 안정과 건강 관리로 흐름을 잡는 구조야.
+${life.core}
 
-${getRiskChoices(categoryId, categoryTitle)}
+[최종적으로 안정되는 시기]
 
-${getDirectionChoices(categoryId, categoryTitle)}
+기준 없는 선택을 줄이고 돈, 일, 건강의 리듬이 맞아질 때 안정이 커져.
 
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
+[형이 딱 정리해줄게]
+
+평생 흐름은 한 번에 뒤집는 운보다 쌓아서 안정시키는 운이야. 급한 확장보다 맞는 구조를 오래 가져가는 게 중요해.`);
   }
 
-  return `[결론부터 말하면]
+  return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
 
-[이 카테고리에서 먼저 봐야 할 핵심]
+[왜 그렇게 보냐면]
 
-${profileText}
+제공된 만세력 기준으로 보면 ${name}에게는 ${flow.strongestText}이 장점으로 잡히고, ${flow.weakestText}은 선택에서 보완해야 할 부분으로 보여.
 
-[조심할 부분]
+[이 운이 막히는 패턴]
 
-${getRiskChoices(categoryId, categoryTitle)}
+${risk || "무리하게 밀어붙이거나 기준 없이 선택하면 같은 문제가 반복될 수 있어."}
 
-[잡아야 할 방향]
+[이 운이 살아나는 조건]
 
-${getDirectionChoices(categoryId, categoryTitle)}
+${direction || "지금은 감정이 아니라 실제로 줄여야 할 손해와 지켜야 할 기준을 나눠야 해."}
 
-${getFinalSummaryGuide(categoryId, categoryTitle)}
-`;
+[앞으로 1년 참고 흐름]
+
+앞으로 1년은 한 번에 크게 바꾸기보다 작은 선택을 정리하고, 되는 흐름만 남기는 쪽이 좋아.
+
+[형이 딱 정리해줄게]
+
+이 운은 좋은 말보다 현실 기준이 중요해. 지금 줄여야 할 것과 잡아야 할 것을 분명히 나눠야 해.`);
 }
 
 async function generateText(prompt: string, maxTokens: number, seed: number) {
@@ -4886,6 +4987,7 @@ function responsePayload(params: {
     profileLogic: PROFILE_LOGIC,
     previewLogic: PREVIEW_LOGIC,
     preserveLogic: "original-final-route-preserved-premium-question-core-only-no-shrink-v4",
+    promptLeakFixLogic: "v24-internal-data-separated-no-bracket-leak-v1",
   };
 }
 
@@ -4915,7 +5017,8 @@ export async function POST(request: Request) {
       ? formatManseForPrompt(partnerManse)
       : "상대방 만세력 정보: 상대방 생년월일 또는 출생 정보가 부족합니다.";
 
-    const fixedConclusionText = getFixedConclusionBlock(categoryId, categoryTitle, user, myManse, partnerManse);
+    const rawFixedConclusionText = getFixedConclusionBlock(categoryId, categoryTitle, user, myManse, partnerManse);
+    const fixedConclusionText = buildSafeFixedConclusionBlock(rawFixedConclusionText);
     const profileText = getCategoryProfileText(categoryId, categoryTitle, myManse, question);
     const careerBlock = shouldUseCareerArchetype(categoryId)
       ? getCareerArchetypeGuide(myManse)
@@ -4951,14 +5054,14 @@ ${partnerManseText}
       const full = fallbackFull(categoryId, categoryTitle, user, myManse, partnerManse);
 
       if (mode === "full") {
-        return NextResponse.json(responsePayload({ preview: "", full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
+        return NextResponse.json(responsePayload({ preview: "", full, result: full, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed }));
       }
 
       if (mode === "both") {
-        return NextResponse.json(responsePayload({ preview, full, result: full, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
+        return NextResponse.json(responsePayload({ preview, full, result: full, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed }));
       }
 
-      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: fixedConclusionText, profileText, fortuneSeed }));
+      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed }));
     }
 
     if (mode === "preview") {
@@ -4983,8 +5086,8 @@ ${partnerManseText}
           result: cleanGeneratedText(finalPreview),
           manse: myManse,
           partnerManse,
-          fixedConclusion: fixedConclusionText,
-          profileText,
+          fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
+          profileText: makeInternalReferenceText(profileText),
           fortuneSeed,
         })
       );
@@ -5012,8 +5115,8 @@ ${partnerManseText}
           result: cleanGeneratedText(finalFull),
           manse: myManse,
           partnerManse,
-          fixedConclusion: fixedConclusionText,
-          profileText,
+          fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
+          profileText: makeInternalReferenceText(profileText),
           fortuneSeed,
         })
       );
@@ -5054,7 +5157,7 @@ ${partnerManseText}
         result: cleanGeneratedText(finalFull),
         manse: myManse,
         partnerManse,
-        fixedConclusion: fixedConclusionText,
+        fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
         profileText,
       })
     );

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
+
+declare global {
+  interface Window {
+    KCP_Pay_Execute_Web?: (form: HTMLFormElement) => void;
+  }
+}
 
 type Step = "home" | "input" | "result" | "consult";
 
@@ -1113,6 +1118,22 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    const scriptId = "kcp-spay-script";
+
+    if (document.getElementById(scriptId)) return;
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+
+    // NHN KCP에서 받은 운영 사이트 코드 기준: 운영 결제창(spay) 고정
+    // 3014 오류가 뜨면 대부분 testspay/spay 환경 불일치 문제입니다.
+    script.src = "https://spay.kcp.co.kr/plugin/kcp_spay_hub.js";
+
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const resultId = params.get("rid");
 
@@ -1192,44 +1213,84 @@ export default function Page() {
     setStep("input");
   };
 
-  const requestTossPayment = async (orderName: string, amount: number) => {
+  const requestKcpPayment = async (orderName: string, amount: number) => {
     if (!privacyAgreed) {
       alert("개인정보 수집·이용에 동의해야 결제를 진행할 수 있습니다.");
       return;
     }
 
-    const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+    const siteCd = process.env.NEXT_PUBLIC_KCP_SITE_CD;
 
-    if (!clientKey) {
-      alert("토스 클라이언트 키가 없습니다. .env.local을 확인하세요.");
+    if (!siteCd) {
+      alert("KCP 사이트 코드가 없습니다. .env.local의 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
+      return;
+    }
+
+    if (!window.KCP_Pay_Execute_Web) {
+      alert("KCP 결제창 스크립트를 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
       return;
     }
 
     try {
+      const orderId = `SOREUM${Date.now()}`;
+
       window.localStorage.setItem(
         "fortune-pending-payment",
         JSON.stringify({
           categoryId,
           user,
           preview: aiPreview,
+          orderId,
+          orderName,
+          amount,
         })
       );
 
-      const tossPayments = await loadTossPayments(clientKey);
-      const payment = tossPayments.payment({ customerKey: `guest_${Date.now()}` });
+      const form = document.createElement("form");
+      form.name = "order_info";
+      form.method = "post";
+      form.action = "/api/kcp/approve";
 
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: amount },
-        orderId: `fortune_${Date.now()}`,
-        orderName,
-        successUrl: `${window.location.origin}${window.location.pathname}?payment=success`,
-        failUrl: `${window.location.origin}${window.location.pathname}?payment=fail`,
-        customerName: nameOf(user),
+      const payData: Record<string, string> = {
+        site_cd: siteCd,
+        site_name: "소름사주",
+
+        // PC 신용카드 결제
+        pay_method: "100000000000",
+
+        ordr_idxx: orderId,
+        good_name: orderName,
+        good_mny: String(amount),
+        currency: "WON",
+
+        buyr_name: nameOf(user),
+        buyr_mail: "",
+        buyr_tel1: "",
+        buyr_tel2: "01000000000",
+
+        // 결제 인증 완료 후 KCP가 넘겨줄 서버 주소
+        Ret_URL: `${window.location.origin}/api/kcp/approve`,
+
+        // 에스크로 사용 안 함
+        escrow_yn: "N",
+
+        // 디지털 콘텐츠 제공기간
+        good_expr: "0",
+      };
+
+      Object.entries(payData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
       });
+
+      document.body.appendChild(form);
+      window.KCP_Pay_Execute_Web(form);
     } catch (error) {
       console.error(error);
-      alert("결제창을 여는 중 문제가 발생했거나 결제가 취소되었습니다.");
+      alert("KCP 결제창을 여는 중 문제가 발생했거나 결제가 취소되었습니다.");
     }
   };
 
@@ -2533,7 +2594,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   <button
                     type="button"
                     onClick={() =>
-                      requestTossPayment(`${category.title} 전체 리포트`, category.price)
+                      requestKcpPayment(`${category.title} 전체 리포트`, category.price)
                     }
                     className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
                   >
@@ -2700,11 +2761,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <button
                   type="button"
                   onClick={() =>
-                    requestTossPayment(selectedPlanInfo.title, selectedPlanInfo.price)
+                    requestKcpPayment(selectedPlanInfo.title, selectedPlanInfo.price)
                   }
                   className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black"
                 >
-                  로컬 테스트용 토스 결제창
+                  로컬 테스트용 KCP 결제창
                 </button>
               )}
             </section>
