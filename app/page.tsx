@@ -614,6 +614,18 @@ function nameOf(user: UserInfo) {
   return user.name.trim() || "너";
 }
 
+function isMobileDevice() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
+
+  return (
+    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    ) || window.innerWidth <= 767
+  );
+}
+
 function makeSafeFileName(value: string) {
   return (
     value
@@ -1125,10 +1137,9 @@ export default function Page() {
     const script = document.createElement("script");
     script.id = scriptId;
 
-    // NHN KCP에서 받은 운영 사이트 코드 기준: 운영 결제창(spay) 고정
-    // 3014 오류가 뜨면 대부분 testspay/spay 환경 불일치 문제입니다.
+    // PC 결제창용 운영 스크립트입니다.
+    // 모바일은 requestKcpMobilePayment에서 별도 모바일 결제창으로 이동합니다.
     script.src = "https://spay.kcp.co.kr/plugin/kcp_spay_hub.js";
-
     script.async = true;
     document.body.appendChild(script);
   }, []);
@@ -1213,6 +1224,113 @@ export default function Page() {
     setStep("input");
   };
 
+  const savePendingPayment = (
+    orderId: string,
+    orderName: string,
+    amount: number
+  ) => {
+    window.localStorage.setItem(
+      "fortune-pending-payment",
+      JSON.stringify({
+        categoryId,
+        user,
+        preview: aiPreview,
+        orderId,
+        orderName,
+        amount,
+      })
+    );
+  };
+
+  const requestKcpMobilePayment = async (orderName: string, amount: number) => {
+    try {
+      const siteCd = process.env.NEXT_PUBLIC_KCP_SITE_CD;
+
+      if (!siteCd) {
+        alert("KCP 사이트 코드가 없습니다. Vercel 환경변수 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
+        return;
+      }
+
+      const orderId = `SOREUM${Date.now()}`;
+      savePendingPayment(orderId, orderName, amount);
+
+      const retUrl = `${window.location.origin}/api/kcp/approve`;
+
+      const response = await fetch("/api/kcp/mobile/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          orderName,
+          amount,
+          buyerName: nameOf(user),
+          buyerTel: "01000000000",
+          retUrl,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            "KCP 모바일 거래등록에 실패했습니다."
+        );
+      }
+
+      const payUrl = String(data.PayUrl || "");
+      const approvalKey = String(data.approvalKey || "");
+
+      if (!payUrl || !approvalKey) {
+        throw new Error("KCP 모바일 결제창 주소 또는 승인키가 없습니다.");
+      }
+
+      const form = document.createElement("form");
+      form.name = "order_info";
+      form.method = "post";
+      form.acceptCharset = "euc-kr";
+      form.action =
+        payUrl.substring(0, payUrl.lastIndexOf("/")) +
+        "/jsp/encodingFilter/encodingFilter.jsp";
+
+      const payData: Record<string, string> = {
+        site_cd: siteCd,
+        pay_method: "CARD",
+        currency: "410",
+        shop_name: "소름사주",
+        Ret_URL: retUrl,
+        approval_key: approvalKey,
+        PayUrl: payUrl,
+        ordr_idxx: orderId,
+        good_name: orderName,
+        good_mny: String(amount),
+        buyr_name: nameOf(user),
+        buyr_mail: "",
+        buyr_tel2: "01000000000",
+        escw_used: "N",
+      };
+
+      Object.entries(payData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "KCP 모바일 결제창을 여는 중 문제가 발생했습니다.";
+      alert(message);
+    }
+  };
+
   const requestKcpPayment = async (orderName: string, amount: number) => {
     if (!privacyAgreed) {
       alert("개인정보 수집·이용에 동의해야 결제를 진행할 수 있습니다.");
@@ -1222,7 +1340,12 @@ export default function Page() {
     const siteCd = process.env.NEXT_PUBLIC_KCP_SITE_CD;
 
     if (!siteCd) {
-      alert("KCP 사이트 코드가 없습니다. .env.local의 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
+      alert("KCP 사이트 코드가 없습니다. .env.local 또는 Vercel의 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
+      return;
+    }
+
+    if (isMobileDevice()) {
+      await requestKcpMobilePayment(orderName, amount);
       return;
     }
 
@@ -1233,18 +1356,7 @@ export default function Page() {
 
     try {
       const orderId = `SOREUM${Date.now()}`;
-
-      window.localStorage.setItem(
-        "fortune-pending-payment",
-        JSON.stringify({
-          categoryId,
-          user,
-          preview: aiPreview,
-          orderId,
-          orderName,
-          amount,
-        })
-      );
+      savePendingPayment(orderId, orderName, amount);
 
       const form = document.createElement("form");
       form.name = "order_info";
