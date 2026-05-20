@@ -614,10 +614,29 @@ function nameOf(user: UserInfo) {
   return user.name.trim() || "너";
 }
 
-function getKcpMobileGoodName() {
+function getKcpMobileGoodName(targetCategoryId: CategoryId) {
   // KCP 모바일 결제창에서 한글 상품명이 ?????로 깨지는 경우가 있어
-  // 모바일 결제창에만 영문 상품명을 보냅니다. 사이트 화면/리포트명은 기존 한글 그대로 유지됩니다.
-  return "SoreumSaju Fortune Report";
+  // 모바일 결제창에만 카테고리별 영문 상품명을 보냅니다.
+  // 사이트 화면/리포트명은 기존 한글 그대로 유지됩니다.
+  const map: Record<CategoryId, string> = {
+    today: "SoreumSaju Today Report",
+    worry: "SoreumSaju Worry Report",
+    money: "SoreumSaju Money Report",
+    career: "SoreumSaju Career Report",
+    love: "SoreumSaju Love Report",
+    marriage: "SoreumSaju Marriage Report",
+    health: "SoreumSaju Health Report",
+    children: "SoreumSaju Children Report",
+    compatibility: "SoreumSaju Compatibility Report",
+    family: "SoreumSaju Family Report",
+    partner: "SoreumSaju Partner Report",
+    lifeFlow: "SoreumSaju Life Flow Report",
+    monthly: "SoreumSaju Yearly Report",
+    premium: "SoreumSaju Premium Report",
+    traditional: "SoreumSaju Full Saju Report",
+  };
+
+  return map[targetCategoryId] || "SoreumSaju Fortune Report";
 }
 
 function getKcpMobileShopName() {
@@ -1274,7 +1293,7 @@ export default function Page() {
           orderId,
           // 모바일 KCP 거래등록에는 영문 상품명을 사용해서 ????? 깨짐을 막습니다.
           // localStorage에는 기존 orderName을 저장해두므로 사이트 복귀 후 리포트 흐름은 그대로입니다.
-          orderName: getKcpMobileGoodName(),
+          orderName: getKcpMobileGoodName(categoryId),
           amount,
           buyerName: nameOf(user),
           buyerTel: "01000000000",
@@ -1316,7 +1335,7 @@ export default function Page() {
         approval_key: approvalKey,
         PayUrl: payUrl,
         ordr_idxx: orderId,
-        good_name: getKcpMobileGoodName(),
+        good_name: getKcpMobileGoodName(categoryId),
         good_mny: String(amount),
         buyr_name: nameOf(user),
         buyr_mail: "",

@@ -12,9 +12,16 @@ function onlyNumber(value: unknown) {
   return String(value ?? "").replace(/[^0-9]/g, "");
 }
 
-function getMobileGoodName() {
+function getMobileGoodName(value: unknown) {
   // KCP 모바일 결제창에서 한글 상품명이 ?????로 표시되는 문제를 막기 위해
-  // 모바일 거래등록 상품명은 영문으로 고정합니다.
+  // 모바일 거래등록 상품명은 page.tsx에서 넘긴 카테고리별 영문명을 우선 사용합니다.
+  const raw = safeText(value);
+
+  // 한글/특수 인코딩 깨짐 방지를 위해 ASCII 영문 상품명만 허용합니다.
+  if (raw && /^[\x20-\x7E]+$/.test(raw)) {
+    return raw.slice(0, 80);
+  }
+
   return "SoreumSaju Fortune Report";
 }
 
@@ -24,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const siteCd = safeText(process.env.KCP_SITE_CD || process.env.NEXT_PUBLIC_KCP_SITE_CD);
     const orderId = safeText(body.orderId);
-    const orderName = getMobileGoodName();
+    const orderName = getMobileGoodName(body.orderName);
     const amount = onlyNumber(body.amount);
     const buyerName = safeText(body.buyerName, "고객");
     const buyerTel = onlyNumber(body.buyerTel) || "01000000000";
