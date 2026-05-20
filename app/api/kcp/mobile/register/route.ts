@@ -12,13 +12,19 @@ function onlyNumber(value: unknown) {
   return String(value ?? "").replace(/[^0-9]/g, "");
 }
 
+function getMobileGoodName() {
+  // KCP 모바일 결제창에서 한글 상품명이 ?????로 표시되는 문제를 막기 위해
+  // 모바일 거래등록 상품명은 영문으로 고정합니다.
+  return "SoreumSaju Fortune Report";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
     const siteCd = safeText(process.env.KCP_SITE_CD || process.env.NEXT_PUBLIC_KCP_SITE_CD);
     const orderId = safeText(body.orderId);
-    const orderName = safeText(body.orderName, "소름사주 전체 리포트");
+    const orderName = getMobileGoodName();
     const amount = onlyNumber(body.amount);
     const buyerName = safeText(body.buyerName, "고객");
     const buyerTel = onlyNumber(body.buyerTel) || "01000000000";
