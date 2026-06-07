@@ -6475,7 +6475,7 @@ export async function POST(request: Request) {
     });
 
     console.log("SOREUM_MANSE_DEBUG", {
-      dayMaster: myManse?.dayMaster?.label || myManse?.dayMaster?.name || myManse?.dayMaster || myManse?.ilgan,
+      dayMaster: (myManse as any)?.dayMaster?.label || (myManse as any)?.dayMaster || (myManse as any)?.ilgan,
       year: userForManse.year,
       month: userForManse.month,
       day: userForManse.day,
