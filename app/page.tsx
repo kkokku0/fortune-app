@@ -1445,9 +1445,6 @@ export default function Page() {
 
   const showQuestion = categoryId === "premium";
 
-  const featuredCategories = categories.filter((item) => item.featured);
-  const normalCategories = categories.filter((item) => !item.featured);
-
   const reviewsPerPage = 3;
   const reviewPages = Math.ceil(reviews.length / reviewsPerPage);
   const visibleReviews = reviews.slice(
@@ -1459,7 +1456,6 @@ export default function Page() {
     user.day || "--"
   }일 · ${user.calendar}${user.calendar === "음력" && user.lunarLeapMonth ? " 윤달" : ""} · ${user.gender} · ${getRelationshipStatusText(user.maritalStatus)}`;
 
-  const paidBullets = getPaidBullets(categoryId);
   const paidHook = getPaidHook(categoryId);
 
   const baseFileName = useMemo(() => {
@@ -1488,8 +1484,15 @@ export default function Page() {
     const script = document.createElement("script");
     script.id = scriptId;
     script.src = "https://cdn.portone.io/v2/browser-sdk.js";
-    script.async = true;
-    document.body.appendChild(script);
+    script.async = false;
+    script.onload = () => {
+      console.log("PORTONE SDK LOADED", Boolean(window.PortOne?.requestPayment));
+    };
+    script.onerror = () => {
+      console.error("PORTONE SDK LOAD FAILED");
+    };
+
+    document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
@@ -1638,11 +1641,22 @@ export default function Page() {
       return;
     }
 
-    const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-    const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
+    const configResponse = await fetch("/api/payment/config", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    const config = await configResponse.json().catch(() => null);
+
+    const storeId = config?.storeId;
+    const channelKey = config?.channelKey;
 
     if (!storeId || !channelKey) {
-      alert("포트원 연동값이 없습니다. .env.local의 NEXT_PUBLIC_PORTONE_STORE_ID, NEXT_PUBLIC_PORTONE_CHANNEL_KEY를 확인하세요.");
+      alert(
+        `포트원 연동값이 없습니다.
+storeId: ${storeId ? "있음" : "없음"}
+channelKey: ${channelKey ? "있음" : "없음"}`
+      );
       return;
     }
 
