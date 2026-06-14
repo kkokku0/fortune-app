@@ -960,31 +960,35 @@ function BrandLogo({ compact = false }: { compact?: boolean }) {
 function normalizeComicChapters(value: unknown): ComicChapter[] {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const raw = item as Record<string, unknown>;
+  const chapters: ComicChapter[] = [];
 
-      return {
-        sceneType: typeof raw.sceneType === "string" ? raw.sceneType : "",
-        speaker: typeof raw.speaker === "string" ? raw.speaker : "",
-        emotion: typeof raw.emotion === "string" ? raw.emotion : "",
-        title: typeof raw.title === "string" ? raw.title : "",
-        text: typeof raw.text === "string" ? raw.text : "",
-        character: typeof raw.character === "string" ? raw.character : "",
-        mood:
-          typeof raw.mood === "string"
-            ? raw.mood
-            : typeof raw.background === "string"
-              ? raw.background
-              : "",
-        background: typeof raw.background === "string" ? raw.background : "",
-        visualHint: typeof raw.visualHint === "string" ? raw.visualHint : "",
-      } satisfies ComicChapter;
-    })
-    .filter((item): item is ComicChapter =>
-      Boolean(item && (item.title || item.text)),
-    );
+  value.forEach((item) => {
+    if (!item || typeof item !== "object") return;
+
+    const raw = item as Record<string, unknown>;
+    const chapter: ComicChapter = {
+      sceneType: typeof raw.sceneType === "string" ? raw.sceneType : "",
+      speaker: typeof raw.speaker === "string" ? raw.speaker : "",
+      emotion: typeof raw.emotion === "string" ? raw.emotion : "",
+      title: typeof raw.title === "string" ? raw.title : "",
+      text: typeof raw.text === "string" ? raw.text : "",
+      character: typeof raw.character === "string" ? raw.character : "",
+      mood:
+        typeof raw.mood === "string"
+          ? raw.mood
+          : typeof raw.background === "string"
+            ? raw.background
+            : "",
+      background: typeof raw.background === "string" ? raw.background : "",
+      visualHint: typeof raw.visualHint === "string" ? raw.visualHint : "",
+    };
+
+    if (chapter.title || chapter.text) {
+      chapters.push(chapter);
+    }
+  });
+
+  return chapters;
 }
 
 function getComicCharacterImage(scene: ComicChapter) {
