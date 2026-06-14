@@ -183,7 +183,7 @@ type TenGodCountsLike = Partial<Record<TenGodKey, number>>;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "missing" });
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const ROUTE_VERSION = "soreum-route-v62-marital-repeat-ghost-pastlife";
+const ROUTE_VERSION = "soreum-route-v63-comic-theater-chapters";
 const RELATIONSHIP_LOGIC = "compatibility-lover-or-business-only-no-family-v41";
 const YEARLY_LOGIC = "yearly-point-months-not-quarter-list-v41";
 const PROFILE_LOGIC = "category-profile-specific-risk-direction-v5-love-timing-partner-job-split";
@@ -6336,6 +6336,358 @@ function getFullMaxTokens(categoryId: CategoryId) {
   return 8200;
 }
 
+
+
+type ComicChapter = {
+  id: string;
+  sceneType:
+    | "entrance"
+    | "mind"
+    | "personality"
+    | "core"
+    | "warning"
+    | "blessing"
+    | "detail"
+    | "timing"
+    | "lock"
+    | "final";
+  speaker: "dohoon" | "narration" | "badLuckGhost" | "fortuneSpirit";
+  character:
+    | "dohoon"
+    | "dohoon-serious"
+    | "dohoon-pointing"
+    | "dohoon-warning"
+    | "dohoon-smile"
+    | "user-shadow"
+    | "bad-luck-ghost"
+    | "fortune-spirit";
+  emotion: "normal" | "serious" | "pointing" | "warning" | "smile" | "shock";
+  mood: "dark" | "redDark" | "gold" | "mist" | "paper" | "black";
+  title: string;
+  text: string;
+  visualHint: string;
+  isLocked?: boolean;
+  ctaText?: string;
+};
+
+type ComicMode = "preview" | "full";
+
+function compactComicText(value: string, fallback = "") {
+  const cleaned = cleanGeneratedText(String(value || ""))
+    .replace(/\[[^\]]+\]/g, " ")
+    .replace(/^[-•]\s*/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const text = cleaned || fallback;
+  if (text.length <= 145) return text;
+  return `${text.slice(0, 142).trim()}...`;
+}
+
+function stripSectionTitle(value: string) {
+  return String(value || "")
+    .replace(/^\s*\[|\]\s*$/g, "")
+    .replace(/^#+\s*/g, "")
+    .trim();
+}
+
+function extractComicSections(resultText: string) {
+  const text = cleanGeneratedText(resultText || "");
+  const sectionRegex = /\[([^\]]+)\]\s*([\s\S]*?)(?=\n\[[^\]]+\]|$)/g;
+  const sections: { title: string; body: string }[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = sectionRegex.exec(text)) !== null) {
+    const title = stripSectionTitle(match[1]);
+    const body = compactComicText(match[2] || "");
+    if (!title || !body) continue;
+    if (/내부|규칙|고정|만세력|프롬프트|AI는|절대/.test(title + body)) continue;
+    sections.push({ title, body });
+  }
+
+  if (sections.length > 0) return sections;
+
+  return text
+    .split(/\n{2,}/)
+    .map((body, index) => ({ title: index === 0 ? "도훈의 첫 판정" : `사주 장면 ${index + 1}`, body: compactComicText(body) }))
+    .filter((item) => item.body)
+    .slice(0, 12);
+}
+
+function getComicCategoryTheme(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return {
+      question: "나는 왜 벌어도 남는 게 없나, 그 답답함을 보러 온 거다.",
+      coreTitle: "돈복부터 까보면",
+      warningTitle: "새는돈귀신",
+      warningText: "돈이 없는 게 아니다. 정, 사람 말, 급한 욕심이 끼면 들어온 돈이 오래 못 머문다.",
+      blessingTitle: "돈복도깨비",
+      blessingText: "네 돈은 네가 흐름을 보고, 네 몫이 분명한 자리에서 붙는다.",
+    };
+  }
+
+  if (isCareerCategory(categoryId, title)) {
+    return {
+      question: "내가 지금 이 일 계속해도 되나, 아니면 내 판을 따로 잡아야 하나 그게 궁금한 거다.",
+      coreTitle: "일복부터 까보면",
+      warningTitle: "판벌림귀신",
+      warningText: "판을 너무 빨리 키우면 복보다 책임과 손해가 먼저 붙는다.",
+      blessingTitle: "밥줄신",
+      blessingText: "네 일복은 역할이 분명하고 이름값이 남는 자리에서 살아난다.",
+    };
+  }
+
+  if (isLoveMarriageCategory(categoryId, title)) {
+    return {
+      question: "사람이 없는 게 궁금한 게 아니다. 왜 비슷한 사람에게 흔들리는지 그게 궁금한 거다.",
+      coreTitle: "인연운부터 까보면",
+      warningTitle: "헛정귀신",
+      warningText: "끊어야 할 사람에게 마음이 묶이면 좋은 인연이 들어와도 자리가 안 난다.",
+      blessingTitle: "인연등불",
+      blessingText: "네 인연은 설렘보다 오래 편해지는 사람에게 복이 붙는다.",
+    };
+  }
+
+  if (isCompatibilityCategory(categoryId, title) || isPartnerCategory(categoryId, title)) {
+    return {
+      question: "이 사람과 계속 가도 되는지, 이미 마음속으로는 답을 확인받고 싶은 거다.",
+      coreTitle: "궁합부터 까보면",
+      warningTitle: "감정귀신",
+      warningText: "끌리는 이유와 오래 가는 이유는 다르다. 말, 돈, 책임에서 진짜 궁합이 갈린다.",
+      blessingTitle: "맞물림복",
+      blessingText: "둘의 역할과 선이 맞으면 관계가 복으로 바뀐다.",
+    };
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return {
+      question: "몸이 왜 이렇게 무거운지, 그냥 피곤한 건지 운에서 신호가 온 건지 보러 온 거다.",
+      coreTitle: "몸운부터 까보면",
+      warningTitle: "피로귀신",
+      warningText: "몸이 약해서가 아니라 끝까지 버티다가 한 번에 꺼지는 흐름을 조심해야 한다.",
+      blessingTitle: "숨고르기복",
+      blessingText: "수면, 소화, 걷기 리듬을 잡으면 몸이 복을 받을 그릇이 된다.",
+    };
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    return {
+      question: "올해가 그냥 지나갈 해인지, 어디서 운이 움직이는지 알고 싶은 거다.",
+      coreTitle: "올해운부터 까보면",
+      warningTitle: "흔들림귀신",
+      warningText: "운이 약한 달에 크게 움직이면 복보다 손해가 먼저 붙는다.",
+      blessingTitle: "천운문",
+      blessingText: "강한 달을 잡고 흔들리는 달을 피하면 올해 판이 달라진다.",
+    };
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return {
+      question: "내 인생이 언제 제대로 풀리는지, 그 문이 어디서 열리는지 보러 온 거다.",
+      coreTitle: "대운부터 까보면",
+      warningTitle: "막힘귀신",
+      warningText: "초년의 답답함을 평생 운으로 착각하면 들어올 복도 늦어진다.",
+      blessingTitle: "천운문",
+      blessingText: "대운은 기다리는 게 아니라 잡을 준비가 된 사람에게 열린다.",
+    };
+  }
+
+  return {
+    question: "재미로만 보는 척하지만, 속으론 하나가 걸려 있다. 이대로 가도 되나, 그걸 확인하러 온 거다.",
+    coreTitle: "사주부터 까보면",
+    warningTitle: "반복귀신",
+    warningText: "같은 장면에서 같은 선택을 반복하면 운이 들어와도 막힌다.",
+    blessingTitle: "복의 자리",
+    blessingText: "피해야 할 악운과 잡아야 할 복을 나누면 길이 보인다.",
+  };
+}
+
+function getComicCoreLine(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  manse: any;
+  partnerManse?: any | null;
+}) {
+  const { user, categoryId, categoryTitle, manse, partnerManse } = params;
+  const name = getName(user);
+  const title = categoryTitle || "";
+
+  if (categoryId === "money" || title.includes("재물")) {
+    return `${name}, 네 돈복은 '${getMoneyGrade(manse)}'으로 본다. 돈이 없는 사주가 아니라, 돈이 붙는 자리와 새는 자리가 분명한 사주다.`;
+  }
+
+  if (isCareerCategory(categoryId, title)) {
+    return `${name}, 너는 '${getCareerArchetype(manse).combined}'에 가깝다. 일은 이름보다 네 역할과 몫이 남는 구조를 봐야 한다.`;
+  }
+
+  if (categoryId === "health" || title.includes("건강")) {
+    return `${name}, 네 건강운은 '${getHealthGrade(manse)}'으로 본다. 몸이 약해서가 아니라 오래 버티다가 꺼지는 흐름을 조심해야 한다.`;
+  }
+
+  if (isPartnerCategory(categoryId, title)) {
+    const score = getBusinessPartnerScore(manse, partnerManse || null);
+    return `두 사람의 동업궁합은 ${score.score}점, '${score.grade}'으로 본다. 같이 벌 수 있는지는 역할과 돈 기준에서 갈린다.`;
+  }
+
+  if (isCompatibilityCategory(categoryId, title)) {
+    const score = getCompatibilityScore(manse, partnerManse || null);
+    return `두 사람의 궁합은 ${score.score}점, '${score.grade}'으로 본다. 끌림보다 오래 갈 기준을 봐야 한다.`;
+  }
+
+  if (isMonthlyCategory(categoryId, title)) {
+    return `${name}, 올해는 아무 달이나 움직이는 해가 아니다. 돈, 일, 사람, 몸에서 강한 달과 피해야 할 달이 갈린다.`;
+  }
+
+  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return `${name}, 네 인생 흐름은 '${getLifeFlow(manse)}'으로 본다. 크게 방향이 바뀌는 대운 문을 놓치면 안 된다.`;
+  }
+
+  return `${name}, 이 운은 지금 방향을 먼저 잡아야 풀리는 흐름이다. 감정으로 밀면 꼬이고, 사주가 가리키는 자리를 봐야 한다.`;
+}
+
+function buildComicChapters(params: {
+  mode: ComicMode;
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  resultText: string;
+  manse: any;
+  partnerManse?: any | null;
+  fortuneSeed?: number;
+}): ComicChapter[] {
+  const { mode, user, categoryId, categoryTitle, resultText, manse, partnerManse } = params;
+  const theme = getComicCategoryTheme(categoryId, categoryTitle);
+  const name = getName(user);
+  const isFull = mode === "full";
+  const baseMood: ComicChapter["mood"] = categoryId === "money" ? "gold" : categoryId === "health" ? "mist" : "redDark";
+
+  const chapters: ComicChapter[] = [
+    {
+      id: "comic-01-entrance",
+      sceneType: "entrance",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "serious",
+      mood: "dark",
+      title: "도훈의 사주극장",
+      text: "야, 이거 그냥 운세가 아니다. 네가 왜 여기까지 왔는지부터 보인다.",
+      visualHint: "검붉은 배경, 중앙에 도훈, 사주 종이가 천천히 펼쳐지는 장면",
+    },
+    {
+      id: "comic-02-mind",
+      sceneType: "mind",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "redDark",
+      title: "너 이거 재미로만 온 거 아니지",
+      text: theme.question,
+      visualHint: "도훈이 손가락으로 화면 밖 사용자를 짚고, 뒤에는 내담자 실루엣",
+    },
+    {
+      id: "comic-03-personality",
+      sceneType: "personality",
+      speaker: "dohoon",
+      character: "user-shadow",
+      emotion: "serious",
+      mood: "mist",
+      title: "넌 이런 사람이다",
+      text: `${name}, 넌 대충 넘기는 척해도 속으로는 오래 계산하는 사람이다. 손해 본 장면은 쉽게 잊지 않고, 중요한 선택 앞에서는 마음이 먼저 무거워진다.`,
+      visualHint: "고개 숙인 내담자 실루엣, 주변에 생각 말풍선이 떠 있는 장면",
+    },
+    {
+      id: "comic-04-core",
+      sceneType: "core",
+      speaker: "dohoon",
+      character: "dohoon-warning",
+      emotion: "warning",
+      mood: baseMood,
+      title: theme.coreTitle,
+      text: getComicCoreLine({ user, categoryId, categoryTitle, manse, partnerManse }),
+      visualHint: "도훈이 사주 명식 위에 붉은 도장을 찍는 장면",
+    },
+  ];
+
+  if (!isFull) {
+    chapters.push({
+      id: "comic-05-lock",
+      sceneType: "lock",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "serious",
+      mood: "black",
+      title: "여기서부터가 진짜다",
+      text: "네 팔자에서 복이 붙는 자리와 악운이 달라붙는 자리는 완전히 다르다. 전체 풀이를 열면 그 지점을 장면별로 까준다.",
+      visualHint: "닫힌 붉은 문, 문틈 사이로 금빛 기운이 새어 나오는 장면",
+      isLocked: true,
+      ctaText: "전체 사주풀이 열기",
+    });
+
+    return chapters;
+  }
+
+  chapters.push(
+    {
+      id: "comic-05-warning",
+      sceneType: "warning",
+      speaker: "badLuckGhost",
+      character: "bad-luck-ghost",
+      emotion: "warning",
+      mood: "black",
+      title: theme.warningTitle,
+      text: theme.warningText,
+      visualHint: "작은 악운 캐릭터가 어깨 뒤에서 귓속말하는 장면",
+    },
+    {
+      id: "comic-06-blessing",
+      sceneType: "blessing",
+      speaker: "fortuneSpirit",
+      character: "fortune-spirit",
+      emotion: "smile",
+      mood: "gold",
+      title: theme.blessingTitle,
+      text: theme.blessingText,
+      visualHint: "금빛 복 캐릭터가 닫힌 문 앞에 등불을 드는 장면",
+    }
+  );
+
+  const sections = extractComicSections(resultText)
+    .filter((section) => !/결론부터|도훈의 사주극장/.test(section.title))
+    .slice(0, 14);
+
+  sections.forEach((section, index) => {
+    const isTiming = /시기|월|올해|대운|앞으로|흐름/.test(section.title);
+    chapters.push({
+      id: `comic-detail-${String(index + 1).padStart(2, "0")}`,
+      sceneType: isTiming ? "timing" : "detail",
+      speaker: "dohoon",
+      character: index % 3 === 0 ? "dohoon-pointing" : index % 3 === 1 ? "dohoon-serious" : "user-shadow",
+      emotion: isTiming ? "pointing" : "serious",
+      mood: isTiming ? "gold" : index % 2 === 0 ? "paper" : "mist",
+      title: section.title,
+      text: section.body,
+      visualHint: isTiming ? "달력 위에 붉은 표시가 찍히는 장면" : "웹툰 말풍선과 사주 종이가 겹쳐지는 장면",
+    });
+  });
+
+  chapters.push({
+    id: "comic-final",
+    sceneType: "final",
+    speaker: "dohoon",
+    character: "dohoon-smile",
+    emotion: "smile",
+    mood: "redDark",
+    title: "도훈의 마지막 판정",
+    text: "이 사주는 겁주려고 보는 게 아니다. 어디서 막히고, 어디서 복이 붙는지 알면 같은 악운을 반복하지 않는다.",
+    visualHint: "도훈이 붉은 도장을 찍고, 뒤쪽 문이 열리는 마지막 장면",
+  });
+
+  return chapters.slice(0, 24);
+}
+
 function responsePayload(params: {
   preview: string;
   full: string;
@@ -6351,6 +6703,7 @@ function responsePayload(params: {
   };
   repeatGhostProfile?: RepeatGhostProfile;
   pastLifeProfile?: any;
+  comicChapters?: ComicChapter[];
 }) {
   return {
     ...params,
@@ -6371,6 +6724,7 @@ function responsePayload(params: {
     sajuTypeStoryLogic: "v29-ghost-saju-story-paid-structure-v1",
     ghostSajuLogic: "ghost-metaphor-no-fear-story-layer-v1",
     todayFourCardLogic: "today-total-money-love-badluck-4sections-v1",
+    comicTheaterLogic: "dohoon-comic-chapters-v1",
   };
 }
 
@@ -6500,21 +6854,34 @@ ${careerBlock}
 
 [상대방 만세력]
 ${partnerManseText}
+
 `;
+
+    const makeComicChapters = (resultText: string, comicMode: ComicMode) =>
+      buildComicChapters({
+        mode: comicMode,
+        user: promptUser,
+        categoryId,
+        categoryTitle,
+        resultText,
+        manse: myManse,
+        partnerManse,
+        fortuneSeed,
+      });
 
     if (!process.env.OPENAI_API_KEY) {
       const preview = fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
       const full = fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
 
       if (mode === "full") {
-        return NextResponse.json(responsePayload({ preview: "", full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion }));
+        return NextResponse.json(responsePayload({ preview: "", full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(full, "full") }));
       }
 
       if (mode === "both") {
-        return NextResponse.json(responsePayload({ preview: cleanGeneratedText(preview), full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion }));
+        return NextResponse.json(responsePayload({ preview: cleanGeneratedText(preview), full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(full, "full") }));
       }
 
-      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion }));
+      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(preview, "preview") }));
     }
 
     if (mode === "preview") {
@@ -6545,6 +6912,7 @@ ${partnerManseText}
           birthConversion,
           repeatGhostProfile,
           pastLifeProfile,
+          comicChapters: makeComicChapters(cleanGeneratedText(finalPreview), "preview"),
         })
       );
     }
@@ -6577,6 +6945,7 @@ ${partnerManseText}
           birthConversion,
           repeatGhostProfile,
           pastLifeProfile,
+          comicChapters: makeComicChapters(ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse), "full"),
         })
       );
     }
@@ -6622,6 +6991,7 @@ ${partnerManseText}
         birthConversion,
         repeatGhostProfile,
         pastLifeProfile,
+        comicChapters: makeComicChapters(ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse), "full"),
       })
     );
   } catch (error) {
@@ -6669,5 +7039,6 @@ export async function GET() {
     previewLogic: PREVIEW_LOGIC,
     ghostSajuLogic: "ghost-metaphor-no-fear-story-layer-v1",
     todayFourCardLogic: "today-total-money-love-badluck-4sections-v1",
+    comicTheaterLogic: "dohoon-comic-chapters-v1",
   });
 }

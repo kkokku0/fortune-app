@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 declare global {
   interface Window {
-    KCP_Pay_Execute_Web?: (form: HTMLFormElement) => void;
+    PortOne?: {
+      requestPayment: (params: Record<string, unknown>) => Promise<any>;
+    };
   }
 }
 
@@ -576,41 +578,14 @@ function normalizeUserInfo(value?: Partial<UserInfo> | null): UserInfo {
   };
 }
 
-function getKcpMobileGoodName(targetCategoryId: CategoryId) {
-  // KCP 모바일 결제창에서 한글 상품명이 ?????로 깨지는 경우가 있어
-  // 모바일 결제창에만 카테고리별 영문 상품명을 보냅니다.
-  // 사이트 화면/리포트명은 기존 한글 그대로 유지됩니다.
-  const map: Record<CategoryId, string> = {
-    today: "SoreumSaju Today Report",
-    money: "SoreumSaju Money Report",
-    career: "SoreumSaju Career Business Report",
-    love: "SoreumSaju Love Marriage Report",
-    health: "SoreumSaju Health Report",
-    compatibility: "SoreumSaju Compatibility Report",
-    monthly: "SoreumSaju Yearly Report",
-    lifeFlow: "SoreumSaju Life Flow Report",
-    traditional: "SoreumSaju Full Saju Report",
-    premium: "SoreumSaju Personal Question Report",
-  };
+function makePortOnePaymentId() {
+  const randomPart =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
 
-  return map[targetCategoryId] || "SoreumSaju Fortune Report";
-}
-
-function getKcpMobileShopName() {
-  // 모바일 결제창 한글 인코딩 깨짐 방지용
-  return "SoreumSaju";
-}
-
-function isMobileDevice() {
-  if (typeof window === "undefined" || typeof navigator === "undefined") {
-    return false;
-  }
-
-  return (
-    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    ) || window.innerWidth <= 767
-  );
+  // KCP는 paymentId에 한글/특수문자를 쓰지 않는 것이 안전합니다.
+  return `soreum-${Date.now()}-${randomPart}`;
 }
 
 function makeSafeFileName(value: string) {
@@ -1506,16 +1481,13 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const scriptId = "kcp-spay-script";
+    const scriptId = "portone-v2-browser-sdk";
 
     if (document.getElementById(scriptId)) return;
 
     const script = document.createElement("script");
     script.id = scriptId;
-
-    // PC 결제창용 운영 스크립트입니다.
-    // 모바일은 requestKcpMobilePayment에서 별도 모바일 결제창으로 이동합니다.
-    script.src = "https://spay.kcp.co.kr/plugin/kcp_spay_hub.js";
+    script.src = "https://cdn.portone.io/v2/browser-sdk.js";
     script.async = true;
     document.body.appendChild(script);
   }, []);
@@ -1551,43 +1523,20 @@ export default function Page() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
+    const paymentId = params.get("paymentId");
+    const code = params.get("code");
+    const message = params.get("message");
 
-    if (payment === "fail") {
-      alert("결제가 취소되었거나 실패했습니다.");
+    if (code) {
+      alert(message || "결제가 취소되었거나 실패했습니다.");
+      window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
-    if (payment !== "success") return;
+    if (!paymentId) return;
 
-    const saved = window.localStorage.getItem("fortune-pending-payment");
-
-    if (!saved) {
-      alert("결제는 성공했지만 저장된 운세 정보가 없습니다. 다시 무료 결과를 생성한 뒤 전체 리포트를 열어주세요.");
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(saved) as {
-        categoryId: CategoryId;
-        user: UserInfo;
-        preview: string;
-      };
-
-      setCategoryId(parsed.categoryId);
-      const restoredUser = normalizeUserInfo(parsed.user);
-      setUser(restoredUser);
-      setAiPreview(parsed.preview || "");
-      setPaid(true);
-      setStep("result");
-
-      setTimeout(() => {
-        generateFullResult(parsed.categoryId, restoredUser);
-      }, 200);
-    } catch (error) {
-      console.error("payment restore error:", error);
-      alert("결제 후 리포트 정보를 복원하지 못했습니다.");
-    }
+    handlePortOnePaymentComplete(paymentId);
+    window.history.replaceState({}, "", window.location.pathname);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1619,169 +1568,131 @@ export default function Page() {
     );
   };
 
-  const requestKcpMobilePayment = async (orderName: string, amount: number) => {
+  const handlePortOnePaymentComplete = async (paymentId: string) => {
+    const saved = window.localStorage.getItem("fortune-pending-payment");
+
+    if (!saved) {
+      alert("결제는 완료됐지만 저장된 운세 정보가 없습니다. 다시 무료 결과를 생성한 뒤 전체 리포트를 열어주세요.");
+      return;
+    }
+
     try {
-      const siteCd = process.env.NEXT_PUBLIC_KCP_SITE_CD;
+      const parsed = JSON.parse(saved) as {
+        categoryId: CategoryId;
+        user: UserInfo;
+        preview: string;
+        orderId?: string;
+        paymentId?: string;
+        orderName: string;
+        amount: number;
+      };
 
-      if (!siteCd) {
-        alert("KCP 사이트 코드가 없습니다. Vercel 환경변수 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
-        return;
-      }
-
-      const orderId = `SOREUM${Date.now()}`;
-      savePendingPayment(orderId, orderName, amount);
-
-      const retUrl = `${window.location.origin}/api/kcp/approve`;
-
-      const response = await fetch("/api/kcp/mobile/register", {
+      const verifyResponse = await fetch("/api/payment/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId,
-          // 모바일 KCP 거래등록에는 영문 상품명을 사용해서 ????? 깨짐을 막습니다.
-          // localStorage에는 기존 orderName을 저장해두므로 사이트 복귀 후 리포트 흐름은 그대로입니다.
-          orderName: getKcpMobileGoodName(categoryId),
-          amount,
-          buyerName: nameOf(user),
-          buyerTel: "01000000000",
-          retUrl,
+          paymentId,
+          orderId: parsed.orderId || parsed.paymentId || paymentId,
+          orderName: parsed.orderName,
+          amount: parsed.amount,
+          categoryId: parsed.categoryId,
         }),
       });
 
-      const data = await response.json();
+      const verifyData = await verifyResponse.json().catch(() => null);
 
-      if (!response.ok) {
+      if (!verifyResponse.ok) {
         throw new Error(
-          data?.message ||
-            data?.error ||
-            "KCP 모바일 거래등록에 실패했습니다."
+          verifyData?.message ||
+            verifyData?.error ||
+            "포트원 결제 검증에 실패했습니다."
         );
       }
 
-      const payUrl = String(data.PayUrl || "");
-      const approvalKey = String(data.approvalKey || "");
+      setCategoryId(parsed.categoryId);
+      const restoredUser = normalizeUserInfo(parsed.user);
+      setUser(restoredUser);
+      setAiPreview(parsed.preview || "");
+      setPaid(true);
+      setStep("result");
 
-      if (!payUrl || !approvalKey) {
-        throw new Error("KCP 모바일 결제창 주소 또는 승인키가 없습니다.");
-      }
+      window.localStorage.removeItem("fortune-pending-payment");
 
-      const form = document.createElement("form");
-      form.name = "order_info";
-      form.method = "post";
-      form.acceptCharset = "euc-kr";
-      form.action =
-        payUrl.substring(0, payUrl.lastIndexOf("/")) +
-        "/jsp/encodingFilter/encodingFilter.jsp";
-
-      const payData: Record<string, string> = {
-        site_cd: siteCd,
-        pay_method: "CARD",
-        currency: "410",
-        shop_name: getKcpMobileShopName(),
-        Ret_URL: retUrl,
-        approval_key: approvalKey,
-        PayUrl: payUrl,
-        ordr_idxx: orderId,
-        good_name: getKcpMobileGoodName(categoryId),
-        good_mny: String(amount),
-        buyr_name: nameOf(user),
-        buyr_mail: "",
-        buyr_tel2: "01000000000",
-        escw_used: "N",
-      };
-
-      Object.entries(payData).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
+      setTimeout(() => {
+        generateFullResult(parsed.categoryId, restoredUser);
+      }, 200);
     } catch (error) {
-      console.error(error);
-      const message =
+      console.error("portone payment complete error:", error);
+      const errorMessage =
         error instanceof Error
           ? error.message
-          : "KCP 모바일 결제창을 여는 중 문제가 발생했습니다.";
-      alert(message);
+          : "결제 검증 중 문제가 발생했습니다.";
+
+      alert(errorMessage);
     }
   };
 
-  const requestKcpPayment = async (orderName: string, amount: number) => {
+  const requestPortOnePayment = async (orderName: string, amount: number) => {
     if (!privacyAgreed) {
       alert("개인정보 수집·이용에 동의해야 결제를 진행할 수 있습니다.");
       return;
     }
 
-    const siteCd = process.env.NEXT_PUBLIC_KCP_SITE_CD;
+    const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
+    const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
 
-    if (!siteCd) {
-      alert("KCP 사이트 코드가 없습니다. .env.local 또는 Vercel의 NEXT_PUBLIC_KCP_SITE_CD를 확인하세요.");
+    if (!storeId || !channelKey) {
+      alert("포트원 연동값이 없습니다. .env.local의 NEXT_PUBLIC_PORTONE_STORE_ID, NEXT_PUBLIC_PORTONE_CHANNEL_KEY를 확인하세요.");
       return;
     }
 
-    if (isMobileDevice()) {
-      await requestKcpMobilePayment(orderName, amount);
-      return;
-    }
-
-    if (!window.KCP_Pay_Execute_Web) {
-      alert("KCP 결제창 스크립트를 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
+    if (!window.PortOne?.requestPayment) {
+      alert("포트원 결제창 스크립트를 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
       return;
     }
 
     try {
-      const orderId = `SOREUM${Date.now()}`;
-      savePendingPayment(orderId, orderName, amount);
+      const paymentId = makePortOnePaymentId();
 
-      const form = document.createElement("form");
-      form.name = "order_info";
-      form.method = "post";
-      form.action = "/api/kcp/approve";
+      savePendingPayment(paymentId, orderName, amount);
 
-      const payData: Record<string, string> = {
-        site_cd: siteCd,
-        site_name: "소름사주",
-
-        // PC 신용카드 결제
-        pay_method: "100000000000",
-
-        ordr_idxx: orderId,
-        good_name: orderName,
-        good_mny: String(amount),
-        currency: "WON",
-
-        buyr_name: nameOf(user),
-        buyr_mail: "",
-        buyr_tel1: "",
-        buyr_tel2: "01000000000",
-
-        // 결제 인증 완료 후 KCP가 넘겨줄 서버 주소
-        Ret_URL: `${window.location.origin}/api/kcp/approve`,
-
-        // 에스크로 사용 안 함
-        escrow_yn: "N",
-
-        // 디지털 콘텐츠 제공기간
-        good_expr: "0",
-      };
-
-      Object.entries(payData).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
+      const response = await window.PortOne.requestPayment({
+        storeId,
+        channelKey,
+        paymentId,
+        orderName,
+        totalAmount: amount,
+        currency: "CURRENCY_KRW",
+        payMethod: "CARD",
+        customer: {
+          fullName: nameOf(user),
+          phoneNumber: "01000000000",
+        },
+        redirectUrl: `${window.location.origin}${window.location.pathname}`,
+        forceRedirect: false,
+        bypass: {
+          kcp_v2: {
+            site_name: "소름사주",
+          },
+        },
       });
 
-      document.body.appendChild(form);
-      window.KCP_Pay_Execute_Web(form);
+      // 모바일에서는 redirectUrl로 돌아올 수 있어서 response가 없을 수 있습니다.
+      if (!response) return;
+
+      if (response.code !== undefined) {
+        alert(response.message || "결제가 취소되었거나 실패했습니다.");
+        return;
+      }
+
+      await handlePortOnePaymentComplete(String(response.paymentId || paymentId));
     } catch (error) {
       console.error(error);
-      alert("KCP 결제창을 여는 중 문제가 발생했거나 결제가 취소되었습니다.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "포트원 결제창을 여는 중 문제가 발생했거나 결제가 취소되었습니다.";
+      alert(message);
     }
   };
 
@@ -3362,7 +3273,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   <button
                     type="button"
                     onClick={() =>
-                      requestKcpPayment(`${category.title} 전체 리포트`, category.price)
+                      requestPortOnePayment(`${category.title} 전체 리포트`, category.price)
                     }
                     className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
                   >
@@ -3529,11 +3440,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <button
                   type="button"
                   onClick={() =>
-                    requestKcpPayment(selectedPlanInfo.title, selectedPlanInfo.price)
+                    requestPortOnePayment(selectedPlanInfo.title, selectedPlanInfo.price)
                   }
                   className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black"
                 >
-                  로컬 테스트용 KCP 결제창
+                  로컬 테스트용 포트원 결제창
                 </button>
               )}
             </section>
