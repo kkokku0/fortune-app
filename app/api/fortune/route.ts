@@ -5,8 +5,17 @@ import { calculateManse, formatManseForPrompt } from "../../lib/manse";
 const KoreanLunarCalendarModule = require("korean-lunar-calendar");
 
 type KoreanLunarCalendarInstance = {
-  setLunarDate: (year: number, month: number, day: number, isLeapMonth: boolean) => boolean;
-  getSolarCalendar?: () => { year: number | string; month: number | string; day: number | string };
+  setLunarDate: (
+    year: number,
+    month: number,
+    day: number,
+    isLeapMonth: boolean,
+  ) => boolean;
+  getSolarCalendar?: () => {
+    year: number | string;
+    month: number | string;
+    day: number | string;
+  };
   getSolarIsoFormat?: () => string;
 };
 
@@ -59,7 +68,8 @@ function createKoreanLunarCalendar() {
 
   console.error("korean-lunar-calendar 사용 가능한 생성 방식이 없습니다.", {
     moduleType: typeof moduleAny,
-    moduleKeys: moduleAny && typeof moduleAny === "object" ? Object.keys(moduleAny) : [],
+    moduleKeys:
+      moduleAny && typeof moduleAny === "object" ? Object.keys(moduleAny) : [],
     defaultType: typeof moduleAny?.default,
     defaultKeys:
       moduleAny?.default && typeof moduleAny.default === "object"
@@ -67,7 +77,8 @@ function createKoreanLunarCalendar() {
         : [],
     koreanLunarCalendarType: typeof moduleAny?.KoreanLunarCalendar,
     koreanLunarCalendarKeys:
-      moduleAny?.KoreanLunarCalendar && typeof moduleAny.KoreanLunarCalendar === "object"
+      moduleAny?.KoreanLunarCalendar &&
+      typeof moduleAny.KoreanLunarCalendar === "object"
         ? Object.keys(moduleAny.KoreanLunarCalendar)
         : [],
   });
@@ -75,7 +86,9 @@ function createKoreanLunarCalendar() {
   throw new Error("korean-lunar-calendar 생성 방식 확인 실패");
 }
 
-function readSolarFromKoreanLunarCalendar(calendar: KoreanLunarCalendarInstance) {
+function readSolarFromKoreanLunarCalendar(
+  calendar: KoreanLunarCalendarInstance,
+) {
   if (typeof calendar.getSolarCalendar === "function") {
     const solar = calendar.getSolarCalendar();
 
@@ -183,10 +196,11 @@ type TenGodCountsLike = Partial<Record<TenGodKey, number>>;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "missing" });
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const ROUTE_VERSION = "soreum-route-v63-comic-theater-chapters";
+const ROUTE_VERSION = "soreum-route-v66-hard-concrete-category-timing";
 const RELATIONSHIP_LOGIC = "compatibility-lover-or-business-only-no-family-v41";
 const YEARLY_LOGIC = "yearly-point-months-not-quarter-list-v41";
-const PROFILE_LOGIC = "category-profile-specific-risk-direction-v5-love-timing-partner-job-split";
+const PROFILE_LOGIC =
+  "category-profile-specific-risk-direction-v5-love-timing-partner-job-split";
 const PREVIEW_LOGIC = "preview-2200-3200-ghost-story-tease-v3";
 const CHILDREN_LOGIC = "children-dedicated-report-jasik-janyeo-v2";
 const DETERMINISTIC_LOGIC = "same-birth-same-category-same-seed-v1";
@@ -399,7 +413,7 @@ function buildBirthConversionText(params: {
     ? `\n- 상대 생년월일 변환: ${params.partnerBirthConversion.note}`
     : "";
 
-  return `[생년월일 변환 기준]\n- 본인 생년월일 변환: ${params.userBirthConversion.note}${partnerLine}\n- 만세력 계산과 고정 결론은 변환된 양력일을 기준으로 한다.\n- 사용자가 음력을 선택했다면 결과 본문에서 필요할 때 \"음력으로 넣은 생일은 양력으로 바꾸면 ○○년 ○월 ○일 기준\"이라고 자연스럽게 말해도 된다.`;
+  return `[생년월일 변환 기준]\n- 본인 생년월일 변환: ${params.userBirthConversion.note}${partnerLine}\n- 만세력 계산과 고정 결론은 변환된 양력일을 기준으로 한다.\n- 사용자가 음력을 선택했다면 결과 본문에서 필요할 때 "음력으로 넣은 생일은 양력으로 바꾸면 ○○년 ○월 ○일 기준"이라고 자연스럽게 말해도 된다.`;
 }
 
 function getName(user?: UserInfo) {
@@ -451,7 +465,11 @@ function getCategoryTitle(categoryId?: CategoryId, categoryTitle?: string) {
   return categoryId ? map[categoryId] : "운세풀이";
 }
 
-function getEffectiveCategoryTitle(categoryId: CategoryId, categoryTitle: string, user?: UserInfo) {
+function getEffectiveCategoryTitle(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  user?: UserInfo,
+) {
   const baseTitle = getCategoryTitle(categoryId, categoryTitle);
 
   if (categoryId === "compatibility" || baseTitle.includes("궁합")) {
@@ -462,18 +480,28 @@ function getEffectiveCategoryTitle(categoryId: CategoryId, categoryTitle: string
   return baseTitle;
 }
 
-
 function getSajuTypeStoryGuide(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
   let focus = "그 사람이 어떤 사주형인지, 어디서 빛나고 어디서 막히는지";
 
-  if (categoryId === "money" || title.includes("재물")) focus = "돈이 붙는 자리, 돈이 새는 장면, 네 몫이 남는 자리";
-  if (isCareerCategory(categoryId, title)) focus = "일이 열리는 자리, 남 밑에서 막히는 지점, 자기 이름값이 붙는 흐름";
-  if (categoryId === "love" || title.includes("연애")) focus = "끌리는 사람, 너무 오래 봐주는 패턴, 관계가 꼬이는 장면";
-  if (categoryId === "marriage" || title.includes("결혼")) focus = "같이 살면 드러나는 돈·가족·생활 기준";
-  if (categoryId === "health" || title.includes("건강")) focus = "몸이 먼저 보내는 신호, 오래 버티다가 꺼지는 자리";
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) focus = "초년·청년·중년·말년에 달라지는 사주형과 대운의 문";
-  if (categoryId === "traditional" || title.includes("평생")) focus = "나라는 사람의 전체 원형, 돈·일·관계·몸이 엮이는 큰 판";
+  if (categoryId === "money" || title.includes("재물"))
+    focus = "돈이 붙는 자리, 돈이 새는 장면, 네 몫이 남는 자리";
+  if (isCareerCategory(categoryId, title))
+    focus = "일이 열리는 자리, 남 밑에서 막히는 지점, 자기 이름값이 붙는 흐름";
+  if (categoryId === "love" || title.includes("연애"))
+    focus = "끌리는 사람, 너무 오래 봐주는 패턴, 관계가 꼬이는 장면";
+  if (categoryId === "marriage" || title.includes("결혼"))
+    focus = "같이 살면 드러나는 돈·가족·생활 기준";
+  if (categoryId === "health" || title.includes("건강"))
+    focus = "몸이 먼저 보내는 신호, 오래 버티다가 꺼지는 자리";
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  )
+    focus = "초년·청년·중년·말년에 달라지는 사주형과 대운의 문";
+  if (categoryId === "traditional" || title.includes("평생"))
+    focus = "나라는 사람의 전체 원형, 돈·일·관계·몸이 엮이는 큰 판";
 
   return `
 [소름사주 사주형 스토리 규칙]
@@ -527,7 +555,6 @@ function getRedPointOutputRule() {
 `;
 }
 
-
 function getGhostSajuStoryGuide(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
   const isToday = categoryId === "today" || title.includes("오늘");
@@ -535,23 +562,30 @@ function getGhostSajuStoryGuide(categoryId: CategoryId, categoryTitle: string) {
   const isLove = categoryId === "love" || title.includes("연애");
   const isMarriage = categoryId === "marriage" || title.includes("결혼");
   const isHealth = categoryId === "health" || title.includes("건강");
-  const isRelation = isCompatibilityCategory(categoryId, title) || isFamilyCategory(categoryId, title) || isPartnerCategory(categoryId, title);
+  const isRelation =
+    isCompatibilityCategory(categoryId, title) ||
+    isFamilyCategory(categoryId, title) ||
+    isPartnerCategory(categoryId, title);
 
   let categoryGhost = "반복되는 선택 귀신";
-  let categoryUse = "사용자가 같은 문제를 왜 반복하는지, 어디서 운이 새는지, 어떻게 복으로 돌리는지";
+  let categoryUse =
+    "사용자가 같은 문제를 왜 반복하는지, 어디서 운이 새는지, 어떻게 복으로 돌리는지";
 
   if (isToday) {
     categoryGhost = "오늘 붙는 말귀신·돈귀신·외로움귀신·성급한 반응 악운";
-    categoryUse = "오늘 하루의 말, 돈, 연애, 악운 한 가지를 4개 카드처럼 풀어주는 것";
+    categoryUse =
+      "오늘 하루의 말, 돈, 연애, 악운 한 가지를 4개 카드처럼 풀어주는 것";
   } else if (isMoney) {
     categoryGhost = "새는 돈귀신";
     categoryUse = "돈이 들어오는 자리, 돈이 새는 장면, 돈복을 잡는 방식";
   } else if (isCareerCategory(categoryId, title)) {
     categoryGhost = "판 벌리는 귀신";
-    categoryUse = "남 밑에서 막히는 자리, 자기 이름값이 붙는 자리, 판을 크게 벌리면 손해가 먼저 붙는 지점";
+    categoryUse =
+      "남 밑에서 막히는 자리, 자기 이름값이 붙는 자리, 판을 크게 벌리면 손해가 먼저 붙는 지점";
   } else if (isLove) {
     categoryGhost = "외로움귀신";
-    categoryUse = "끌리는 사람, 피해야 할 사람, 연락과 말투에서 관계가 꼬이는 장면";
+    categoryUse =
+      "끌리는 사람, 피해야 할 사람, 연락과 말투에서 관계가 꼬이는 장면";
   } else if (isMarriage) {
     categoryGhost = "생활고귀신과 외로움귀신";
     categoryUse = "결혼이 복이 되는 조건과 결혼이 업처럼 무거워지는 조건";
@@ -560,7 +594,8 @@ function getGhostSajuStoryGuide(categoryId: CategoryId, categoryTitle: string) {
     categoryUse = "몸이 약해서가 아니라 오래 버티다가 꺼지는 흐름";
   } else if (isRelation) {
     categoryGhost = "말꼬리귀신·기대귀신·몫다툼귀신 중 관계 구조에 맞는 귀신";
-    categoryUse = "둘 사이에서 반복되는 말투, 돈 기준, 책임, 거리감, 주도권 충돌";
+    categoryUse =
+      "둘 사이에서 반복되는 말투, 돈 기준, 책임, 거리감, 주도권 충돌";
   }
 
   return `
@@ -584,17 +619,29 @@ function getGhostSajuStoryGuide(categoryId: CategoryId, categoryTitle: string) {
 `;
 }
 
-function getPersonalStoryFingerprint(manse: any, categoryId: CategoryId, categoryTitle: string) {
+function getPersonalStoryFingerprint(
+  manse: any,
+  categoryId: CategoryId,
+  categoryTitle: string,
+) {
   if (typeof manse === "string") {
     const read = (label: string) => {
       const m = manse.match(new RegExp(`${label}[^0-9]{0,8}([0-9]+)`));
       return m ? Number(m[1]) : 0;
     };
-    const dayMatch = manse.match(/일간[^가-힣A-Za-z0-9]{0,8}([가-힣A-Za-z0-9]+)/);
+    const dayMatch = manse.match(
+      /일간[^가-힣A-Za-z0-9]{0,8}([가-힣A-Za-z0-9]+)/,
+    );
     const strongestMatch = manse.match(/강한[^\n:：]*[:：]?\s*([목화토금수])/);
     const weakestMatch = manse.match(/약한[^\n:：]*[:：]?\s*([목화토금수])/);
     manse = {
-      elementCounts: { 목: read("목"), 화: read("화"), 토: read("토"), 금: read("금"), 수: read("수") },
+      elementCounts: {
+        목: read("목"),
+        화: read("화"),
+        토: read("토"),
+        금: read("금"),
+        수: read("수"),
+      },
       dayMaster: dayMatch ? dayMatch[1] : "제공된 일간",
       strongestElement: strongestMatch ? strongestMatch[1] : "제공된 명식 기준",
       weakestElement: weakestMatch ? weakestMatch[1] : "제공된 명식 기준",
@@ -632,21 +679,34 @@ function getPersonalStoryFingerprint(manse: any, categoryId: CategoryId, categor
   };
 
   let typeHint = "버티는 힘과 흔들리는 선택이 같이 있는 사주형";
-  if (snap.earth >= 3 && snap.metal === 0) typeHint = "담벼락은 단단한데 끊어낼 칼이 늦게 나오는 사주형";
-  else if (snap.water >= 3) typeHint = "생각의 물길이 깊어 남보다 먼저 감지하지만 결정이 늦어지는 사주형";
-  else if (snap.fire >= 2 && snap.wood >= 2) typeHint = "불씨가 살아나면 빠르게 커지지만 식으면 확 꺼지는 사주형";
-  else if (snap.metal >= 2) typeHint = "칼처럼 정리하고 판단하지만 마음이 늦게 풀리는 사주형";
-  else if (snap.wood >= 2) typeHint = "틈만 보이면 위로 뻗지만 막히면 답답함이 커지는 사주형";
-  else if (resource >= 3) typeHint = "공부와 준비는 깊은데 밖으로 꺼내는 버튼이 늦은 사주형";
-  else if (output >= 3) typeHint = "말·기술·표현이 밖으로 나가야 운이 열리는 사주형";
-  else if (wealth >= 3) typeHint = "돈 냄새는 맡지만 판을 잘못 키우면 새는 돈도 커지는 사주형";
+  if (snap.earth >= 3 && snap.metal === 0)
+    typeHint = "담벼락은 단단한데 끊어낼 칼이 늦게 나오는 사주형";
+  else if (snap.water >= 3)
+    typeHint =
+      "생각의 물길이 깊어 남보다 먼저 감지하지만 결정이 늦어지는 사주형";
+  else if (snap.fire >= 2 && snap.wood >= 2)
+    typeHint = "불씨가 살아나면 빠르게 커지지만 식으면 확 꺼지는 사주형";
+  else if (snap.metal >= 2)
+    typeHint = "칼처럼 정리하고 판단하지만 마음이 늦게 풀리는 사주형";
+  else if (snap.wood >= 2)
+    typeHint = "틈만 보이면 위로 뻗지만 막히면 답답함이 커지는 사주형";
+  else if (resource >= 3)
+    typeHint = "공부와 준비는 깊은데 밖으로 꺼내는 버튼이 늦은 사주형";
+  else if (output >= 3)
+    typeHint = "말·기술·표현이 밖으로 나가야 운이 열리는 사주형";
+  else if (wealth >= 3)
+    typeHint = "돈 냄새는 맡지만 판을 잘못 키우면 새는 돈도 커지는 사주형";
 
   let categoryFocus = "이 사람의 반복 장면";
-  if (categoryId === "today") categoryFocus = "오늘 말·돈·사람관계·몸 컨디션에서 먼저 새는 장면";
+  if (categoryId === "today")
+    categoryFocus = "오늘 말·돈·사람관계·몸 컨디션에서 먼저 새는 장면";
   if (categoryId === "money") categoryFocus = `${money.type} / ${money.risk}`;
-  if (isCareerCategory(categoryId, categoryTitle)) categoryFocus = `${career.combined} / ${career.warning}`;
-  if (categoryId === "health") categoryFocus = `${health.type} / ${health.risk}`;
-  if (categoryId === "love") categoryFocus = `${relation.type} / ${relation.risk}`;
+  if (isCareerCategory(categoryId, categoryTitle))
+    categoryFocus = `${career.combined} / ${career.warning}`;
+  if (categoryId === "health")
+    categoryFocus = `${health.type} / ${health.risk}`;
+  if (categoryId === "love")
+    categoryFocus = `${relation.type} / ${relation.risk}`;
 
   return `
 [개인화 핑거프린트 - 반드시 내용 차이로 반영]
@@ -680,7 +740,10 @@ function isPartnerCategory(categoryId: CategoryId, categoryTitle: string) {
   );
 }
 
-function isCompatibilityCategory(categoryId: CategoryId, categoryTitle: string) {
+function isCompatibilityCategory(
+  categoryId: CategoryId,
+  categoryTitle: string,
+) {
   const title = categoryTitle || "";
   if (isPartnerCategory(categoryId, title)) return false;
 
@@ -699,7 +762,11 @@ function isFamilyCategory(categoryId: CategoryId, categoryTitle: string) {
 
 function isChildrenCategory(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
-  return categoryId === "children" || title.includes("자식") || title.includes("자녀");
+  return (
+    categoryId === "children" ||
+    title.includes("자식") ||
+    title.includes("자녀")
+  );
 }
 
 function isMonthlyCategory(categoryId: CategoryId, categoryTitle: string) {
@@ -727,7 +794,12 @@ function isLoveMarriageCategory(categoryId: CategoryId, categoryTitle: string) {
 
 function isCareerCategory(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
-  return categoryId === "career" || title.includes("일·사업") || title.includes("직업") || (title.includes("사업") && !isPartnerCategory(categoryId, title));
+  return (
+    categoryId === "career" ||
+    title.includes("일·사업") ||
+    title.includes("직업") ||
+    (title.includes("사업") && !isPartnerCategory(categoryId, title))
+  );
 }
 
 function shouldUseCareerArchetype(categoryId?: CategoryId) {
@@ -740,7 +812,6 @@ function shouldUseCareerArchetype(categoryId?: CategoryId) {
     categoryId === "premium"
   );
 }
-
 
 type RepeatGhostKey =
   | "새는돈귀신"
@@ -763,11 +834,16 @@ type RepeatGhostProfile = {
 
 function normalizeMaritalStatus(user?: UserInfo) {
   const raw = safeText(user?.maritalStatus, "비공개");
-  if (["미혼", "연애중", "기혼", "이혼/재혼 고민", "비공개"].includes(raw)) return raw;
+  if (["미혼", "연애중", "기혼", "이혼/재혼 고민", "비공개"].includes(raw))
+    return raw;
   return "비공개";
 }
 
-function getMaritalStatusGuide(user?: UserInfo, categoryId?: CategoryId, categoryTitle = "") {
+function getMaritalStatusGuide(
+  user?: UserInfo,
+  categoryId?: CategoryId,
+  categoryTitle = "",
+) {
   const status = normalizeMaritalStatus(user);
   const title = categoryTitle || "";
   const isRelationCategory =
@@ -779,16 +855,21 @@ function getMaritalStatusGuide(user?: UserInfo, categoryId?: CategoryId, categor
     title.includes("결혼") ||
     title.includes("궁합");
 
-  let focus = "관계 상태를 단정하지 말고, 현재 입력값 기준으로 조심스럽게 풀이한다.";
+  let focus =
+    "관계 상태를 단정하지 말고, 현재 입력값 기준으로 조심스럽게 풀이한다.";
 
   if (status === "미혼") {
-    focus = "앞으로 들어올 인연, 피해야 할 사람, 결혼까지 갈 수 있는 기준을 중심으로 풀이한다.";
+    focus =
+      "앞으로 들어올 인연, 피해야 할 사람, 결혼까지 갈 수 있는 기준을 중심으로 풀이한다.";
   } else if (status === "연애중") {
-    focus = "막연한 새 인연보다 현재 상대와 계속 갈 수 있는지, 결혼까지 볼 수 있는지, 어디서 부딪히는지를 중심으로 풀이한다.";
+    focus =
+      "막연한 새 인연보다 현재 상대와 계속 갈 수 있는지, 결혼까지 볼 수 있는지, 어디서 부딪히는지를 중심으로 풀이한다.";
   } else if (status === "기혼") {
-    focus = "새로운 이성 인연이나 결혼할 사람 중심으로 말하지 말고, 배우자운·부부관계·생활 기준·가족 거리감·돈 기준을 중심으로 풀이한다.";
+    focus =
+      "새로운 이성 인연이나 결혼할 사람 중심으로 말하지 말고, 배우자운·부부관계·생활 기준·가족 거리감·돈 기준을 중심으로 풀이한다.";
   } else if (status === "이혼/재혼 고민") {
-    focus = "과거 인연의 반복 패턴, 새 인연을 받을 조건, 재혼운에서 피해야 할 사람을 중심으로 풀이한다.";
+    focus =
+      "과거 인연의 반복 패턴, 새 인연을 받을 조건, 재혼운에서 피해야 할 사람을 중심으로 풀이한다.";
   }
 
   return `
@@ -811,27 +892,32 @@ function getRepeatGhostDescriptions() {
     새는돈귀신: {
       summary: "돈은 들어오는데 정, 충동, 사람 말 때문에 새는 반복 흐름",
       risk: "벌어도 남는 게 흐려지고, 사람 일에 끌려가 돈과 마음이 같이 빠질 수 있다.",
-      direction: "정 때문에 쓰는 돈, 남 말 듣고 들어가는 돈, 내 몫이 흐린 돈을 끊을 때 돈복이 산다.",
+      direction:
+        "정 때문에 쓰는 돈, 남 말 듣고 들어가는 돈, 내 몫이 흐린 돈을 끊을 때 돈복이 산다.",
     },
     정귀신: {
       summary: "아닌 걸 알면서도 정 때문에 오래 못 끊는 반복 흐름",
       risk: "좋은 사람 노릇을 하다가 내 시간, 돈, 감정이 먼저 닳을 수 있다.",
-      direction: "불쌍함과 의리를 사랑이나 복으로 착각하지 말고, 선을 긋는 순간 운이 열린다.",
+      direction:
+        "불쌍함과 의리를 사랑이나 복으로 착각하지 말고, 선을 긋는 순간 운이 열린다.",
     },
     미루기귀신: {
       summary: "생각이 깊어서 시작과 결정이 늦어지는 반복 흐름",
       risk: "머릿속에서는 이미 여러 번 끝냈는데 현실에서는 문을 늦게 열어 기회를 놓칠 수 있다.",
-      direction: "완벽한 확신을 기다리지 말고, 손에 잡히는 첫 문을 열어야 복이 들어온다.",
+      direction:
+        "완벽한 확신을 기다리지 말고, 손에 잡히는 첫 문을 열어야 복이 들어온다.",
     },
     판벌림귀신: {
       summary: "꽂히면 크게 벌리고 나중에 부담이 먼저 붙는 반복 흐름",
       risk: "복이 붙기 전에 지출, 약속, 책임이 먼저 커져 몸과 돈이 같이 눌릴 수 있다.",
-      direction: "처음부터 판 크게 벌리지 말고, 먼저 빠지는 돈과 책임을 줄여야 한다.",
+      direction:
+        "처음부터 판 크게 벌리지 말고, 먼저 빠지는 돈과 책임을 줄여야 한다.",
     },
     외로움귀신: {
       summary: "혼자 있는 불안 때문에 사람 선택이 흔들리는 반복 흐름",
       risk: "사람이 없는 게 무서워서 마음을 늙게 만드는 사람까지 붙잡을 수 있다.",
-      direction: "빈자리를 아무 사람으로 채우지 말고, 오래 편해지는 사람인지 봐야 한다.",
+      direction:
+        "빈자리를 아무 사람으로 채우지 말고, 오래 편해지는 사람인지 봐야 한다.",
     },
     책임귀신: {
       summary: "내 몫도 아닌 짐까지 떠안고 버티는 반복 흐름",
@@ -841,31 +927,51 @@ function getRepeatGhostDescriptions() {
     말꼬리귀신: {
       summary: "말투, 연락, 자존심 때문에 관계가 꼬이는 반복 흐름",
       risk: "작은 말 하나가 오래 남아 관계를 닫고, 닫힌 마음이 다시 열리는 데 시간이 걸린다.",
-      direction: "말을 이기려고 하지 말고, 끊어야 할 말과 풀어야 할 말을 나눠야 한다.",
+      direction:
+        "말을 이기려고 하지 말고, 끊어야 할 말과 풀어야 할 말을 나눠야 한다.",
     },
     피로귀신: {
       summary: "몸이 약해서가 아니라 끝까지 버티다가 꺼지는 반복 흐름",
       risk: "몸이 보내는 신호를 미루면 운이 들어와도 몸이 못 받친다.",
-      direction: "수면, 소화, 장, 순환, 목·어깨 긴장을 먼저 살려야 복을 받을 그릇이 산다.",
+      direction:
+        "수면, 소화, 장, 순환, 목·어깨 긴장을 먼저 살려야 복을 받을 그릇이 산다.",
     },
-  } satisfies Record<RepeatGhostKey, { summary: string; risk: string; direction: string }>;
+  } satisfies Record<
+    RepeatGhostKey,
+    { summary: string; risk: string; direction: string }
+  >;
 }
 
-function addGhostScore(scores: Record<RepeatGhostKey, number>, key: RepeatGhostKey, amount: number) {
+function addGhostScore(
+  scores: Record<RepeatGhostKey, number>,
+  key: RepeatGhostKey,
+  amount: number,
+) {
   scores[key] = (scores[key] || 0) + amount;
 }
 
-function scoreRepeatGhostFromText(scores: Record<RepeatGhostKey, number>, text: string) {
+function scoreRepeatGhostFromText(
+  scores: Record<RepeatGhostKey, number>,
+  text: string,
+) {
   const value = String(text || "");
 
-  if (/새|모으|돈|충동|고정비|투자|사업|크게 쓰|가족.*쓰|사람.*쓰/.test(value)) addGhostScore(scores, "새는돈귀신", 3);
-  if (/정|못 끊|가족|사람.*쓰|오래 본|다 이해|참/.test(value)) addGhostScore(scores, "정귀신", 3);
-  if (/미루|오래 고민|생각|시작.*늦|결정.*늦|기회.*놓/.test(value)) addGhostScore(scores, "미루기귀신", 3);
-  if (/크게|벌리|급하게|꽂히|확 타오르|판/.test(value)) addGhostScore(scores, "판벌림귀신", 3);
-  if (/외로|혼자|불안|연애|사람.*막힌/.test(value)) addGhostScore(scores, "외로움귀신", 3);
-  if (/책임|짐|떠안|다 이해|오래 참|내가.*많/.test(value)) addGhostScore(scores, "책임귀신", 3);
-  if (/말투|연락|자존심|마음.*닫|관계.*꼬/.test(value)) addGhostScore(scores, "말꼬리귀신", 3);
-  if (/몸|마음|피로|수면|소화|장|무겁|건강|버티/.test(value)) addGhostScore(scores, "피로귀신", 3);
+  if (/새|모으|돈|충동|고정비|투자|사업|크게 쓰|가족.*쓰|사람.*쓰/.test(value))
+    addGhostScore(scores, "새는돈귀신", 3);
+  if (/정|못 끊|가족|사람.*쓰|오래 본|다 이해|참/.test(value))
+    addGhostScore(scores, "정귀신", 3);
+  if (/미루|오래 고민|생각|시작.*늦|결정.*늦|기회.*놓/.test(value))
+    addGhostScore(scores, "미루기귀신", 3);
+  if (/크게|벌리|급하게|꽂히|확 타오르|판/.test(value))
+    addGhostScore(scores, "판벌림귀신", 3);
+  if (/외로|혼자|불안|연애|사람.*막힌/.test(value))
+    addGhostScore(scores, "외로움귀신", 3);
+  if (/책임|짐|떠안|다 이해|오래 참|내가.*많/.test(value))
+    addGhostScore(scores, "책임귀신", 3);
+  if (/말투|연락|자존심|마음.*닫|관계.*꼬/.test(value))
+    addGhostScore(scores, "말꼬리귀신", 3);
+  if (/몸|마음|피로|수면|소화|장|무겁|건강|버티/.test(value))
+    addGhostScore(scores, "피로귀신", 3);
 }
 
 function getRepeatGhostProfile(user: UserInfo, manse: any): RepeatGhostProfile {
@@ -882,7 +988,9 @@ function getRepeatGhostProfile(user: UserInfo, manse: any): RepeatGhostProfile {
   };
 
   const answers = user.repeatGhostAnswers || {};
-  Object.values(answers).forEach((answer) => scoreRepeatGhostFromText(scores, String(answer || "")));
+  Object.values(answers).forEach((answer) =>
+    scoreRepeatGhostFromText(scores, String(answer || "")),
+  );
   scoreRepeatGhostFromText(scores, safeText(user.repeatGhostType, ""));
 
   const snap = getElementSnapshot(manse);
@@ -900,9 +1008,12 @@ function getRepeatGhostProfile(user: UserInfo, manse: any): RepeatGhostProfile {
   if (snap.water >= 2 && snap.fire <= 1) addGhostScore(scores, "외로움귀신", 1);
   if (authority >= 2 || snap.earth >= 3) addGhostScore(scores, "책임귀신", 2);
   if (output >= 2 || snap.metal >= 2) addGhostScore(scores, "말꼬리귀신", 1);
-  if (snap.fire === 0 || snap.fire <= 1 || snap.earth >= 4) addGhostScore(scores, "피로귀신", 2);
+  if (snap.fire === 0 || snap.fire <= 1 || snap.earth >= 4)
+    addGhostScore(scores, "피로귀신", 2);
 
-  const sorted = (Object.keys(scores) as RepeatGhostKey[]).sort((a, b) => scores[b] - scores[a]);
+  const sorted = (Object.keys(scores) as RepeatGhostKey[]).sort(
+    (a, b) => scores[b] - scores[a],
+  );
   const primary = sorted[0] || "책임귀신";
   const secondary = sorted.find((key) => key !== primary) || "새는돈귀신";
   const hasAnswer = Object.values(answers).some((value) => safeText(value, ""));
@@ -913,7 +1024,9 @@ function getRepeatGhostProfile(user: UserInfo, manse: any): RepeatGhostProfile {
     summary: descriptions[primary].summary,
     risk: descriptions[primary].risk,
     direction: descriptions[primary].direction,
-    source: hasAnswer ? "사용자 반복귀신 5문 + 만세력 보정" : "만세력 보정값 중심. 사용자가 반복귀신 5문을 답하면 더 선명해진다.",
+    source: hasAnswer
+      ? "사용자 반복귀신 5문 + 만세력 보정"
+      : "만세력 보정값 중심. 사용자가 반복귀신 5문을 답하면 더 선명해진다.",
   };
 }
 
@@ -923,20 +1036,25 @@ function getPastLifeProfile(user: UserInfo, manse: any) {
 
   let pastType = "무사 전생";
   let image = "남의 짐을 대신 지고 길을 건너던 사람";
-  let habit = "이번 생에도 책임을 그냥 못 지나치고, 내 몫 아닌 일까지 붙잡는 버릇";
+  let habit =
+    "이번 생에도 책임을 그냥 못 지나치고, 내 몫 아닌 일까지 붙잡는 버릇";
   let blessing = "잘 풀리면 사람을 지키고 일을 끝까지 세우는 힘이 된다.";
-  let shadow = "안 풀리면 남의 짐을 들다가 내 돈, 내 시간, 내 몸이 먼저 닳는다.";
+  let shadow =
+    "안 풀리면 남의 짐을 들다가 내 돈, 내 시간, 내 몸이 먼저 닳는다.";
 
   if (ghost.primary === "새는돈귀신") {
     pastType = "장사꾼 전생";
     image = "사람과 물건이 오가는 장터에서 흐름을 보던 사람";
-    habit = "이번 생에도 돈 냄새와 사람 흐름은 읽지만, 사람 말에 흔들리면 돈이 새는 버릇";
+    habit =
+      "이번 생에도 돈 냄새와 사람 흐름은 읽지만, 사람 말에 흔들리면 돈이 새는 버릇";
     blessing = "잘 풀리면 거래와 사람 사이에서 돈길을 잡는 눈이 된다.";
-    shadow = "안 풀리면 정 때문에 쓰고, 남 말 듣고 들어간 돈에서 손해가 먼저 붙는다.";
+    shadow =
+      "안 풀리면 정 때문에 쓰고, 남 말 듣고 들어간 돈에서 손해가 먼저 붙는다.";
   } else if (ghost.primary === "정귀신") {
     pastType = "중매꾼 전생";
     image = "사람 사이를 이어주고 서운함을 달래던 사람";
-    habit = "이번 생에도 사람 마음을 빨리 읽고, 아닌 관계도 정 때문에 오래 보는 버릇";
+    habit =
+      "이번 생에도 사람 마음을 빨리 읽고, 아닌 관계도 정 때문에 오래 보는 버릇";
     blessing = "잘 풀리면 사람복과 연결복이 된다.";
     shadow = "안 풀리면 좋은 사람 노릇을 하다가 내 마음이 먼저 늙는다.";
   } else if (ghost.primary === "미루기귀신") {
@@ -944,7 +1062,8 @@ function getPastLifeProfile(user: UserInfo, manse: any) {
     image = "밤새 문서를 읽고 답을 고르던 사람";
     habit = "이번 생에도 생각이 깊어 시작 버튼이 늦게 눌리는 버릇";
     blessing = "잘 풀리면 남들이 못 보는 흐름을 먼저 읽는 눈이 된다.";
-    shadow = "안 풀리면 좋은 생각이 머릿속에서만 돌고 복이 들어올 문을 늦게 연다.";
+    shadow =
+      "안 풀리면 좋은 생각이 머릿속에서만 돌고 복이 들어올 문을 늦게 연다.";
   } else if (ghost.primary === "판벌림귀신") {
     pastType = "떠돌이 전생";
     image = "한곳에 오래 묶이지 않고 새 길을 찾던 사람";
@@ -978,7 +1097,12 @@ function getPastLifeProfile(user: UserInfo, manse: any) {
   return { pastType, image, habit, blessing, shadow };
 }
 
-function getSoreumAddOnPrompt(user: UserInfo, manse: any, categoryId: CategoryId, categoryTitle: string) {
+function getSoreumAddOnPrompt(
+  user: UserInfo,
+  manse: any,
+  categoryId: CategoryId,
+  categoryTitle: string,
+) {
   const ghost = getRepeatGhostProfile(user, manse);
   const past = getPastLifeProfile(user, manse);
 
@@ -1008,14 +1132,23 @@ ${getMaritalStatusGuide(user, categoryId, categoryTitle)}
 `;
 }
 
-function addSoreumAddOnSectionsToOutputStructure(outputStructure: string, categoryId: CategoryId, categoryTitle: string) {
-  if (categoryId === "today" || (categoryTitle || "").includes("오늘")) return outputStructure;
+function addSoreumAddOnSectionsToOutputStructure(
+  outputStructure: string,
+  categoryId: CategoryId,
+  categoryTitle: string,
+) {
+  if (categoryId === "today" || (categoryTitle || "").includes("오늘"))
+    return outputStructure;
   if (outputStructure.includes("[내 안의 반복귀신]")) return outputStructure;
   if (!outputStructure.includes("[내 사주상 분석]")) return outputStructure;
 
   return outputStructure.replace(
     "[내 사주상 분석]",
-    "[내 사주상 분석]" + NL + "[내 안의 반복귀신]" + NL + "[전생에서 넘어온 버릇]"
+    "[내 사주상 분석]" +
+      NL +
+      "[내 안의 반복귀신]" +
+      NL +
+      "[전생에서 넘어온 버릇]",
   );
 }
 
@@ -1040,7 +1173,11 @@ function buildUserInfoText(user?: UserInfo) {
 `;
 }
 
-function readElementCount(manse: any, korean: "목" | "화" | "토" | "금" | "수", english: string) {
+function readElementCount(
+  manse: any,
+  korean: "목" | "화" | "토" | "금" | "수",
+  english: string,
+) {
   const candidates = [
     manse?.elements,
     manse?.elementCounts,
@@ -1053,7 +1190,11 @@ function readElementCount(manse: any, korean: "목" | "화" | "토" | "금" | "�
   for (const item of candidates) {
     if (!item || typeof item !== "object") continue;
 
-    const value = item[korean] ?? item[english] ?? item[english.toLowerCase()] ?? item[english.toUpperCase()];
+    const value =
+      item[korean] ??
+      item[english] ??
+      item[english.toLowerCase()] ??
+      item[english.toUpperCase()];
 
     if (typeof value === "number") return value;
 
@@ -1073,15 +1214,43 @@ function getElementSnapshot(manse: any) {
   const metal = readElementCount(manse, "금", "metal");
   const water = readElementCount(manse, "수", "water");
 
-  const strongestElement = manse?.strongestElement || manse?.strongElement || manse?.strongest || "제공된 명식 기준";
-  const weakestElement = manse?.weakestElement || manse?.weakElement || manse?.weakest || "제공된 명식 기준";
-  const dayMaster = manse?.dayMaster?.label || manse?.dayMaster?.name || manse?.dayMaster || manse?.ilgan || "제공된 일간";
+  const strongestElement =
+    manse?.strongestElement ||
+    manse?.strongElement ||
+    manse?.strongest ||
+    "제공된 명식 기준";
+  const weakestElement =
+    manse?.weakestElement ||
+    manse?.weakElement ||
+    manse?.weakest ||
+    "제공된 명식 기준";
+  const dayMaster =
+    manse?.dayMaster?.label ||
+    manse?.dayMaster?.name ||
+    manse?.dayMaster ||
+    manse?.ilgan ||
+    "제공된 일간";
 
-  return { wood, fire, earth, metal, water, strongestElement, weakestElement, dayMaster };
+  return {
+    wood,
+    fire,
+    earth,
+    metal,
+    water,
+    strongestElement,
+    weakestElement,
+    dayMaster,
+  };
 }
 
 function getTenGodCounts(manse: any): TenGodCountsLike {
-  return manse?.tenGods?.counts || manse?.tenGodCounts || manse?.sip성Counts || manse?.sipsungCounts || {};
+  return (
+    manse?.tenGods?.counts ||
+    manse?.tenGodCounts ||
+    manse?.sip성Counts ||
+    manse?.sipsungCounts ||
+    {}
+  );
 }
 
 function countTenGodGroup(tenGods: TenGodCountsLike, keys: TenGodKey[]) {
@@ -1102,13 +1271,18 @@ function getReadableElementFlow(manse: any) {
     strongest: String(snap.strongestElement),
     weakest: String(snap.weakestElement),
     strongestText: labelMap[String(snap.strongestElement)] || "좋게 타고난 힘",
-    weakestText: labelMap[String(snap.weakestElement)] || "반복해서 보완해야 할 부분",
+    weakestText:
+      labelMap[String(snap.weakestElement)] || "반복해서 보완해야 할 부분",
   };
 }
 
 function profileLines(profile: SajuProfile) {
-  const avoidLines = profile.avoid.map((item, index) => `${index + 1}. ${item}`).join(NL);
-  const actionLines = profile.action.map((item, index) => `${index + 1}. ${item}`).join(NL);
+  const avoidLines = profile.avoid
+    .map((item, index) => `${index + 1}. ${item}`)
+    .join(NL);
+  const actionLines = profile.action
+    .map((item, index) => `${index + 1}. ${item}`)
+    .join(NL);
 
   return `
 [내부 참고용 사주 프로필 - 결과에 제목 그대로 출력 금지]
@@ -1191,22 +1365,23 @@ function buildFortuneSeed(params: {
   return hashToSeed(seedSource);
 }
 
-
 function getNumberFromText(value?: string) {
   const parsed = Number(String(value || "").replace(/[^0-9]/g, ""));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function getMoneyTimingText(user: UserInfo, manse: any) {
-  const seed = hashToSeed(stableStringify({
-    year: safeText(user.year),
-    month: safeText(user.month),
-    day: safeText(user.day),
-    birthTime: safeText(user.birthTime, "모름"),
-    gender: safeText(user.gender),
-    manse,
-    logic: "money-timing-v44",
-  }));
+  const seed = hashToSeed(
+    stableStringify({
+      year: safeText(user.year),
+      month: safeText(user.month),
+      day: safeText(user.day),
+      birthTime: safeText(user.birthTime, "모름"),
+      gender: safeText(user.gender),
+      manse,
+      logic: "money-timing-v44",
+    }),
+  );
 
   const birthYear = getNumberFromText(user.year);
   const currentYear = new Date().getFullYear();
@@ -1223,8 +1398,14 @@ function getMoneyTimingText(user: UserInfo, manse: any) {
   const moneyMoveMonth = movingMonths[seed % movingMonths.length];
   const moneyLeakMonth = leakMonths[Math.floor(seed / 5) % leakMonths.length];
   let moneyCatchMonth = catchMonths[Math.floor(seed / 11) % catchMonths.length];
-  if (moneyCatchMonth === moneyMoveMonth || moneyCatchMonth === moneyLeakMonth) {
-    moneyCatchMonth = catchMonths[(catchMonths.indexOf(moneyCatchMonth) + 2) % catchMonths.length];
+  if (
+    moneyCatchMonth === moneyMoveMonth ||
+    moneyCatchMonth === moneyLeakMonth
+  ) {
+    moneyCatchMonth =
+      catchMonths[
+        (catchMonths.indexOf(moneyCatchMonth) + 2) % catchMonths.length
+      ];
   }
 
   const ageLine = currentAge
@@ -1247,7 +1428,6 @@ ${ageLine}
 ${moneyCatchMonth}월 전후에는 다시 돈을 잡을 기회가 들어오는 흐름으로 본다.`,
   };
 }
-
 
 function getMoneyGrade(manse: any): Grade {
   const { wood, fire, earth, metal, water } = getElementSnapshot(manse);
@@ -1293,8 +1473,10 @@ function getChildrenFlow(manse: any) {
   if (metal === 0) score -= 1;
   if (fire === 0) score -= 1;
 
-  if (score >= 5) return "자식 인연이 비교적 강하고, 자식복이 관계 속에서 드러나는 편";
-  if (score >= 3) return "자식운은 중간 이상이지만 기대와 거리 조율이 중요한 편";
+  if (score >= 5)
+    return "자식 인연이 비교적 강하고, 자식복이 관계 속에서 드러나는 편";
+  if (score >= 3)
+    return "자식운은 중간 이상이지만 기대와 거리 조율이 중요한 편";
   if (score >= 1) return "자식운이 늦게 드러나거나 책임과 함께 들어오는 편";
   return "자식운은 약하게 단정하기보다 관계 조율과 양육 기준이 중요한 편";
 }
@@ -1303,7 +1485,8 @@ function getMarriageFlow(manse: any) {
   const { earth, metal, water, fire } = getElementSnapshot(manse);
   if (earth >= 3 && fire === 0) return "늦게 안정되는 결혼운";
   if (metal >= 2 || water >= 2) return "기준이 맞아야 열리는 결혼운";
-  if (fire >= 2) return "인연이 빠르게 들어올 수 있지만 선택 기준이 중요한 결혼운";
+  if (fire >= 2)
+    return "인연이 빠르게 들어올 수 있지만 선택 기준이 중요한 결혼운";
   return "생활 기준을 맞춰야 안정되는 결혼운";
 }
 
@@ -1321,12 +1504,32 @@ function getCompatibilityScore(myManse: any, partnerManse: any | null) {
   const partner = getElementSnapshot(partnerManse);
   let score = 60;
 
-  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 10;
-  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 10;
-  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 8;
+  if (
+    me.weakestElement &&
+    partner.strongestElement &&
+    me.weakestElement === partner.strongestElement
+  )
+    score += 10;
+  if (
+    partner.weakestElement &&
+    me.strongestElement &&
+    partner.weakestElement === me.strongestElement
+  )
+    score += 10;
+  if (
+    me.strongestElement &&
+    partner.strongestElement &&
+    me.strongestElement === partner.strongestElement
+  )
+    score -= 8;
 
   const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
-  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+  const partnerTotal =
+    partner.wood +
+      partner.fire +
+      partner.earth +
+      partner.metal +
+      partner.water || 1;
 
   const diff =
     Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
@@ -1339,7 +1542,11 @@ function getCompatibilityScore(myManse: any, partnerManse: any | null) {
   if (diff > 1.6) score -= 8;
   if (me.fire === 0 && partner.fire === 0) score -= 7;
   if (me.earth >= 3 && partner.earth >= 3) score -= 7;
-  if ((me.water >= 2 && partner.fire >= 2) || (partner.water >= 2 && me.fire >= 2)) score += 1;
+  if (
+    (me.water >= 2 && partner.fire >= 2) ||
+    (partner.water >= 2 && me.fire >= 2)
+  )
+    score += 1;
 
   score = Math.max(35, Math.min(92, score));
 
@@ -1401,9 +1608,24 @@ function getFamilyScore(myManse: any, partnerManse: any | null) {
   const partner = getElementSnapshot(partnerManse);
   let score = 60;
 
-  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 8;
-  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 8;
-  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 6;
+  if (
+    me.weakestElement &&
+    partner.strongestElement &&
+    me.weakestElement === partner.strongestElement
+  )
+    score += 8;
+  if (
+    partner.weakestElement &&
+    me.strongestElement &&
+    partner.weakestElement === me.strongestElement
+  )
+    score += 8;
+  if (
+    me.strongestElement &&
+    partner.strongestElement &&
+    me.strongestElement === partner.strongestElement
+  )
+    score -= 6;
 
   if (me.earth >= 3 && partner.earth >= 3) score -= 8;
   if (me.fire === 0 && partner.fire === 0) score -= 5;
@@ -1411,7 +1633,12 @@ function getFamilyScore(myManse: any, partnerManse: any | null) {
   if (me.metal === 0 && partner.metal === 0) score -= 4;
 
   const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
-  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+  const partnerTotal =
+    partner.wood +
+      partner.fire +
+      partner.earth +
+      partner.metal +
+      partner.water || 1;
 
   const diff =
     Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
@@ -1483,18 +1710,46 @@ function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
   const partner = getElementSnapshot(partnerManse);
   let score = 58;
 
-  if (me.weakestElement && partner.strongestElement && me.weakestElement === partner.strongestElement) score += 8;
-  if (partner.weakestElement && me.strongestElement && partner.weakestElement === me.strongestElement) score += 8;
-  if (me.strongestElement && partner.strongestElement && me.strongestElement === partner.strongestElement) score -= 6;
+  if (
+    me.weakestElement &&
+    partner.strongestElement &&
+    me.weakestElement === partner.strongestElement
+  )
+    score += 8;
+  if (
+    partner.weakestElement &&
+    me.strongestElement &&
+    partner.weakestElement === me.strongestElement
+  )
+    score += 8;
+  if (
+    me.strongestElement &&
+    partner.strongestElement &&
+    me.strongestElement === partner.strongestElement
+  )
+    score -= 6;
 
-  if ((me.earth >= 2 && partner.metal >= 1) || (partner.earth >= 2 && me.metal >= 1)) score += 7;
-  if ((me.water >= 2 && partner.fire >= 1) || (partner.water >= 2 && me.fire >= 1)) score += 5;
+  if (
+    (me.earth >= 2 && partner.metal >= 1) ||
+    (partner.earth >= 2 && me.metal >= 1)
+  )
+    score += 7;
+  if (
+    (me.water >= 2 && partner.fire >= 1) ||
+    (partner.water >= 2 && me.fire >= 1)
+  )
+    score += 5;
   if (me.metal === 0 && partner.metal === 0) score -= 8;
   if (me.fire === 0 && partner.fire === 0) score -= 4;
   if (me.earth >= 3 && partner.earth >= 3) score -= 5;
 
   const myTotal = me.wood + me.fire + me.earth + me.metal + me.water || 1;
-  const partnerTotal = partner.wood + partner.fire + partner.earth + partner.metal + partner.water || 1;
+  const partnerTotal =
+    partner.wood +
+      partner.fire +
+      partner.earth +
+      partner.metal +
+      partner.water || 1;
 
   const diff =
     Math.abs(me.wood / myTotal - partner.wood / partnerTotal) +
@@ -1512,7 +1767,8 @@ function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
     return {
       score,
       grade: "좋은 사업파트너궁합",
-      summary: "역할을 나누면 서로의 부족한 부분을 채워 돈 흐름을 만들 수 있는 관계",
+      summary:
+        "역할을 나누면 서로의 부족한 부분을 채워 돈 흐름을 만들 수 있는 관계",
       risk: "좋은 궁합이어도 계약과 돈 기준을 대충 넘기면 나중에 균열이 생길 수 있다",
     };
   }
@@ -1521,7 +1777,8 @@ function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
     return {
       score,
       grade: "괜찮은 사업파트너궁합",
-      summary: "같이 일할 수 있는 힘은 있지만 역할과 책임을 정확히 나눠야 하는 관계",
+      summary:
+        "같이 일할 수 있는 힘은 있지만 역할과 책임을 정확히 나눠야 하는 관계",
       risk: "처음엔 잘 맞아도 수익 배분, 업무 강도, 결정권에서 부딪힐 수 있다",
     };
   }
@@ -1530,7 +1787,8 @@ function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
     return {
       score,
       grade: "보통 사업파트너궁합",
-      summary: "아이디어나 방향은 맞을 수 있지만 돈 기준을 잡아야 하는 동업 관계",
+      summary:
+        "아이디어나 방향은 맞을 수 있지만 돈 기준을 잡아야 하는 동업 관계",
       risk: "말로만 시작하면 역할, 책임, 비용 부담에서 반복 충돌이 생길 수 있다",
     };
   }
@@ -1554,10 +1812,13 @@ function getBusinessPartnerScore(myManse: any, partnerManse: any | null) {
 
 function getLifeFlow(manse: any) {
   const { earth, fire, metal, water } = getElementSnapshot(manse);
-  if (earth >= 3 && fire === 0) return "초년보다 중년 이후에 기준을 잡으며 풀리는 흐름";
-  if (water >= 2 && metal === 0) return "감각은 있으나 방향을 잡기 전까지 흔들리는 흐름";
-  if (fire >= 2) return "빠르게 움직일수록 기회가 생기지만 무리하면 꺾이는 흐름";
-  return "한 번에 치고 나가기보다 쌓아서 안정되는 흐름";
+  if (earth >= 3 && fire === 0)
+    return "초년에는 책임이 먼저 붙고, 30대 중반부터 돈눈이 뜨며, 40대 초중반부터 일과 돈이 같이 붙는 사주";
+  if (water >= 2 && metal === 0)
+    return "생각과 촉은 빠른데 30대 초중반까지 방향이 흔들리고, 중년 초입부터 정보·거래·전문성으로 풀리는 사주";
+  if (fire >= 2)
+    return "청년기부터 움직일 문은 빨리 열리지만, 판을 크게 벌리면 꺾이고 30대 이후 선택을 줄일수록 살아나는 사주";
+  return "초년엔 느리지만 30대 후반부터 쌓은 일이 돈으로 바뀌고, 중년 이후 안정되는 사주";
 }
 
 function getMajorLuckChanceCount(manse: any) {
@@ -1584,7 +1845,16 @@ function getMostImportantLuckPhase(manse: any) {
 }
 
 function getCareerArchetype(manse: any) {
-  const { wood, fire, earth, metal, water, strongestElement, weakestElement, dayMaster } = getElementSnapshot(manse);
+  const {
+    wood,
+    fire,
+    earth,
+    metal,
+    water,
+    strongestElement,
+    weakestElement,
+    dayMaster,
+  } = getElementSnapshot(manse);
   const tenGods = getTenGodCounts(manse);
   const wealth = countTenGodGroup(tenGods, ["편재", "정재"]);
   const output = countTenGodGroup(tenGods, ["식신", "상관"]);
@@ -1663,7 +1933,10 @@ function getCareerArchetype(manse: any) {
   const secondary = scores[1];
   let combined = primary.type;
 
-  if (primary.type === "부업형" && (secondary.type === "사업형" || secondary.type === "전문기술형")) {
+  if (
+    primary.type === "부업형" &&
+    (secondary.type === "사업형" || secondary.type === "전문기술형")
+  ) {
     combined = "부업형에 가까운 자기수익형";
   } else if (primary.type === "부업형" && secondary.type === "직장형") {
     combined = "직장+부업형";
@@ -1676,11 +1949,16 @@ function getCareerArchetype(manse: any) {
   }
 
   let warning = "초기비용이 크거나 감정적으로 급하게 결정하는 구조";
-  if (combined.includes("직장") && !combined.includes("부업")) warning = "규칙 없는 프리랜서형이나 준비 없는 창업";
-  if (combined.includes("사업")) warning = "준비 없이 크게 벌이는 사업, 무리한 확장, 빚내서 시작하는 구조";
-  if (combined.includes("부업")) warning = "처음부터 크게 벌이는 사업, 먼저 빠지는 돈 큰 창업, 무리한 투자";
-  if (combined.includes("프리랜서")) warning = "수입 구조 없이 감각만 믿고 움직이는 방식";
-  if (combined.includes("전문기술")) warning = "기술 없이 말로만 하는 사업, 남의 말 듣고 시작하는 투자";
+  if (combined.includes("직장") && !combined.includes("부업"))
+    warning = "규칙 없는 프리랜서형이나 준비 없는 창업";
+  if (combined.includes("사업"))
+    warning = "준비 없이 크게 벌이는 사업, 무리한 확장, 빚내서 시작하는 구조";
+  if (combined.includes("부업"))
+    warning = "처음부터 크게 벌이는 사업, 먼저 빠지는 돈 큰 창업, 무리한 투자";
+  if (combined.includes("프리랜서"))
+    warning = "수입 구조 없이 감각만 믿고 움직이는 방식";
+  if (combined.includes("전문기술"))
+    warning = "기술 없이 말로만 하는 사업, 남의 말 듣고 시작하는 투자";
 
   return {
     wood,
@@ -1702,7 +1980,9 @@ function getCareerArchetype(manse: any) {
 
 function getCareerArchetypeGuide(manse: any) {
   const career = getCareerArchetype(manse);
-  const scoreLines = career.scores.map((item) => `- ${item.type}: ${item.score}`).join(NL);
+  const scoreLines = career.scores
+    .map((item) => `- ${item.type}: ${item.score}`)
+    .join(NL);
 
   return `
 [고정 직업 성향 판정]
@@ -1789,7 +2069,8 @@ function getMoneyPatternLabel(pattern: MoneyPattern) {
     cashflow_manager: "돈은 사람과 일의 흐름을 끝까지 잡을 때 붙는다",
     small_sales_tester: "돈은 사람을 만나고 물건이 움직일 때 붙는다",
     skill_price_builder: "돈은 손에 잡히는 기술과 결과가 있을 때 붙는다",
-    knowledge_packager: "돈은 생각으로만 보관하면 늦고 실제 일의 결과가 보일 때 붙는다",
+    knowledge_packager:
+      "돈은 생각으로만 보관하면 늦고 실제 일의 결과가 보일 때 붙는다",
     relationship_settlement: "돈은 필요한 사람과 필요한 일을 이어줄 때 붙는다",
     slow_asset_accumulator: "돈은 빨리 터지기보다 늦게 모여 단단해진다",
     high_leakage_controller: "돈은 새는 구멍을 끊을 때부터 남기 시작한다",
@@ -1809,9 +2090,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 돈은 그냥 월급만 기다리는 자리보다 사람과 일의 흐름을 끝까지 잡을 때 붙는다. 회사 안에서는 영업관리, 거래처관리, 구매, 운영, 품질, 현장관리처럼 일이 흘러가는 자리를 잡을 때 돈길이 산다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 책임은 내가 지는데 이름과 몫은 남에게 넘어가는 자리다. 남 좋은 일만 하다가 내 돈은 늦게 오는 흐름이 가장 강한 악운이다.",
-      direction: "잡아야 할 돈은 내가 맡은 일이 분명하고, 내가 움직인 만큼 결과가 남는 돈이다. 피해야 할 돈은 남 말에 끌려가서 들어가는 돈, 정 때문에 흐려지는 돈, 처음부터 크게 벌려야 한다는 돈이다.",
-      avoid: ["책임만 크고 내 몫은 흐린 돈", "남 말 듣고 들어가는 돈", "처음부터 판 크게 벌리는 돈"],
-      action: ["회사 안에서는 거래처·구매·운영·현장 흐름이 보이는 자리", "밖에서는 내가 움직인 결과가 남는 일", "정 때문에 돈이 흐려지는 선택은 끊는 흐름"],
+      direction:
+        "잡아야 할 돈은 내가 맡은 일이 분명하고, 내가 움직인 만큼 결과가 남는 돈이다. 피해야 할 돈은 남 말에 끌려가서 들어가는 돈, 정 때문에 흐려지는 돈, 처음부터 크게 벌려야 한다는 돈이다.",
+      avoid: [
+        "책임만 크고 내 몫은 흐린 돈",
+        "남 말 듣고 들어가는 돈",
+        "처음부터 판 크게 벌리는 돈",
+      ],
+      action: [
+        "회사 안에서는 거래처·구매·운영·현장 흐름이 보이는 자리",
+        "밖에서는 내가 움직인 결과가 남는 일",
+        "정 때문에 돈이 흐려지는 선택은 끊는 흐름",
+      ],
     };
   }
 
@@ -1820,9 +2110,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 가만히 앉아서 돈이 굴러오는 사주가 아니다. 사람을 만나고, 물건이 오가고, 내가 직접 보고 움직이는 자리에서 돈이 붙는다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 남들이 대박 났다는 말만 듣고 따라 들어가는 돈이다. 큰 매장, 큰 재고, 큰 광고비처럼 먼저 돈부터 나가는 판은 복보다 부담이 먼저 붙는다.",
-      direction: "잡아야 할 돈은 내 눈으로 물건과 사람 반응이 보이는 돈이다. 피해야 할 돈은 남의 성공담에 끌려 들어가는 돈, 내 손에 보이지 않는 돈, 급해서 잡는 돈이다.",
-      avoid: ["대박났다는 말만 믿고 들어가는 돈", "큰 재고와 큰 매장부터 안는 돈", "내 눈으로 확인하지 않은 돈"],
-      action: ["사람 반응이 보이는 돈", "내가 감당할 수 있는 만큼 굴러가는 돈", "한 번으로 끝나지 않고 이어지는 돈"],
+      direction:
+        "잡아야 할 돈은 내 눈으로 물건과 사람 반응이 보이는 돈이다. 피해야 할 돈은 남의 성공담에 끌려 들어가는 돈, 내 손에 보이지 않는 돈, 급해서 잡는 돈이다.",
+      avoid: [
+        "대박났다는 말만 믿고 들어가는 돈",
+        "큰 재고와 큰 매장부터 안는 돈",
+        "내 눈으로 확인하지 않은 돈",
+      ],
+      action: [
+        "사람 반응이 보이는 돈",
+        "내가 감당할 수 있는 만큼 굴러가는 돈",
+        "한 번으로 끝나지 않고 이어지는 돈",
+      ],
     };
   }
 
@@ -1831,9 +2130,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 말만 하는 돈보다 손에 잡히는 일에 돈이 붙는다. 고치고, 만들고, 챙기고, 다시 불러줄 만한 결과가 남을 때 재물운이 산다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 공짜로 더 해주고, 정 때문에 못 받고, 몸만 바쁘고 이름은 안 남는 자리다. 잘해주기만 하면 복이 아니라 피로가 먼저 붙는다.",
-      direction: "잡아야 할 돈은 내 손으로 끝을 볼 수 있는 돈이다. 피해야 할 돈은 부탁처럼 들어와서 돈은 흐리고 몸만 쓰게 만드는 돈이다.",
-      avoid: ["공짜로 더 해주는 일", "정 때문에 네 몫을 못 받는 일", "몸만 바쁘고 이름은 안 남는 일"],
-      action: ["내 손으로 끝을 볼 수 있는 일", "다시 불러줄 만한 결과가 남는 일", "잘해줘도 내 몫이 사라지지 않는 일"],
+      direction:
+        "잡아야 할 돈은 내 손으로 끝을 볼 수 있는 돈이다. 피해야 할 돈은 부탁처럼 들어와서 돈은 흐리고 몸만 쓰게 만드는 돈이다.",
+      avoid: [
+        "공짜로 더 해주는 일",
+        "정 때문에 네 몫을 못 받는 일",
+        "몸만 바쁘고 이름은 안 남는 일",
+      ],
+      action: [
+        "내 손으로 끝을 볼 수 있는 일",
+        "다시 불러줄 만한 결과가 남는 일",
+        "잘해줘도 내 몫이 사라지지 않는 일",
+      ],
     };
   }
 
@@ -1842,9 +2150,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 머릿속으로만 굴리는 돈은 늦다. 실제 일의 결과가 보이고, 회사 안에서는 기획·구매·운영·관리처럼 맡은 역할이 눈에 보일 때 돈길이 열린다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 생각만 길어지는 자리다. 더 보고, 더 준비하고, 더 확실해지길 기다리다가 돈이 움직이는 때를 놓치기 쉽다.",
-      direction: "잡아야 할 돈은 말로만 남는 돈이 아니라 결과가 보이는 돈이다. 피해야 할 돈은 준비만 길고 실제로 내게 들어오는 몫이 보이지 않는 돈이다.",
-      avoid: ["생각만 길어지는 돈", "말만 하고 끝나는 돈", "내게 들어오는 몫이 보이지 않는 자리"],
-      action: ["회사 안에서는 기획·구매·운영·관리처럼 결과가 보이는 자리", "밖에서는 말보다 실제 결과가 남는 일", "준비만 길어지는 흐름을 끊는 돈"],
+      direction:
+        "잡아야 할 돈은 말로만 남는 돈이 아니라 결과가 보이는 돈이다. 피해야 할 돈은 준비만 길고 실제로 내게 들어오는 몫이 보이지 않는 돈이다.",
+      avoid: [
+        "생각만 길어지는 돈",
+        "말만 하고 끝나는 돈",
+        "내게 들어오는 몫이 보이지 않는 자리",
+      ],
+      action: [
+        "회사 안에서는 기획·구매·운영·관리처럼 결과가 보이는 자리",
+        "밖에서는 말보다 실제 결과가 남는 일",
+        "준비만 길어지는 흐름을 끊는 돈",
+      ],
     };
   }
 
@@ -1853,9 +2170,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 사람 사이에서 돈길이 열릴 수 있는 사주다. 누가 무엇을 필요로 하는지 보고, 사람과 일의 사이를 이어줄 때 돈이 붙는다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 친하다고 돈을 흐리게 섞는 자리다. 정으로 시작한 돈은 나중에 악운으로 돌아오기 쉽다.",
-      direction: "잡아야 할 돈은 좋은 사람 노릇으로 끝나는 돈이 아니라 내 몫이 분명한 돈이다. 피해야 할 돈은 친분, 의리, 미안함 때문에 흐려지는 돈이다.",
-      avoid: ["친분 때문에 흐려지는 돈", "좋은 사람 노릇만 하다 끝나는 돈", "내 몫이 분명하지 않은 동업 돈"],
-      action: ["사람 사이 필요한 것을 이어주는 자리", "정 때문에 흐려지지 않는 돈", "좋은 사람보다 내 몫이 남는 사람으로 서는 흐름"],
+      direction:
+        "잡아야 할 돈은 좋은 사람 노릇으로 끝나는 돈이 아니라 내 몫이 분명한 돈이다. 피해야 할 돈은 친분, 의리, 미안함 때문에 흐려지는 돈이다.",
+      avoid: [
+        "친분 때문에 흐려지는 돈",
+        "좋은 사람 노릇만 하다 끝나는 돈",
+        "내 몫이 분명하지 않은 동업 돈",
+      ],
+      action: [
+        "사람 사이 필요한 것을 이어주는 자리",
+        "정 때문에 흐려지지 않는 돈",
+        "좋은 사람보다 내 몫이 남는 사람으로 서는 흐름",
+      ],
     };
   }
 
@@ -1864,9 +2190,18 @@ function getMoneyProfile(manse: any): SajuProfile {
       type: label,
       core: `돈복은 '${moneyGrade}'으로 본다. 초반에 크게 터지는 돈보다 늦게 모여 단단해지는 돈이 맞다. 빨리 벌려고 흔들리면 새고, 천천히 쌓는 돈에서는 재물운이 살아난다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
       risk: "돈을 잃는 자리는 급한 욕심으로 잡는 돈이다. 한 번에 크게 벌겠다는 돈, 남들이 뛰어든다고 같이 들어가는 돈에는 손해가 먼저 붙는다.",
-      direction: "잡아야 할 돈은 오래 남는 돈이다. 피해야 할 돈은 급하게 잡는 돈, 한 번에 크게 뒤집겠다는 돈, 사람 말에 흔들려 들어가는 돈이다.",
-      avoid: ["급하게 잡는 돈", "한 번에 크게 뒤집겠다는 돈", "사람 말에 흔들려 들어가는 돈"],
-      action: ["늦게 모여 단단해지는 돈", "오래 남는 돈", "초반보다 중년 이후 강해지는 돈길"],
+      direction:
+        "잡아야 할 돈은 오래 남는 돈이다. 피해야 할 돈은 급하게 잡는 돈, 한 번에 크게 뒤집겠다는 돈, 사람 말에 흔들려 들어가는 돈이다.",
+      avoid: [
+        "급하게 잡는 돈",
+        "한 번에 크게 뒤집겠다는 돈",
+        "사람 말에 흔들려 들어가는 돈",
+      ],
+      action: [
+        "늦게 모여 단단해지는 돈",
+        "오래 남는 돈",
+        "초반보다 중년 이후 강해지는 돈길",
+      ],
     };
   }
 
@@ -1874,9 +2209,14 @@ function getMoneyProfile(manse: any): SajuProfile {
     type: label,
     core: `돈복은 '${moneyGrade}'으로 본다. 돈을 크게 벌기 전에 먼저 새는 구멍이 보이는 사주다. 돈이 없는 사주가 아니라, 정·사람·급한 선택 때문에 들어온 돈이 빠지는 흐름을 먼저 끊어야 재물운이 산다. 일·사업 성향은 '${career.combined}'으로 고정해서 본다.`,
     risk: "돈을 잃는 자리는 남 말 듣고 들어가는 돈, 정 때문에 쓰는 돈, 내 몫이 흐린 돈, 급해서 잡는 돈이다.",
-    direction: "잡아야 할 돈은 내가 보고 움직인 만큼 남는 돈이다. 피해야 할 돈은 남의 말, 정, 급한 욕심 때문에 붙는 돈이다.",
+    direction:
+      "잡아야 할 돈은 내가 보고 움직인 만큼 남는 돈이다. 피해야 할 돈은 남의 말, 정, 급한 욕심 때문에 붙는 돈이다.",
     avoid: ["남 말 듣고 들어가는 돈", "정 때문에 쓰는 돈", "내 몫이 흐린 돈"],
-    action: ["내가 보고 움직인 만큼 남는 돈", "정 때문에 새지 않는 돈", "급한 욕심이 끼지 않는 돈"],
+    action: [
+      "내가 보고 움직인 만큼 남는 돈",
+      "정 때문에 새지 않는 돈",
+      "급한 욕심이 끼지 않는 돈",
+    ],
   };
 }
 function getCareerProfile(manse: any): SajuProfile {
@@ -1892,9 +2232,18 @@ function getCareerProfile(manse: any): SajuProfile {
       type: `${career.combined} / 실행수익형`,
       core: `너는 '${career.combined}'에 가깝고, 일은 실행해서 반응을 만들고 그 반응을 수익으로 바꾸는 쪽이 맞아.`,
       risk: "아이디어가 괜찮다고 바로 크게 시작하는 게 위험해.",
-      direction: "작은 판매, 작은 서비스, 작은 프로젝트로 반응을 확인한 뒤 키워야 해.",
-      avoid: ["먼저 빠지는 돈 큰 창업", "검증 없는 광고비 지출", "재고부터 쌓는 선택"],
-      action: ["작게 판을 열어보는 흐름 상품 만들기", "반응 기록하기", "되는 것만 남기기"],
+      direction:
+        "작은 판매, 작은 서비스, 작은 프로젝트로 반응을 확인한 뒤 키워야 해.",
+      avoid: [
+        "먼저 빠지는 돈 큰 창업",
+        "검증 없는 광고비 지출",
+        "재고부터 쌓는 선택",
+      ],
+      action: [
+        "작게 판을 열어보는 흐름 상품 만들기",
+        "반응 기록하기",
+        "되는 것만 남기기",
+      ],
     };
   }
 
@@ -1905,7 +2254,11 @@ function getCareerProfile(manse: any): SajuProfile {
       risk: "실력만 쌓고 가격표나 판매 구조를 만들지 않는 게 위험해.",
       direction: "기술이나 표현을 바로 상품·서비스·콘텐츠로 포장해야 해.",
       avoid: ["무료 노동", "가격 없는 서비스", "배우기만 하고 팔지 않는 구조"],
-      action: ["서비스 메뉴 만들기", "가격표 만들기", "작은 고객 반응 확인하기"],
+      action: [
+        "서비스 메뉴 만들기",
+        "가격표 만들기",
+        "작은 고객 반응 확인하기",
+      ],
     };
   }
 
@@ -1916,7 +2269,11 @@ function getCareerProfile(manse: any): SajuProfile {
       risk: "남의 책임만 떠안고 내 돈이 남는 자리를 못 만드는 게 위험해.",
       direction: "관리 능력을 내 이름의 돈이 남는 자리로 옮기는 준비가 필요해.",
       avoid: ["보상 없는 책임", "감정노동 과다 역할", "내 역할이 흐린 일"],
-      action: ["내가 맡을 역할 정하기", "보상 기준 확인하기", "관리 능력을 상품화하기"],
+      action: [
+        "내가 맡을 역할 정하기",
+        "보상 기준 확인하기",
+        "관리 능력을 상품화하기",
+      ],
     };
   }
 
@@ -1925,9 +2282,14 @@ function getCareerProfile(manse: any): SajuProfile {
       type: `${career.combined} / 지식전문형`,
       core: `너는 '${career.combined}' 흐름과 함께 기획, 분석, 구매·소싱, 자료 정리, 품질관리, 운영관리처럼 정리력과 판단력이 필요한 자리에서 일이 풀려.`,
       risk: "준비와 공부만 길어지고 실제 직무나 결과물로 연결하지 못하는 게 위험해.",
-      direction: "배운 것을 막연한 조언으로 두지 말고, 기획안·비교표·견적표·운영표·관리표처럼 회사나 거래에서 바로 쓰이는 결과물로 바꿔야 해.",
+      direction:
+        "배운 것을 막연한 조언으로 두지 말고, 기획안·비교표·견적표·운영표·관리표처럼 회사나 거래에서 바로 쓰이는 결과물로 바꿔야 해.",
       avoid: ["자격증만 늘리기", "완벽주의", "결과물 없는 공부"],
-      action: ["기획·구매·관리·운영 중 맞는 직무로 좁히기", "비교표·견적표·운영표처럼 보이는 산출물 만들기", "마감일과 결과물 기준을 정해서 일하기"],
+      action: [
+        "기획·구매·관리·운영 중 맞는 직무로 좁히기",
+        "비교표·견적표·운영표처럼 보이는 산출물 만들기",
+        "마감일과 결과물 기준을 정해서 일하기",
+      ],
     };
   }
 
@@ -1935,9 +2297,18 @@ function getCareerProfile(manse: any): SajuProfile {
     type: career.combined,
     core: `너는 '${career.combined}'에 가깝다. 직업명보다 중요한 건 돈과 역할이 만들어지는 구조야.`,
     risk: career.warning,
-    direction: "생활 기반을 무너뜨리지 않으면서 맞는 직무와 돈길을 구체적으로 좁혀야 해. 회사라면 관리·영업·운영·현장 중 어디가 맞는지, 사업이라면 먼저 빠지는 돈가 낮고 돈이 묶이는 시간이 보이는 구조인지 먼저 봐야 해.",
-    avoid: [career.warning, "남 말만 듣고 시작하는 일", "돈이 남는 자리 없는 일"],
-    action: ["맞는 직무군 3개로 좁히기", "월 먼저 빠지는 돈와 돈이 묶이는 시간 계산하기", "역할·가격·마감이 분명한 일만 받기"],
+    direction:
+      "생활 기반을 무너뜨리지 않으면서 맞는 직무와 돈길을 구체적으로 좁혀야 해. 회사라면 관리·영업·운영·현장 중 어디가 맞는지, 사업이라면 먼저 빠지는 돈가 낮고 돈이 묶이는 시간이 보이는 구조인지 먼저 봐야 해.",
+    avoid: [
+      career.warning,
+      "남 말만 듣고 시작하는 일",
+      "돈이 남는 자리 없는 일",
+    ],
+    action: [
+      "맞는 직무군 3개로 좁히기",
+      "월 먼저 빠지는 돈와 돈이 묶이는 시간 계산하기",
+      "역할·가격·마감이 분명한 일만 받기",
+    ],
   };
 }
 
@@ -1951,9 +2322,18 @@ function getHealthProfile(manse: any): SajuProfile {
       type: "피로·수면·회복 리듬 약한 건강형",
       core: `건강운은 '${healthGrade}'으로 본다. 사주상 몸을 다시 데우고 회복시키는 리듬이 약하게 잡혀서, 무리하면 잠·피로·기운 저하가 먼저 흔들리는 흐름이야.`,
       risk: "잠을 줄이고 카페인으로 버티거나, 피곤한데 계속 약속과 일을 밀어붙이면 컨디션이 한 번에 꺼질 수 있어.",
-      direction: "맞는 관리는 수면 시간 고정, 저녁 카페인 줄이기, 따뜻한 식사, 매일 20~30분 걷기, 가벼운 하체 근력운동이야. 피해야 할 건 밤샘, 공복 커피, 고강도 운동을 갑자기 몰아서 하는 습관이야.",
-      avoid: ["밤늦게까지 화면 보며 잠 미루기", "피곤한데 커피·에너지음료로 버티기", "운동을 한 번에 몰아서 세게 하는 것"],
-      action: ["취침·기상 시간을 1시간 안에서 고정하기", "저녁 카페인과 야식 줄이기", "걷기 30분 + 하체 스트레칭부터 시작하기"],
+      direction:
+        "맞는 관리는 수면 시간 고정, 저녁 카페인 줄이기, 따뜻한 식사, 매일 20~30분 걷기, 가벼운 하체 근력운동이야. 피해야 할 건 밤샘, 공복 커피, 고강도 운동을 갑자기 몰아서 하는 습관이야.",
+      avoid: [
+        "밤늦게까지 화면 보며 잠 미루기",
+        "피곤한데 커피·에너지음료로 버티기",
+        "운동을 한 번에 몰아서 세게 하는 것",
+      ],
+      action: [
+        "취침·기상 시간을 1시간 안에서 고정하기",
+        "저녁 카페인과 야식 줄이기",
+        "걷기 30분 + 하체 스트레칭부터 시작하기",
+      ],
     };
   }
 
@@ -1962,9 +2342,18 @@ function getHealthProfile(manse: any): SajuProfile {
       type: "위장·소화·장 리듬 예민형",
       core: `건강운은 '${healthGrade}'으로 본다. 사주상 책임과 긴장이 몸에 쌓일 때 위장·소화·장 리듬으로 먼저 드러나기 쉬운 흐름이야.`,
       risk: "속이 더부룩한데도 계속 참거나, 스트레스를 야식·과식·매운 음식으로 풀면 몸이 먼저 무거워진다.",
-      direction: "맞는 관리는 식사 시간 고정, 야식 줄이기, 찬 음료 줄이기, 따뜻한 국물·죽·익힌 채소·두부·계란·생선처럼 부담 적은 음식으로 속을 덜 자극하는 거야. 운동은 식후 바로 눕지 않고 20분 걷기, 복부를 압박하지 않는 스트레칭이 맞다.",
-      avoid: ["야식과 과식", "찬 음료와 자극적인 음식", "속이 불편한데 계속 버티는 것"],
-      action: ["식사 시간을 일정하게 잡기", "매운 음식·기름진 음식·찬 음료 줄이기", "식후 20분 걷기와 가벼운 복부·허리 스트레칭"],
+      direction:
+        "맞는 관리는 식사 시간 고정, 야식 줄이기, 찬 음료 줄이기, 따뜻한 국물·죽·익힌 채소·두부·계란·생선처럼 부담 적은 음식으로 속을 덜 자극하는 거야. 운동은 식후 바로 눕지 않고 20분 걷기, 복부를 압박하지 않는 스트레칭이 맞다.",
+      avoid: [
+        "야식과 과식",
+        "찬 음료와 자극적인 음식",
+        "속이 불편한데 계속 버티는 것",
+      ],
+      action: [
+        "식사 시간을 일정하게 잡기",
+        "매운 음식·기름진 음식·찬 음료 줄이기",
+        "식후 20분 걷기와 가벼운 복부·허리 스트레칭",
+      ],
     };
   }
 
@@ -1973,9 +2362,18 @@ function getHealthProfile(manse: any): SajuProfile {
       type: "수면·순환·냉한 회복력 관리형",
       core: `건강운은 '${healthGrade}'으로 본다. 사주상 회복력과 순환 리듬을 챙겨야 안정되는 구조라, 몸이 차가워지거나 잠이 깨지면 컨디션이 쉽게 흔들릴 수 있어.`,
       risk: "물을 너무 안 마시거나, 몸을 차갑게 두거나, 쉬어도 회복이 안 되는 느낌을 방치하는 게 위험해.",
-      direction: "맞는 관리는 따뜻한 물, 규칙적인 수면, 하체 보온, 가벼운 걷기, 종아리·발목 스트레칭이야. 피해야 할 건 찬 음료를 자주 마시는 습관, 오래 앉아만 있는 패턴이야.",
-      avoid: ["찬 음료와 몸을 차갑게 두는 습관", "잠을 계속 줄이는 생활", "오래 앉아서 움직임이 없는 패턴"],
-      action: ["따뜻한 물 섭취 늘리기", "하체 보온과 발목·종아리 스트레칭", "하루 한 번 숨이 살짝 차는 걷기"],
+      direction:
+        "맞는 관리는 따뜻한 물, 규칙적인 수면, 하체 보온, 가벼운 걷기, 종아리·발목 스트레칭이야. 피해야 할 건 찬 음료를 자주 마시는 습관, 오래 앉아만 있는 패턴이야.",
+      avoid: [
+        "찬 음료와 몸을 차갑게 두는 습관",
+        "잠을 계속 줄이는 생활",
+        "오래 앉아서 움직임이 없는 패턴",
+      ],
+      action: [
+        "따뜻한 물 섭취 늘리기",
+        "하체 보온과 발목·종아리 스트레칭",
+        "하루 한 번 숨이 살짝 차는 걷기",
+      ],
     };
   }
 
@@ -1984,9 +2382,14 @@ function getHealthProfile(manse: any): SajuProfile {
       type: "호흡·피부·목어깨 긴장 관리형",
       core: `건강운은 '${healthGrade}'으로 본다. 사주상 정리하고 끊어내는 힘이 약하게 흔들리면 긴장이 목·어깨·호흡·피부 건조함 쪽으로 나타나기 쉬운 흐름이야.`,
       risk: "쉴 때도 몸에 힘이 들어가 있고, 물을 적게 마시고, 건조함과 목·어깨 뭉침을 방치하면 컨디션이 눌릴 수 있어.",
-      direction: "맞는 관리는 수분 섭취, 호흡 길게 내쉬기, 목·어깨 스트레칭, 실내 습도 관리, 가벼운 등 운동이야. 피해야 할 건 오래 앉아 긴장한 자세, 수면 부족, 건조한 환경을 오래 두는 습관이야.",
+      direction:
+        "맞는 관리는 수분 섭취, 호흡 길게 내쉬기, 목·어깨 스트레칭, 실내 습도 관리, 가벼운 등 운동이야. 피해야 할 건 오래 앉아 긴장한 자세, 수면 부족, 건조한 환경을 오래 두는 습관이야.",
       avoid: ["긴장한 자세로 오래 앉아 있기", "수분 부족", "목·어깨 뭉침 방치"],
-      action: ["목·어깨 스트레칭을 하루 2번 하기", "물 섭취와 실내 습도 챙기기", "호흡을 길게 내쉬는 5분 루틴 만들기"],
+      action: [
+        "목·어깨 스트레칭을 하루 2번 하기",
+        "물 섭취와 실내 습도 챙기기",
+        "호흡을 길게 내쉬는 5분 루틴 만들기",
+      ],
     };
   }
 
@@ -1994,12 +2397,24 @@ function getHealthProfile(manse: any): SajuProfile {
     type: "균형 리듬 관리형",
     core: `건강운은 '${healthGrade}'으로 본다. 사주상 ${flow.weakestText} 쪽이 흔들릴 때 컨디션이 먼저 무너질 수 있어서, 몸의 신호를 생활 리듬으로 잡아야 해.`,
     risk: "몸이 보내는 신호를 무시하고 몰아서 일하거나 몰아서 운동하면 피로가 늦게 터질 수 있어.",
-    direction: "맞는 관리는 수면 시간 고정, 식사 시간 고정, 매일 걷기, 하체·허리 스트레칭, 야식과 찬 음료 줄이기야. 실제 증상이 오래가면 운세로 넘기지 말고 검진을 따로 봐야 해.",
-    avoid: ["몸의 신호를 무시하고 버티기", "야식·찬 음료·수면 부족을 반복하기", "갑자기 고강도 운동으로 몸을 밀어붙이기"],
-    action: ["수면·식사 시간을 먼저 고정하기", "걷기와 스트레칭부터 시작하기", "불편한 증상이 지속되면 검진 받기"],
+    direction:
+      "맞는 관리는 수면 시간 고정, 식사 시간 고정, 매일 걷기, 하체·허리 스트레칭, 야식과 찬 음료 줄이기야. 실제 증상이 오래가면 운세로 넘기지 말고 검진을 따로 봐야 해.",
+    avoid: [
+      "몸의 신호를 무시하고 버티기",
+      "야식·찬 음료·수면 부족을 반복하기",
+      "갑자기 고강도 운동으로 몸을 밀어붙이기",
+    ],
+    action: [
+      "수면·식사 시간을 먼저 고정하기",
+      "걷기와 스트레칭부터 시작하기",
+      "불편한 증상이 지속되면 검진 받기",
+    ],
   };
 }
-function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "children" = "love"): SajuProfile {
+function getRelationshipProfile(
+  manse: any,
+  mode: "love" | "marriage" | "children" = "love",
+): SajuProfile {
   const tenGods = getTenGodCounts(manse);
   const output = countTenGodGroup(tenGods, ["식신", "상관"]);
   const authority = countTenGodGroup(tenGods, ["편관", "정관"]);
@@ -2013,9 +2428,20 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
         type: "표현과 정서 교류가 중요한 자식운",
         core: "자식운은 말의 온도와 정서 교류에서 살아나는 흐름이야. 자식 인연은 감정 교류, 대화, 표현 방식에서 강하게 드러나고, 자식이 있다면 부모의 말투와 반응이 관계를 좌우해.",
         risk: "기대가 커지면 말이 앞서고 아이가 부담으로 느낄 수 있어. 좋은 뜻으로 하는 말도 아이 입장에서는 압박처럼 들어갈 수 있다.",
-        direction: "통제보다 대화, 기준보다 온도 조절이 중요해. 자식의 가능성은 표현력, 예술성, 말, 콘텐츠, 기술, 사람 앞에서 드러내는 능력 쪽으로 살려주는 게 좋아.",
-        avoid: ["말로 몰아붙이기", "기대 과다", "감정적인 훈육", "자식의 선택을 부모 기준으로만 재단하기"],
-        action: ["칭찬과 기준 분리", "말투 조절", "감정 표현 기다리기", "자식의 재능 방향을 관찰해서 환경 만들어주기"],
+        direction:
+          "통제보다 대화, 기준보다 온도 조절이 중요해. 자식의 가능성은 표현력, 예술성, 말, 콘텐츠, 기술, 사람 앞에서 드러내는 능력 쪽으로 살려주는 게 좋아.",
+        avoid: [
+          "말로 몰아붙이기",
+          "기대 과다",
+          "감정적인 훈육",
+          "자식의 선택을 부모 기준으로만 재단하기",
+        ],
+        action: [
+          "칭찬과 기준 분리",
+          "말투 조절",
+          "감정 표현 기다리기",
+          "자식의 재능 방향을 관찰해서 환경 만들어주기",
+        ],
       };
     }
 
@@ -2024,9 +2450,20 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
         type: "기대와 보호가 강한 자식운",
         core: "자식운은 보호하려는 마음이 강하게 들어오는 구조야. 자식 인연은 안정적인 환경을 만들어주는 쪽에서 살아나지만, 과하면 간섭으로 느껴질 수 있어.",
         risk: "걱정이 많아져 자식의 선택을 대신하려는 게 위험해. 부모가 불안해서 길을 먼저 정해주면 자식의 독립성과 가능성이 늦게 살아날 수 있다.",
-        direction: "기대보다 거리감, 보호보다 자율성을 잡아야 해. 자식의 가능성은 공부형, 전문성, 자격, 안정형 진로, 깊게 파고드는 분야에서 살아날 수 있어.",
-        avoid: ["과한 간섭", "대신 결정하기", "걱정으로 통제하기", "공부나 진로를 부모 불안으로 밀어붙이기"],
-        action: ["선택권 주기", "경제적 선 정하기", "기대치 낮추기", "자식이 스스로 고를 수 있는 선택지를 만들어주기"],
+        direction:
+          "기대보다 거리감, 보호보다 자율성을 잡아야 해. 자식의 가능성은 공부형, 전문성, 자격, 안정형 진로, 깊게 파고드는 분야에서 살아날 수 있어.",
+        avoid: [
+          "과한 간섭",
+          "대신 결정하기",
+          "걱정으로 통제하기",
+          "공부나 진로를 부모 불안으로 밀어붙이기",
+        ],
+        action: [
+          "선택권 주기",
+          "경제적 선 정하기",
+          "기대치 낮추기",
+          "자식이 스스로 고를 수 있는 선택지를 만들어주기",
+        ],
       };
     }
 
@@ -2034,9 +2471,20 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "거리와 기준 조율형 자식운",
       core: "자식운은 붙잡는 흐름보다 관계의 거리와 기준을 잘 맞출 때 안정돼. 자식 인연은 단정할 수 없지만, 들어온다면 기쁨과 책임이 함께 오는 구조로 봐야 해.",
       risk: "경제적 책임이나 기대를 혼자 크게 떠안는 게 위험해. 자식 문제를 부모의 체면이나 대리만족으로 끌고 가면 관계가 무거워질 수 있어.",
-      direction: "사랑과 기준을 분리해야 해. 자식의 가능성은 한쪽으로 몰아붙이기보다 성향을 관찰해서 기술형, 안정형, 독립형 중 맞는 방향을 천천히 잡아주는 게 좋아.",
-      avoid: ["경제적 책임 과다", "기대 강요", "거리감 없는 간섭", "자식을 통해 부모의 못 이룬 욕심을 채우려는 선택"],
-      action: ["경제적 기준 정하기", "말의 온도 조절", "부모 삶도 지키기", "자식과 가족 사이에서 역할과 기대치를 미리 조율하기"],
+      direction:
+        "사랑과 기준을 분리해야 해. 자식의 가능성은 한쪽으로 몰아붙이기보다 성향을 관찰해서 기술형, 안정형, 독립형 중 맞는 방향을 천천히 잡아주는 게 좋아.",
+      avoid: [
+        "경제적 책임 과다",
+        "기대 강요",
+        "거리감 없는 간섭",
+        "자식을 통해 부모의 못 이룬 욕심을 채우려는 선택",
+      ],
+      action: [
+        "경제적 기준 정하기",
+        "말의 온도 조절",
+        "부모 삶도 지키기",
+        "자식과 가족 사이에서 역할과 기대치를 미리 조율하기",
+      ],
     };
   }
 
@@ -2046,7 +2494,11 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       core: "결혼은 설렘보다 생활 기준, 책임 분담, 돈 기준이 맞을 때 안정돼.",
       risk: "상대의 조건만 보고 감정 회복 방식이나 생활 리듬을 놓치는 게 위험해.",
       direction: "돈, 가족 거리감, 역할 분담을 결혼 전부터 맞춰야 해.",
-      avoid: ["외로움 때문에 결혼 결정", "돈 기준 미확인", "가족 문제를 나중으로 미루기"],
+      avoid: [
+        "외로움 때문에 결혼 결정",
+        "돈 기준 미확인",
+        "가족 문제를 나중으로 미루기",
+      ],
       action: ["돈 쓰는 방식 확인", "가족 거리감 대화", "역할 분담 정하기"],
     };
   }
@@ -2057,7 +2509,11 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       core: "연애는 말투, 반응, 연락의 온도에서 크게 흔들릴 수 있어.",
       risk: "초반 설렘에 빨리 반응하다가 생활 기준을 놓치는 게 위험해.",
       direction: "표현은 하되 상대의 반복 행동을 보고 판단해야 해.",
-      avoid: ["설렘만 보고 시작", "말만 많은 사람에게 끌리는 것", "불안해서 연락을 몰아치는 것"],
+      avoid: [
+        "설렘만 보고 시작",
+        "말만 많은 사람에게 끌리는 것",
+        "불안해서 연락을 몰아치는 것",
+      ],
       action: ["반복 행동 보기", "연락 기준 정하기", "말보다 생활 태도 보기"],
     };
   }
@@ -2069,7 +2525,11 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       risk: "생각만 많아지고 실제 대화가 늦어지는 게 위험해.",
       direction: "혼자 판단하지 말고 필요한 질문을 직접 확인해야 해.",
       avoid: ["혼자 추측하기", "확인 없이 마음 접기", "완벽한 사람 기다리기"],
-      action: ["중요한 질문 직접 하기", "상대의 생활 리듬 보기", "불편한 점 기록하기"],
+      action: [
+        "중요한 질문 직접 하기",
+        "상대의 생활 리듬 보기",
+        "불편한 점 기록하기",
+      ],
     };
   }
 
@@ -2089,9 +2549,18 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "빠르게 끌리고 식기 쉬운 연애운",
       core: "연애운은 초반 분위기와 말의 온도에 빨리 반응하는 구조야. 끌림은 빠르게 생길 수 있지만, 상대가 꾸준한 사람인지 확인하지 않으면 감정 소모가 커질 수 있어.",
       risk: "처음 설레는 말, 빠른 연락, 강한 표현만 보고 관계를 밀어붙이는 게 위험해. 뜨거운 시작보다 식은 뒤에도 남는 태도를 봐야 해.",
-      direction: "연락 속도보다 약속을 지키는지, 말보다 반복 행동이 일정한지, 감정이 올라왔을 때 상대가 책임 있게 반응하는지를 봐야 해.",
-      avoid: ["초반 설렘만 보고 확정하기", "말 잘하는 사람에게 바로 마음 주기", "감정이 올라온 날 관계를 결정하기"],
-      action: ["최소 세 번의 약속 태도 보기", "연락 빈도보다 약속 이행 보기", "상대가 불편한 대화를 피하는지 확인하기"],
+      direction:
+        "연락 속도보다 약속을 지키는지, 말보다 반복 행동이 일정한지, 감정이 올라왔을 때 상대가 책임 있게 반응하는지를 봐야 해.",
+      avoid: [
+        "초반 설렘만 보고 확정하기",
+        "말 잘하는 사람에게 바로 마음 주기",
+        "감정이 올라온 날 관계를 결정하기",
+      ],
+      action: [
+        "최소 세 번의 약속 태도 보기",
+        "연락 빈도보다 약속 이행 보기",
+        "상대가 불편한 대화를 피하는지 확인하기",
+      ],
     };
   }
 
@@ -2100,9 +2569,18 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "속마음을 늦게 여는 신중형 연애운",
       core: "연애운은 쉽게 마음을 여는 쪽이 아니라, 오래 관찰하고 안전하다고 느낄 때 깊어지는 구조야. 그래서 겉으로는 괜찮아 보여도 속으로는 상대를 계속 재고 있을 수 있어.",
       risk: "혼자 생각이 많아져서 상대를 시험하거나, 확인하지 않고 마음을 접는 게 위험해. 말하지 않은 불안은 상대가 알아차리기 어렵다.",
-      direction: "상대가 꾸준히 안심을 주는지, 감정 기복을 받아줄 수 있는지, 애매한 관계를 오래 끌지 않는지를 봐야 해.",
-      avoid: ["혼자 결론 내리고 멀어지기", "상대 마음을 떠보는 식의 대화", "애매한 관계를 오래 유지하기"],
-      action: ["불안한 지점을 직접 질문하기", "관계 정의를 미루지 않기", "말보다 오래 유지되는 태도 보기"],
+      direction:
+        "상대가 꾸준히 안심을 주는지, 감정 기복을 받아줄 수 있는지, 애매한 관계를 오래 끌지 않는지를 봐야 해.",
+      avoid: [
+        "혼자 결론 내리고 멀어지기",
+        "상대 마음을 떠보는 식의 대화",
+        "애매한 관계를 오래 유지하기",
+      ],
+      action: [
+        "불안한 지점을 직접 질문하기",
+        "관계 정의를 미루지 않기",
+        "말보다 오래 유지되는 태도 보기",
+      ],
     };
   }
 
@@ -2111,9 +2589,18 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "정들면 오래 가지만 부담도 커지는 연애운",
       core: "연애운은 쉽게 시작하기보다 정이 들면 오래 붙잡는 구조야. 안정감은 장점이지만, 맞지 않는 사람도 책임감 때문에 오래 끌고 갈 수 있어.",
       risk: "상대를 챙기다가 내 생활 리듬과 돈, 시간을 잃는 게 위험해. 연애가 편안함이 아니라 의무처럼 변하면 피로가 커진다.",
-      direction: "나를 편하게 해주는 사람인지, 책임을 나눌 줄 아는 사람인지, 생활 기준이 비슷한지를 먼저 봐야 해.",
-      avoid: ["불쌍해서 붙잡는 관계", "내가 다 맞춰주는 연애", "돈과 시간을 계속 떠안는 관계"],
-      action: ["초반부터 돈과 시간 기준 세우기", "상대가 책임을 나누는지 보기", "내 생활 루틴을 깨는 관계는 멈춰보기"],
+      direction:
+        "나를 편하게 해주는 사람인지, 책임을 나눌 줄 아는 사람인지, 생활 기준이 비슷한지를 먼저 봐야 해.",
+      avoid: [
+        "불쌍해서 붙잡는 관계",
+        "내가 다 맞춰주는 연애",
+        "돈과 시간을 계속 떠안는 관계",
+      ],
+      action: [
+        "초반부터 돈과 시간 기준 세우기",
+        "상대가 책임을 나누는지 보기",
+        "내 생활 루틴을 깨는 관계는 멈춰보기",
+      ],
     };
   }
 
@@ -2122,9 +2609,18 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "기준이 높고 쉽게 정리하는 연애운",
       core: "연애운은 마음이 없어서가 아니라, 기준이 맞지 않으면 빠르게 선을 긋는 구조야. 그래서 좋은 사람을 만나도 작은 불편함이 크게 보일 수 있어.",
       risk: "상대를 너무 빨리 판단하거나, 완벽한 사람을 기다리다가 실제로 맞춰볼 기회를 놓치는 게 위험해.",
-      direction: "절대 안 되는 기준과 맞춰볼 수 있는 기준을 분리해야 해. 말투, 돈 기준, 생활 습관 중 무엇이 정말 중요한지 먼저 정리해야 한다.",
-      avoid: ["작은 단점 하나로 바로 끊기", "완벽한 사람만 기다리기", "감정을 표현하지 않고 평가만 하기"],
-      action: ["절대 기준 3개만 정하기", "한 번의 실수와 반복 습관 구분하기", "좋으면 좋다고 표현하기"],
+      direction:
+        "절대 안 되는 기준과 맞춰볼 수 있는 기준을 분리해야 해. 말투, 돈 기준, 생활 습관 중 무엇이 정말 중요한지 먼저 정리해야 한다.",
+      avoid: [
+        "작은 단점 하나로 바로 끊기",
+        "완벽한 사람만 기다리기",
+        "감정을 표현하지 않고 평가만 하기",
+      ],
+      action: [
+        "절대 기준 3개만 정하기",
+        "한 번의 실수와 반복 습관 구분하기",
+        "좋으면 좋다고 표현하기",
+      ],
     };
   }
 
@@ -2133,19 +2629,62 @@ function getRelationshipProfile(manse: any, mode: "love" | "marriage" | "childre
       type: "새로운 인연에 열리지만 방향이 중요한 연애운",
       core: "연애운은 새로운 사람, 새로운 분위기, 대화가 잘 통하는 사람에게 열리기 쉬워. 다만 방향이 맞지 않으면 시작은 빨라도 오래 끌고 가기 어렵다.",
       risk: "가능성만 보고 현실 조건을 늦게 확인하는 게 위험해. 말이 잘 통한다고 생활 기준까지 맞는 건 아니다.",
-      direction: "함께 성장할 수 있는 사람인지, 미래 계획의 속도가 맞는지, 관계 안에서 서로를 키워주는지를 봐야 해.",
-      avoid: ["가능성만 보고 시작하기", "미래 얘기를 피하는 사람", "말은 통하지만 행동이 없는 관계"],
-      action: ["초반에 관계 방향 묻기", "미래 계획의 속도 확인하기", "말보다 실제 행동 변화 보기"],
+      direction:
+        "함께 성장할 수 있는 사람인지, 미래 계획의 속도가 맞는지, 관계 안에서 서로를 키워주는지를 봐야 해.",
+      avoid: [
+        "가능성만 보고 시작하기",
+        "미래 얘기를 피하는 사람",
+        "말은 통하지만 행동이 없는 관계",
+      ],
+      action: [
+        "초반에 관계 방향 묻기",
+        "미래 계획의 속도 확인하기",
+        "말보다 실제 행동 변화 보기",
+      ],
     };
   }
 
   return {
-    type: mode === "marriage" ? "생활 기준 조율형 결혼운" : "거리 조절이 중요한 현실형 연애운",
-    core: mode === "marriage" ? "결혼운은 설렘보다 생활 기준, 돈 기준, 가족과의 거리감이 맞을 때 안정되는 구조야." : "연애운은 감정이 없는 게 아니라, 가까워질수록 거리와 생활 리듬을 잘 맞춰야 안정되는 구조야.",
-    risk: mode === "marriage" ? "좋아하는 마음만 믿고 돈, 가족, 역할 분담을 나중으로 미루는 게 위험해." : "처음엔 괜찮아도 연락 방식, 시간 사용, 말투가 맞지 않으면 같은 문제로 피로가 쌓일 수 있어.",
-    direction: mode === "marriage" ? "결혼 전에는 돈 쓰는 방식, 가족 개입 범위, 집안일과 책임 분담을 구체적으로 맞춰야 해." : "상대가 내 생활 리듬을 존중하는지, 불편한 이야기를 피하지 않는지, 관계 속도가 맞는지를 봐야 해.",
-    avoid: mode === "marriage" ? ["돈 기준 없이 결혼 결정", "가족 문제를 나중으로 미루기", "역할 분담 없이 같이 살기"] : ["외로움 때문에 시작하기", "연락 방식이 안 맞는데 참기", "불편한 점을 계속 미루기"],
-    action: mode === "marriage" ? ["생활비 기준 정하기", "가족 거리감 대화하기", "역할 분담을 말로 끝내지 않기"] : ["연락 기준을 초반에 맞추기", "불편한 점을 작은 말로 바로 꺼내기", "상대의 반복 행동을 3번 이상 확인하기"],
+    type:
+      mode === "marriage"
+        ? "생활 기준 조율형 결혼운"
+        : "거리 조절이 중요한 현실형 연애운",
+    core:
+      mode === "marriage"
+        ? "결혼운은 설렘보다 생활 기준, 돈 기준, 가족과의 거리감이 맞을 때 안정되는 구조야."
+        : "연애운은 감정이 없는 게 아니라, 가까워질수록 거리와 생활 리듬을 잘 맞춰야 안정되는 구조야.",
+    risk:
+      mode === "marriage"
+        ? "좋아하는 마음만 믿고 돈, 가족, 역할 분담을 나중으로 미루는 게 위험해."
+        : "처음엔 괜찮아도 연락 방식, 시간 사용, 말투가 맞지 않으면 같은 문제로 피로가 쌓일 수 있어.",
+    direction:
+      mode === "marriage"
+        ? "결혼 전에는 돈 쓰는 방식, 가족 개입 범위, 집안일과 책임 분담을 구체적으로 맞춰야 해."
+        : "상대가 내 생활 리듬을 존중하는지, 불편한 이야기를 피하지 않는지, 관계 속도가 맞는지를 봐야 해.",
+    avoid:
+      mode === "marriage"
+        ? [
+            "돈 기준 없이 결혼 결정",
+            "가족 문제를 나중으로 미루기",
+            "역할 분담 없이 같이 살기",
+          ]
+        : [
+            "외로움 때문에 시작하기",
+            "연락 방식이 안 맞는데 참기",
+            "불편한 점을 계속 미루기",
+          ],
+    action:
+      mode === "marriage"
+        ? [
+            "생활비 기준 정하기",
+            "가족 거리감 대화하기",
+            "역할 분담을 말로 끝내지 않기",
+          ]
+        : [
+            "연락 기준을 초반에 맞추기",
+            "불편한 점을 작은 말로 바로 꺼내기",
+            "상대의 반복 행동을 3번 이상 확인하기",
+          ],
   };
 }
 
@@ -2168,18 +2707,28 @@ function getLoveTimingProfile(manse: any) {
   if (peer >= 3) strength -= 1;
   if (earth >= 4 && fire <= 1) strength -= 1;
 
-  let chance = "올해 인연운은 없는 해가 아니라, 사람을 만날 기회는 들어오는 편이야.";
-  if (strength >= 5) chance = "올해 인연운은 비교적 열리는 편이야. 가만히 있으면 약하지만, 사람을 만나는 자리에 나가면 반응이 생기기 쉬워.";
-  else if (strength >= 3) chance = "올해 인연운은 중간 이상이야. 갑자기 강하게 들어오기보다 소개, 모임, 일상 동선에서 천천히 살아나는 흐름이야.";
-  else if (strength >= 1) chance = "올해 인연운은 약하게 열리는 편이야. 큰 기대보다 사람 보는 기준을 정리하고 작은 만남을 늘릴 때 살아나.";
-  else chance = "올해 인연운은 강하게 터지는 해라기보다, 애매한 관계를 정리하고 다음 인연을 받을 자리를 만드는 해에 가까워.";
+  let chance =
+    "올해 인연운은 없는 해가 아니라, 사람을 만날 기회는 들어오는 편이야.";
+  if (strength >= 5)
+    chance =
+      "올해 인연운은 비교적 열리는 편이야. 가만히 있으면 약하지만, 사람을 만나는 자리에 나가면 반응이 생기기 쉬워.";
+  else if (strength >= 3)
+    chance =
+      "올해 인연운은 중간 이상이야. 갑자기 강하게 들어오기보다 소개, 모임, 일상 동선에서 천천히 살아나는 흐름이야.";
+  else if (strength >= 1)
+    chance =
+      "올해 인연운은 약하게 열리는 편이야. 큰 기대보다 사람 보는 기준을 정리하고 작은 만남을 늘릴 때 살아나.";
+  else
+    chance =
+      "올해 인연운은 강하게 터지는 해라기보다, 애매한 관계를 정리하고 다음 인연을 받을 자리를 만드는 해에 가까워.";
 
   let timing = "3~5월, 9~10월";
   let reason = "새로운 대화가 생기고 관계를 다시 정리하기 좋은 시기야.";
 
   if (fire >= 2 && wood >= 1) {
     timing = "5~8월";
-    reason = "표현력과 분위기가 살아나는 때라 썸, 만남, 연락 흐름이 빨라지기 쉬워.";
+    reason =
+      "표현력과 분위기가 살아나는 때라 썸, 만남, 연락 흐름이 빨라지기 쉬워.";
   } else if (wood >= 2) {
     timing = "3~5월";
     reason = "새로운 사람, 새로운 모임, 소개운이 열리기 쉬운 시기야.";
@@ -2188,10 +2737,12 @@ function getLoveTimingProfile(manse: any) {
     reason = "관계가 정리되고 진지한 사람을 고르기 좋은 시기야.";
   } else if (water >= 2) {
     timing = "11~2월";
-    reason = "속마음을 천천히 나누는 인연, 오래 알고 지낸 사람과의 흐름이 살아나기 쉬워.";
+    reason =
+      "속마음을 천천히 나누는 인연, 오래 알고 지낸 사람과의 흐름이 살아나기 쉬워.";
   } else if (earth >= 3) {
     timing = "4월, 7월, 10월 전후";
-    reason = "갑작스러운 만남보다 주변 소개, 익숙한 환경, 생활권 안의 인연이 들어오기 쉬워.";
+    reason =
+      "갑작스러운 만남보다 주변 소개, 익숙한 환경, 생활권 안의 인연이 들어오기 쉬워.";
   }
 
   return {
@@ -2211,7 +2762,8 @@ function getLovePartnerProfile(manse: any) {
       good: "감정 표현은 따뜻하지만 생활이 일정한 사람",
       avoid: "말은 뜨겁고 연락은 빠른데 약속과 책임이 들쭉날쭉한 사람",
       jobs: "운영관리, 기획, 교육, 공공기관, 회계·총무, 안정적인 기술직처럼 생활 리듬이 일정한 직업군",
-      reason: "네 연애운은 초반 분위기에 빨리 반응하기 쉬워서, 설레게 하는 사람보다 꾸준히 지키는 사람이 오래 맞아.",
+      reason:
+        "네 연애운은 초반 분위기에 빨리 반응하기 쉬워서, 설레게 하는 사람보다 꾸준히 지키는 사람이 오래 맞아.",
       check: "약속 시간, 말 바꾸는 빈도, 화났을 때 태도, 돈 쓰는 방식",
       type: love.type,
     };
@@ -2222,8 +2774,10 @@ function getLovePartnerProfile(manse: any) {
       good: "기다려줄 줄 알고 말로 안심을 주는 사람",
       avoid: "애매하게 굴면서 확답을 피하거나, 네 불안을 가볍게 넘기는 사람",
       jobs: "상담, 교육, 연구, 문서·기획, 디자인, 개발, 전문기술직처럼 차분히 쌓아가는 직업군",
-      reason: "네 연애운은 마음을 여는 데 시간이 필요해서, 감정 속도를 강요하지 않는 사람이 맞아.",
-      check: "관계 정의를 피하는지, 불편한 질문에 답하는지, 연락이 끊겼을 때 회복 태도",
+      reason:
+        "네 연애운은 마음을 여는 데 시간이 필요해서, 감정 속도를 강요하지 않는 사람이 맞아.",
+      check:
+        "관계 정의를 피하는지, 불편한 질문에 답하는지, 연락이 끊겼을 때 회복 태도",
       type: love.type,
     };
   }
@@ -2233,7 +2787,8 @@ function getLovePartnerProfile(manse: any) {
       good: "생활력 있고 책임을 나눌 줄 아는 사람",
       avoid: "챙김만 받으려 하거나 경제적·감정적 책임을 너에게 미루는 사람",
       jobs: "공무직, 생산·설비, 물류·관리, 회계, 자영업 운영자, 안정적인 회사원처럼 생활 기반이 있는 직업군",
-      reason: "네 연애운은 정이 들면 오래 가지만 부담도 같이 커질 수 있어서, 책임을 나누는 사람이 맞아.",
+      reason:
+        "네 연애운은 정이 들면 오래 가지만 부담도 같이 커질 수 있어서, 책임을 나누는 사람이 맞아.",
       check: "생활비 기준, 시간 약속, 가족 거리감, 힘든 일을 함께 나누는 태도",
       type: love.type,
     };
@@ -2244,7 +2799,8 @@ function getLovePartnerProfile(manse: any) {
       good: "깔끔하고 약속이 분명하며 말과 행동이 일치하는 사람",
       avoid: "핑계가 많고 사과가 늦거나, 관계를 대충 흘려보내는 사람",
       jobs: "금융, 법무, 품질관리, 의료·보건, IT, 행정, 분석직처럼 기준과 책임이 분명한 직업군",
-      reason: "네 연애운은 기준이 맞지 않으면 빨리 식을 수 있어서, 애매함이 적은 사람이 오래 맞아.",
+      reason:
+        "네 연애운은 기준이 맞지 않으면 빨리 식을 수 있어서, 애매함이 적은 사람이 오래 맞아.",
       check: "약속 이행, 정리된 소비 습관, 말투의 예의, 갈등 후 사과 방식",
       type: love.type,
     };
@@ -2255,8 +2811,10 @@ function getLovePartnerProfile(manse: any) {
       good: "같이 성장하고 미래 이야기를 피하지 않는 사람",
       avoid: "가능성만 말하고 실제 행동이 없거나, 방향 없이 분위기만 좋은 사람",
       jobs: "교육, 콘텐츠, 마케팅, 영업, 기획, 창업 초기 멤버, 성장형 전문직처럼 움직임과 성장성이 있는 직업군",
-      reason: "네 연애운은 새로움에 열리지만 방향이 없으면 오래 가지 않아서, 같이 커지는 사람이 맞아.",
-      check: "미래 계획, 일관된 행동 변화, 자기 생활 관리, 말한 것을 실행하는지",
+      reason:
+        "네 연애운은 새로움에 열리지만 방향이 없으면 오래 가지 않아서, 같이 커지는 사람이 맞아.",
+      check:
+        "미래 계획, 일관된 행동 변화, 자기 생활 관리, 말한 것을 실행하는지",
       type: love.type,
     };
   }
@@ -2265,7 +2823,8 @@ function getLovePartnerProfile(manse: any) {
     good: "감정이 편하고 생활 리듬을 존중해주는 사람",
     avoid: "가까워질수록 네 생활을 흔들고 눈치 보게 만드는 사람",
     jobs: "정해진 리듬이 있는 회사원, 전문기술직, 교육·상담, 운영·관리직처럼 생활 패턴이 안정적인 직업군",
-    reason: "네 연애운은 감정만으로 오래 가는 구조가 아니라 거리와 생활 리듬을 맞춰야 안정돼.",
+    reason:
+      "네 연애운은 감정만으로 오래 가는 구조가 아니라 거리와 생활 리듬을 맞춰야 안정돼.",
     check: "연락 방식, 쉬는 방식, 돈과 시간 기준, 불편한 대화를 피하지 않는지",
     type: love.type,
   };
@@ -2290,36 +2849,55 @@ function getMarriageTimingProfile(manse: any) {
   if (output >= 3 && authority === 0) strength -= 1;
   if (wealth >= 3 && earth <= 1) strength -= 1;
 
-  let chance = "올해 결혼운은 약하게라도 움직이는 편이지만, 바로 확정하기보다 상대의 생활 기준을 확인해야 안정돼.";
-  if (strength >= 6) chance = "올해 결혼운은 비교적 현실적으로 열리는 편이야. 연애 감정보다 결혼 조건, 생활 기준, 가족 거리감이 맞는 사람이 들어오면 진지하게 볼 수 있어.";
-  else if (strength >= 4) chance = "올해 결혼운은 중간 이상이야. 갑자기 결혼이 확정되는 흐름보다, 기존 인연이나 소개를 통해 진지한 관계로 넘어갈 가능성이 더 커.";
-  else if (strength >= 2) chance = "올해 결혼운은 강하게 터지는 해라기보다, 결혼 기준을 정리하고 맞지 않는 관계를 걸러내는 흐름이야.";
-  else chance = "올해 결혼운은 서두르면 흔들리기 쉬운 흐름이야. 결혼 자체보다 먼저 사람 보는 기준과 생활 조건을 정리해야 해.";
+  let chance =
+    "올해 결혼운은 약하게라도 움직이는 편이지만, 바로 확정하기보다 상대의 생활 기준을 확인해야 안정돼.";
+  if (strength >= 6)
+    chance =
+      "올해 결혼운은 비교적 현실적으로 열리는 편이야. 연애 감정보다 결혼 조건, 생활 기준, 가족 거리감이 맞는 사람이 들어오면 진지하게 볼 수 있어.";
+  else if (strength >= 4)
+    chance =
+      "올해 결혼운은 중간 이상이야. 갑자기 결혼이 확정되는 흐름보다, 기존 인연이나 소개를 통해 진지한 관계로 넘어갈 가능성이 더 커.";
+  else if (strength >= 2)
+    chance =
+      "올해 결혼운은 강하게 터지는 해라기보다, 결혼 기준을 정리하고 맞지 않는 관계를 걸러내는 흐름이야.";
+  else
+    chance =
+      "올해 결혼운은 서두르면 흔들리기 쉬운 흐름이야. 결혼 자체보다 먼저 사람 보는 기준과 생활 조건을 정리해야 해.";
 
   let timing = "4~6월, 9~11월";
   let timingReason = "생활 기준을 맞추고 현실적인 대화가 오가기 좋은 시기야.";
-  let longFlow = "결혼은 빠르게 결정할수록 흔들리고, 시간을 두고 기준을 확인할수록 안정되는 흐름이야.";
+  let longFlow =
+    "결혼은 빠르게 결정할수록 흔들리고, 시간을 두고 기준을 확인할수록 안정되는 흐름이야.";
 
   if (earth >= 3 && fire <= 1) {
     timing = "9~11월, 또는 내년 초까지 이어지는 흐름";
-    timingReason = "이 사주는 초반 설렘보다 현실 조건이 맞을 때 결혼운이 살아나서, 하반기처럼 정리와 결정이 필요한 시기가 더 맞아.";
-    longFlow = "결혼은 늦게 안정되는 쪽이 강해. 서두르는 결혼보다 생활 기반과 돈 기준을 맞춘 뒤 하는 결혼이 훨씬 편해.";
+    timingReason =
+      "이 사주는 초반 설렘보다 현실 조건이 맞을 때 결혼운이 살아나서, 하반기처럼 정리와 결정이 필요한 시기가 더 맞아.";
+    longFlow =
+      "결혼은 늦게 안정되는 쪽이 강해. 서두르는 결혼보다 생활 기반과 돈 기준을 맞춘 뒤 하는 결혼이 훨씬 편해.";
   } else if (fire >= 2 && wood >= 1) {
     timing = "3~6월, 7~8월 전후";
-    timingReason = "표현과 만남의 기운이 살아나는 때라 소개, 썸, 진지한 대화가 빠르게 붙기 쉬워.";
-    longFlow = "인연은 빨리 들어올 수 있지만, 결혼은 감정이 식은 뒤에도 책임이 남는지를 봐야 해.";
+    timingReason =
+      "표현과 만남의 기운이 살아나는 때라 소개, 썸, 진지한 대화가 빠르게 붙기 쉬워.";
+    longFlow =
+      "인연은 빨리 들어올 수 있지만, 결혼은 감정이 식은 뒤에도 책임이 남는지를 봐야 해.";
   } else if (metal >= 2) {
     timing = "8~10월";
-    timingReason = "사람을 고르는 기준이 선명해지고, 진지한 조건을 확인하기 좋은 시기야.";
-    longFlow = "결혼은 애매한 사람과 오래 끌기보다, 기준이 맞는 사람을 만났을 때 빠르게 정리되는 흐름이야.";
+    timingReason =
+      "사람을 고르는 기준이 선명해지고, 진지한 조건을 확인하기 좋은 시기야.";
+    longFlow =
+      "결혼은 애매한 사람과 오래 끌기보다, 기준이 맞는 사람을 만났을 때 빠르게 정리되는 흐름이야.";
   } else if (water >= 2) {
     timing = "11~2월";
-    timingReason = "속마음과 현실 대화를 천천히 나누면서 관계가 깊어지기 쉬운 시기야.";
+    timingReason =
+      "속마음과 현실 대화를 천천히 나누면서 관계가 깊어지기 쉬운 시기야.";
     longFlow = "결혼은 오래 보고 신뢰가 쌓인 뒤 안정되는 쪽이 강해.";
   } else if (wood >= 2) {
     timing = "3~5월";
-    timingReason = "새로운 소개나 모임, 이동, 배움의 자리에서 인연이 열리기 쉬워.";
-    longFlow = "결혼은 같이 성장할 방향이 맞을 때 살아나지만, 미래 계획이 다르면 오래 가기 어렵다.";
+    timingReason =
+      "새로운 소개나 모임, 이동, 배움의 자리에서 인연이 열리기 쉬워.";
+    longFlow =
+      "결혼은 같이 성장할 방향이 맞을 때 살아나지만, 미래 계획이 다르면 오래 가기 어렵다.";
   }
 
   return {
@@ -2340,9 +2918,11 @@ function getMarriagePartnerProfile(manse: any) {
       good: "생활력 있고 책임을 나눌 줄 아는 사람",
       avoid: "말은 좋지만 경제적·감정적 책임을 상대에게 미루는 사람",
       jobs: "공무직, 안정적인 회사원, 회계·총무, 생산·설비 관리, 운영관리, 자영업 운영자처럼 생활 기반과 책임이 분명한 직업군",
-      family: "가족과 너무 붙어 있지 않고, 배우자와 원가족 사이의 선을 정할 줄 아는 사람이 좋아.",
+      family:
+        "가족과 너무 붙어 있지 않고, 배우자와 원가족 사이의 선을 정할 줄 아는 사람이 좋아.",
       money: "수입의 크기보다 돈을 모으고 쓰는 기준이 일정한 사람이 맞아.",
-      check: "생활비 기준, 가족 지원 범위, 집안일 분담, 힘든 일을 함께 나누는 태도",
+      check:
+        "생활비 기준, 가족 지원 범위, 집안일 분담, 힘든 일을 함께 나누는 태도",
       type: marriage.type,
     };
   }
@@ -2352,9 +2932,12 @@ function getMarriagePartnerProfile(manse: any) {
       good: "약속이 정확하고 말과 행동이 일치하는 사람",
       avoid: "핑계가 많고 사과가 늦거나, 돈과 약속을 대충 넘기는 사람",
       jobs: "금융, 법무, 행정, 의료·보건, 품질관리, IT, 분석직처럼 기준과 책임이 분명한 직업군",
-      family: "가족 문제도 감정으로 끌고 가지 않고 원칙과 대화로 정리하는 사람이 맞아.",
-      money: "공동 지출, 저축, 대출, 큰돈 사용 기준을 숫자로 맞출 수 있어야 해.",
-      check: "약속 이행, 소비 습관, 갈등 후 사과 방식, 가족 개입을 선 긋는 능력",
+      family:
+        "가족 문제도 감정으로 끌고 가지 않고 원칙과 대화로 정리하는 사람이 맞아.",
+      money:
+        "공동 지출, 저축, 대출, 큰돈 사용 기준을 숫자로 맞출 수 있어야 해.",
+      check:
+        "약속 이행, 소비 습관, 갈등 후 사과 방식, 가족 개입을 선 긋는 능력",
       type: marriage.type,
     };
   }
@@ -2364,9 +2947,11 @@ function getMarriagePartnerProfile(manse: any) {
       good: "조용히 신뢰를 쌓고 감정을 안정적으로 받아주는 사람",
       avoid: "확답을 피하거나 애매한 말로 관계를 오래 끄는 사람",
       jobs: "상담, 교육, 연구, 기획, 개발, 디자인, 전문기술직처럼 차분히 쌓아가는 직업군",
-      family: "부부 사이의 속마음을 밖으로 쉽게 흘리지 않고, 둘만의 대화를 지킬 줄 아는 사람이 좋아.",
+      family:
+        "부부 사이의 속마음을 밖으로 쉽게 흘리지 않고, 둘만의 대화를 지킬 줄 아는 사람이 좋아.",
       money: "큰소리치는 사람보다 꾸준히 벌고 꾸준히 관리하는 사람이 맞아.",
-      check: "관계 정의를 피하는지, 불편한 대화에 답하는지, 감정 기복을 어떻게 회복하는지",
+      check:
+        "관계 정의를 피하는지, 불편한 대화에 답하는지, 감정 기복을 어떻게 회복하는지",
       type: marriage.type,
     };
   }
@@ -2376,9 +2961,11 @@ function getMarriagePartnerProfile(manse: any) {
       good: "표현은 따뜻하지만 생활은 일정하게 유지하는 사람",
       avoid: "초반에는 뜨겁지만 약속과 책임이 들쭉날쭉한 사람",
       jobs: "교육, 영업관리, 서비스 운영, 기획, 공공기관, 안정적인 기술직처럼 사람을 상대하되 생활 리듬이 잡힌 직업군",
-      family: "감정적으로 가족 편만 드는 사람보다, 배우자를 먼저 세워주는 사람이 맞아.",
+      family:
+        "감정적으로 가족 편만 드는 사람보다, 배우자를 먼저 세워주는 사람이 맞아.",
       money: "기분으로 쓰는 돈보다 미래 계획에 맞춰 쓰는 돈 기준이 필요해.",
-      check: "화났을 때 말투, 약속 시간, 돈 쓰는 습관, 결혼 이야기를 피하지 않는지",
+      check:
+        "화났을 때 말투, 약속 시간, 돈 쓰는 습관, 결혼 이야기를 피하지 않는지",
       type: marriage.type,
     };
   }
@@ -2388,7 +2975,8 @@ function getMarriagePartnerProfile(manse: any) {
       good: "같이 성장하고 미래 계획을 구체적으로 말하는 사람",
       avoid: "가능성만 말하고 실제 준비나 행동이 없는 사람",
       jobs: "교육, 콘텐츠, 마케팅, 기획, 영업, 성장형 전문직, 창업 초기 멤버처럼 움직임과 방향성이 있는 직업군",
-      family: "부부가 같이 성장하려면 양가 가족보다 두 사람의 계획을 먼저 세우는 사람이 좋아.",
+      family:
+        "부부가 같이 성장하려면 양가 가족보다 두 사람의 계획을 먼저 세우는 사람이 좋아.",
       money: "벌 가능성보다 실제 실행력, 저축 습관, 미래 계획을 봐야 해.",
       check: "미래 계획, 주거 계획, 일과 가정의 균형, 말한 것을 실행하는지",
       type: marriage.type,
@@ -2401,7 +2989,8 @@ function getMarriagePartnerProfile(manse: any) {
     jobs: "정해진 리듬이 있는 회사원, 전문기술직, 교육·상담, 운영·관리직처럼 생활 패턴이 안정적인 직업군",
     family: "가족과 배우자 사이의 선을 지킬 줄 아는 사람이 맞아.",
     money: "소비 성향, 저축 기준, 큰돈 결정 방식을 초반에 확인해야 해.",
-    check: "돈과 시간 기준, 쉬는 방식, 집안일 분담, 불편한 대화를 피하지 않는지",
+    check:
+      "돈과 시간 기준, 쉬는 방식, 집안일 분담, 불편한 대화를 피하지 않는지",
     type: marriage.type,
   };
 }
@@ -2417,7 +3006,8 @@ function getYearlyProfile(manse: any): SajuProfile {
       type: "회복 후 확인하는 해",
       core: "올해는 무리하게 크게 벌리기보다 몸과 생활 리듬을 먼저 회복하고, 작게 판을 열어보는 흐름으로 가능성을 확인하는 해로 봐야 해.",
       risk: "컨디션이 무너진 상태에서 돈이나 일을 크게 움직이는 게 위험해.",
-      direction: "초반은 정리, 중반은 작게 판을 열어보는 흐름, 하반기 초입은 되는 것만 남기기, 연말은 안정화가 좋아.",
+      direction:
+        "초반은 정리, 중반은 작게 판을 열어보는 흐름, 하반기 초입은 되는 것만 남기기, 연말은 안정화가 좋아.",
       avoid: ["무리한 확장", "피로 누적", "큰돈 들어가는 선택"],
       action: ["생활 리듬 회복", "작은 수익 확인", "되는 것만 남기기"],
     };
@@ -2440,7 +3030,11 @@ function getYearlyProfile(manse: any): SajuProfile {
     risk: "돈, 사람, 일을 한꺼번에 바꾸려는 게 위험해.",
     direction: "정리할 것과 키울 것을 나눠야 해.",
     avoid: ["한 번에 다 바꾸기", "감정적 결정", "먼저 빠지는 돈 증가"],
-    action: ["정리 목록 만들기", "작게 판을 열어보는 흐름", "먼저 빠지는 돈 점검"],
+    action: [
+      "정리 목록 만들기",
+      "작게 판을 열어보는 흐름",
+      "먼저 빠지는 돈 점검",
+    ],
   };
 }
 
@@ -2450,14 +3044,22 @@ function getLifeProfile(manse: any): SajuProfile {
   const health = getHealthProfile(manse);
   const flow = getReadableElementFlow(manse);
 
-  if (career.combined.includes("부업") || career.combined.includes("자기수익")) {
+  if (
+    career.combined.includes("부업") ||
+    career.combined.includes("자기수익")
+  ) {
     return {
       type: "중년 이후 자기판이 커지는 인생대운",
       core: `인생 흐름은 초년에 바로 완성되기보다 중년 이후 자기 돈이 남는 자리가 커지는 쪽이 강해. ${money.type}와 연결해서 봐야 해.`,
       risk: "초년의 답답함을 평생 운으로 착각하는 게 위험해.",
-      direction: "청년기에는 확인, 중년에는 자기판 확장, 말년에는 안정화가 중요해.",
+      direction:
+        "청년기에는 확인, 중년에는 자기판 확장, 말년에는 안정화가 중요해.",
       avoid: ["초년 실패로 포기", "준비 없는 큰 확장", "건강 리듬 무시"],
-      action: ["작은 돈이 남는 자리 만들기", "반복 수요 찾기", "건강 리듬 유지"],
+      action: [
+        "작은 돈이 남는 자리 만들기",
+        "반복 수요 찾기",
+        "건강 리듬 유지",
+      ],
     };
   }
 
@@ -2476,7 +3078,8 @@ function getLifeProfile(manse: any): SajuProfile {
     type: "기준을 세울수록 안정되는 인생대운",
     core: "인생 흐름은 급하게 뒤집기보다 기준을 세우고 쌓아갈 때 안정되는 쪽이야.",
     risk: "방향 없이 사람과 돈, 일을 끌고 가는 게 위험해.",
-    direction: "초년에는 기준, 청년에는 실험, 중년에는 자리, 말년에는 안정이 중요해.",
+    direction:
+      "초년에는 기준, 청년에는 실험, 중년에는 자리, 말년에는 안정이 중요해.",
     avoid: ["기준 없는 선택", "사람 때문에 흔들리기", "무리한 확장"],
     action: ["정리 기준 만들기", "작은 실험 기록하기", "건강 리듬 지키기"],
   };
@@ -2538,8 +3141,16 @@ function getWorryProfile(manse: any, question: string): SajuProfile {
     core: "이 고민은 돈·일·사람·몸 중 어디가 가장 먼저 막혔는지 하나로 좁혀야 풀려.",
     risk: "한 번에 전부 바꾸려는 선택이 가장 위험해.",
     direction: "오늘 당장 할 일, 며칠 보류할 일, 정리해야 할 일을 나눠야 해.",
-    avoid: ["큰돈 쓰기", "충동적인 퇴사나 계약", "관계 정리를 감정으로 바로 결정하기"],
-    action: ["문제 하나로 좁히기", "오늘 결정하지 않아도 되는 일 보류하기", "손실이 큰 선택부터 멈추기"],
+    avoid: [
+      "큰돈 쓰기",
+      "충동적인 퇴사나 계약",
+      "관계 정리를 감정으로 바로 결정하기",
+    ],
+    action: [
+      "문제 하나로 좁히기",
+      "오늘 결정하지 않아도 되는 일 보류하기",
+      "손실이 큰 선택부터 멈추기",
+    ],
   };
 }
 
@@ -2549,79 +3160,205 @@ function getPremiumQuestionDomain(question: string) {
   if (/결혼|혼인|배우자|남편|아내|재혼|동거|상견례|이혼|파혼/.test(q)) {
     return {
       label: "결혼·배우자 핵심상담",
-      focus: "이 관계를 결혼이나 장기 생활로 가져가도 되는지, 생활 기준과 책임 구조가 맞는지",
-      criteria: ["생활비와 저축 기준", "가족 거리감", "갈등 후 회복 방식", "역할 분담", "상대의 책임감"],
-      avoid: ["외로움 때문에 결혼을 확정하는 선택", "돈과 가족 기준을 확인하지 않고 넘어가는 선택", "상대가 결혼 후 바뀔 거라 기대하는 선택"],
-      action: ["결혼 전 돈 기준을 눈앞의 흐름을 직접 보기하기", "가족 개입 범위를 말로 정하기", "불편한 대화를 피하지 않는지 확인하기"],
+      focus:
+        "이 관계를 결혼이나 장기 생활로 가져가도 되는지, 생활 기준과 책임 구조가 맞는지",
+      criteria: [
+        "생활비와 저축 기준",
+        "가족 거리감",
+        "갈등 후 회복 방식",
+        "역할 분담",
+        "상대의 책임감",
+      ],
+      avoid: [
+        "외로움 때문에 결혼을 확정하는 선택",
+        "돈과 가족 기준을 확인하지 않고 넘어가는 선택",
+        "상대가 결혼 후 바뀔 거라 기대하는 선택",
+      ],
+      action: [
+        "결혼 전 돈 기준을 눈앞의 흐름을 직접 보기하기",
+        "가족 개입 범위를 말로 정하기",
+        "불편한 대화를 피하지 않는지 확인하기",
+      ],
     };
   }
 
-  if (/연애|재회|썸|상대|남자친구|여자친구|헤어|이별|마음|고백|짝사랑/.test(q)) {
+  if (
+    /연애|재회|썸|상대|남자친구|여자친구|헤어|이별|마음|고백|짝사랑/.test(q)
+  ) {
     return {
       label: "연애·관계 선택 핵심상담",
-      focus: "상대가 좋은 사람인지보다 이 관계가 오래 갈 수 있는 구조인지, 내가 어떤 패턴으로 흔들리는지",
-      criteria: ["연락과 말투", "반복 행동", "관계 속도", "감정 회복 방식", "돈과 시간 사용 기준"],
-      avoid: ["초반 감정만 보고 관계를 확정하는 선택", "말은 좋은데 행동이 반복되지 않는 사람을 믿는 선택", "불안해서 먼저 매달리거나 끊어내는 선택"],
-      action: ["상대의 반복 행동을 확인하기", "관계 속도를 말로 맞추기", "내가 불안해지는 장면을 기록하고 기준 세우기"],
+      focus:
+        "상대가 좋은 사람인지보다 이 관계가 오래 갈 수 있는 구조인지, 내가 어떤 패턴으로 흔들리는지",
+      criteria: [
+        "연락과 말투",
+        "반복 행동",
+        "관계 속도",
+        "감정 회복 방식",
+        "돈과 시간 사용 기준",
+      ],
+      avoid: [
+        "초반 감정만 보고 관계를 확정하는 선택",
+        "말은 좋은데 행동이 반복되지 않는 사람을 믿는 선택",
+        "불안해서 먼저 매달리거나 끊어내는 선택",
+      ],
+      action: [
+        "상대의 반복 행동을 확인하기",
+        "관계 속도를 말로 맞추기",
+        "내가 불안해지는 장면을 기록하고 기준 세우기",
+      ],
     };
   }
 
   if (/가족|부모|엄마|아빠|형제|자매|자식|자녀|집안|시댁|처가/.test(q)) {
     return {
       label: "가족관계 핵심상담",
-      focus: "누가 맞고 틀린지가 아니라 가족 안에서 반복되는 역할, 책임, 서운함의 구조가 무엇인지",
-      criteria: ["거리 조절", "돈과 책임의 선", "말투", "기대치", "같이 살거나 떨어져 지낼 기준"],
-      avoid: ["가족이라는 이유로 계속 감당하는 선택", "돈 문제를 정으로 덮는 선택", "말투와 거리 문제를 사소하게 넘기는 선택"],
-      action: ["도와줄 수 있는 범위와 못 하는 범위를 정하기", "돈과 책임 기준을 말로 남기기", "가까움보다 덜 다치는 거리를 찾기"],
+      focus:
+        "누가 맞고 틀린지가 아니라 가족 안에서 반복되는 역할, 책임, 서운함의 구조가 무엇인지",
+      criteria: [
+        "거리 조절",
+        "돈과 책임의 선",
+        "말투",
+        "기대치",
+        "같이 살거나 떨어져 지낼 기준",
+      ],
+      avoid: [
+        "가족이라는 이유로 계속 감당하는 선택",
+        "돈 문제를 정으로 덮는 선택",
+        "말투와 거리 문제를 사소하게 넘기는 선택",
+      ],
+      action: [
+        "도와줄 수 있는 범위와 못 하는 범위를 정하기",
+        "돈과 책임 기준을 말로 남기기",
+        "가까움보다 덜 다치는 거리를 찾기",
+      ],
     };
   }
 
   if (/동업|파트너|공동|계약|투자자|지분|수익배분|같이 일|협업/.test(q)) {
     return {
       label: "동업·사업파트너 핵심상담",
-      focus: "좋은 사람인지가 아니라 같이 돈을 만들고 나눌 수 있는 구조인지, 책임과 결정권이 맞는지",
-      criteria: ["역할 분담", "수익 배분", "비용 부담", "결정권", "빠져나오는 기준"],
-      avoid: ["친분만 믿고 시작하는 선택", "계약 없이 의리로 가는 선택", "수익 배분과 손실 책임을 나중으로 미루는 선택"],
-      action: ["작은 프로젝트로 먼저 확인하기", "역할과 돈이 돌아오는 때을 문서로 정하기", "잘 안 됐을 때 정리 기준까지 정하기"],
+      focus:
+        "좋은 사람인지가 아니라 같이 돈을 만들고 나눌 수 있는 구조인지, 책임과 결정권이 맞는지",
+      criteria: [
+        "역할 분담",
+        "수익 배분",
+        "비용 부담",
+        "결정권",
+        "빠져나오는 기준",
+      ],
+      avoid: [
+        "친분만 믿고 시작하는 선택",
+        "계약 없이 의리로 가는 선택",
+        "수익 배분과 손실 책임을 나중으로 미루는 선택",
+      ],
+      action: [
+        "작은 프로젝트로 먼저 확인하기",
+        "역할과 돈이 돌아오는 때을 문서로 정하기",
+        "잘 안 됐을 때 정리 기준까지 정하기",
+      ],
     };
   }
 
-  if (/돈|재물|수익|매출|투자|대출|빚|부업|창업|장사|판매|매장|먼저 빠지는 돈|월세|재고/.test(q)) {
+  if (
+    /돈|재물|수익|매출|투자|대출|빚|부업|창업|장사|판매|매장|먼저 빠지는 돈|월세|재고/.test(
+      q,
+    )
+  ) {
     return {
       label: "돈·수익구조 핵심상담",
-      focus: "돈을 벌 수 있냐보다 어떤 방식에서 돈이 남고, 어떤 선택에서 돈이 새는지",
-      criteria: ["돈이 묶이는 시간", "먼저 빠지는 돈", "손실 한도", "반복 수익", "돈 나누는 기준"],
-      avoid: ["언제 돌아올지 보이지 않는 돈", "검증 전에 먼저 빠지는 돈를 키우는 선택", "남의 말만 믿고 들어가는 투자나 사업"],
-      action: ["손실 한도부터 정하기", "작게 팔거나 작게 검증하기", "반복 문의와 재구매가 생기는 구조만 남기기"],
+      focus:
+        "돈을 벌 수 있냐보다 어떤 방식에서 돈이 남고, 어떤 선택에서 돈이 새는지",
+      criteria: [
+        "돈이 묶이는 시간",
+        "먼저 빠지는 돈",
+        "손실 한도",
+        "반복 수익",
+        "돈 나누는 기준",
+      ],
+      avoid: [
+        "언제 돌아올지 보이지 않는 돈",
+        "검증 전에 먼저 빠지는 돈를 키우는 선택",
+        "남의 말만 믿고 들어가는 투자나 사업",
+      ],
+      action: [
+        "손실 한도부터 정하기",
+        "작게 팔거나 작게 검증하기",
+        "반복 문의와 재구매가 생기는 구조만 남기기",
+      ],
     };
   }
 
   if (/직장|회사|일|직업|이직|퇴사|취업|알바|진로|커리어|사업/.test(q)) {
     return {
       label: "일·진로 선택 핵심상담",
-      focus: "지금 버틸지 움직일지가 아니라 어떤 일 구조에서 덜 흔들리고 오래 돈으로 이어지는지",
-      criteria: ["생활 기반", "자기 돈이 남는 자리", "업무 강도", "사람 스트레스", "다음 선택의 구체성"],
-      avoid: ["감정만으로 퇴사하는 선택", "준비 없이 큰 사업으로 넘어가는 선택", "남이 돈 된다는 말만 듣고 따라가는 선택"],
-      action: ["1년 안에 바꿀 일 구조를 정하기", "현재 기반을 지키며 작은 자기 수익 루트 만들기", "옮길 조건과 남을 조건을 숫자로 정하기"],
+      focus:
+        "지금 버틸지 움직일지가 아니라 어떤 일 구조에서 덜 흔들리고 오래 돈으로 이어지는지",
+      criteria: [
+        "생활 기반",
+        "자기 돈이 남는 자리",
+        "업무 강도",
+        "사람 스트레스",
+        "다음 선택의 구체성",
+      ],
+      avoid: [
+        "감정만으로 퇴사하는 선택",
+        "준비 없이 큰 사업으로 넘어가는 선택",
+        "남이 돈 된다는 말만 듣고 따라가는 선택",
+      ],
+      action: [
+        "1년 안에 바꿀 일 구조를 정하기",
+        "현재 기반을 지키며 작은 자기 수익 루트 만들기",
+        "옮길 조건과 남을 조건을 숫자로 정하기",
+      ],
     };
   }
 
   if (/건강|몸|아프|피로|잠|수면|소화|위|장|병원|스트레스|컨디션/.test(q)) {
     return {
       label: "건강·생활리듬 핵심상담",
-      focus: "병명을 맞히는 게 아니라 몸이 무너지는 생활 패턴과 회복 리듬을 어떻게 바꿔야 하는지",
-      criteria: ["수면", "소화·장 리듬", "피로 누적", "스트레스 배출", "검진과 생활 관리"],
-      avoid: ["몸의 신호를 참고 넘기는 선택", "밤낮이 무너진 상태에서 큰 결정을 하는 선택", "스트레스를 안으로만 삼키는 선택"],
-      action: ["수면 시간을 먼저 고정하기", "소화와 장 리듬을 기록하기", "증상이 있으면 실제 검진으로 확인하기"],
+      focus:
+        "병명을 맞히는 게 아니라 몸이 무너지는 생활 패턴과 회복 리듬을 어떻게 바꿔야 하는지",
+      criteria: [
+        "수면",
+        "소화·장 리듬",
+        "피로 누적",
+        "스트레스 배출",
+        "검진과 생활 관리",
+      ],
+      avoid: [
+        "몸의 신호를 참고 넘기는 선택",
+        "밤낮이 무너진 상태에서 큰 결정을 하는 선택",
+        "스트레스를 안으로만 삼키는 선택",
+      ],
+      action: [
+        "수면 시간을 먼저 고정하기",
+        "소화와 장 리듬을 기록하기",
+        "증상이 있으면 실제 검진으로 확인하기",
+      ],
     };
   }
 
   return {
     label: "인생방향·선택 핵심상담",
-    focus: "지금 질문 속에서 반복되는 선택 습관과 앞으로 인생 전반에서 바꿔야 할 방향이 무엇인지",
-    criteria: ["반복되는 막힘", "버려야 할 선택 습관", "1년 안에 바꿀 구조", "인생 전반의 기준", "오래 가져갈 기반"],
-    avoid: ["질문의 핵심을 정하지 않고 이것저것 한 번에 바꾸는 선택", "불안해서 큰 결정을 먼저 해버리는 선택", "지금까지 반복된 습관을 그대로 끌고 가는 선택"],
-    action: ["질문을 한 문장으로 좁히기", "앞으로 1년 안에 바꿀 구조를 하나 정하기", "인생 전체에서 반복하지 않을 선택 습관을 끊기"],
+    focus:
+      "지금 질문 속에서 반복되는 선택 습관과 앞으로 인생 전반에서 바꿔야 할 방향이 무엇인지",
+    criteria: [
+      "반복되는 막힘",
+      "버려야 할 선택 습관",
+      "1년 안에 바꿀 구조",
+      "인생 전반의 기준",
+      "오래 가져갈 기반",
+    ],
+    avoid: [
+      "질문의 핵심을 정하지 않고 이것저것 한 번에 바꾸는 선택",
+      "불안해서 큰 결정을 먼저 해버리는 선택",
+      "지금까지 반복된 습관을 그대로 끌고 가는 선택",
+    ],
+    action: [
+      "질문을 한 문장으로 좁히기",
+      "앞으로 1년 안에 바꿀 구조를 하나 정하기",
+      "인생 전체에서 반복하지 않을 선택 습관을 끊기",
+    ],
   };
 }
 
@@ -2642,18 +3379,40 @@ function getPremiumProfile(manse: any, question: string): SajuProfile {
   };
 }
 
-function getCategoryProfileText(categoryId: CategoryId, categoryTitle: string, manse: any, question: string) {
+function getCategoryProfileText(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  manse: any,
+  question: string,
+) {
   const title = categoryTitle || "";
 
-  if (categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄")) return profileLines(getPremiumProfile(manse, question));
-  if (categoryId === "worry" || title.includes("고민")) return profileLines(getPremiumProfile(manse, question));
-  if (categoryId === "money" || title.includes("재물")) return profileLines(getMoneyProfile(manse));
-  if (isCareerCategory(categoryId, title)) return profileLines(getCareerProfile(manse));
-  if (categoryId === "health" || title.includes("건강")) return profileLines(getHealthProfile(manse));
-  if (isLoveMarriageCategory(categoryId, title)) return profileLines(getRelationshipProfile(manse, "love"));
-  if (isChildrenCategory(categoryId, title)) return profileLines(getRelationshipProfile(manse, "children"));
-  if (isMonthlyCategory(categoryId, title)) return profileLines(getYearlyProfile(manse));
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) return profileLines(getLifeProfile(manse));
+  if (
+    categoryId === "premium" ||
+    title.includes("내 고민") ||
+    title.includes("프리미엄")
+  )
+    return profileLines(getPremiumProfile(manse, question));
+  if (categoryId === "worry" || title.includes("고민"))
+    return profileLines(getPremiumProfile(manse, question));
+  if (categoryId === "money" || title.includes("재물"))
+    return profileLines(getMoneyProfile(manse));
+  if (isCareerCategory(categoryId, title))
+    return profileLines(getCareerProfile(manse));
+  if (categoryId === "health" || title.includes("건강"))
+    return profileLines(getHealthProfile(manse));
+  if (isLoveMarriageCategory(categoryId, title))
+    return profileLines(getRelationshipProfile(manse, "love"));
+  if (isChildrenCategory(categoryId, title))
+    return profileLines(getRelationshipProfile(manse, "children"));
+  if (isMonthlyCategory(categoryId, title))
+    return profileLines(getYearlyProfile(manse));
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  )
+    return profileLines(getLifeProfile(manse));
 
   return `
 [카테고리별 사주 프로필]
@@ -2669,7 +3428,7 @@ function getFixedConclusionBlock(
   categoryTitle: string,
   user: UserInfo,
   manse: any,
-  partnerManse?: any | null
+  partnerManse?: any | null,
 ) {
   const name = getName(user);
   const moneyGrade = getMoneyGrade(manse);
@@ -2772,7 +3531,11 @@ AI는 이 결론, 돈복 등급, 건강운 등급, 일·사업 성향을 절대 
 `;
   }
 
-  if (categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄")) {
+  if (
+    categoryId === "premium" ||
+    title.includes("내 고민") ||
+    title.includes("프리미엄")
+  ) {
     return `
 [고정 결론]
 결론부터 말하면, ${name}, 내 고민 사주풀이는 질문 하나에 대한 답을 흐리지 않고 먼저 찍어주는 메뉴다.
@@ -2815,7 +3578,6 @@ AI는 이 결론을 절대 바꾸지 마라.
 첫 문장은 반드시 위 결론과 같은 의미로 시작해라.
 `;
   }
-
 
   if (categoryId === "money" || title.includes("재물")) {
     return `
@@ -2861,7 +3623,6 @@ AI는 이 건강운 등급을 절대 바꾸지 마라.
 `;
   }
 
-
   if (isChildrenCategory(categoryId, title)) {
     return `
 [고정 결론]
@@ -2900,7 +3661,11 @@ AI는 이 결론, 결혼운 흐름, 결혼 시기, 배우자 유형, 피해야 �
 `;
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
     return `
 [고정 결론]
 결론부터 말하면, ${name}, 네 인생 흐름은 '${lifeFlow}'이고, 인생에서 크게 방향이 바뀌는 대운 기회는 ${majorLuckCount} 들어오는 구조로 본다.
@@ -3290,7 +4055,7 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - "너는 어떤 사주다:", "언제 운이 움직인다:", "무엇으로 복이 붙는다:" 같은 항목명 출력은 절대 금지다. 이런 건 내부 정리용이지 사용자에게 보여줄 문장이 아니다.
 - 문장은 짧게 끊고, 중간중간 찌르는 말을 넣어라. 예: "너 지금도 그 생각하제?", "자, 여기서 봐야 된다.", "이건 그냥 성격 문제가 아니다.", "이 자리에서 네 운이 눌린다."
 - 단, 욕설·저주·공포 조장 금지다. 귀신사주식 느낌은 무섭게 겁주는 게 아니라, 숨은 반복과 막힌 자리를 딱 짚는 말투다.
-- "돈을 다룰 때는 네 몫이 분명한 자리를 찾아야 해"처럼 조언식으로 쓰지 마라. "네 돈은 네 몫이 흐린 자리에서는 오래 못 머문다"처럼 결과로 말해라.
+- "돈을 다룰 때는 받을 금액·입금일·역할값이 정해진 자리를 찾아야 해"처럼 조언식으로 쓰지 마라. "네 돈은 네 몫이 흐린 자리에서는 오래 못 머문다"처럼 결과로 말해라.
 - "피해야 할 사람은 책임이 흐린 사람이라는 걸 잊지 말아야 해" 금지. "책임 흐린 사람은 네 마음만 늙게 만든다"로 말해라.
 - "깊고 섬세한 감각이 있는 사주"처럼 예쁜 말 하나로 끝내지 마라. 그 감각 때문에 사람을 오래 보고, 말 한마디를 오래 씹고, 한 번 마음 닫히면 오래 가는 현실 장면까지 붙여라.
 
@@ -3303,7 +4068,7 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 [소름사주 v50 문체 보강]
 - 챕터 구조는 유지하되, 각 챕터 첫 문장부터 결과를 찍어라. 제목 설명으로 시작하지 마라.
 - 딱딱한 보고서 문장 금지: "현실감과 책임감을 잘 활용", "새로운 기회가 생길 가능성", "능력과 경험이 빛을 발" 같은 말 금지.
-- 바로 알아듣는 장면으로 써라. "사람을 만나고 조건을 맞추는 일", "거래처와 돈 흐름이 보이는 자리", "책임만 지고 이름도 몫도 안 남는 자리", "정 때문에 새는 돈"처럼 써라.
+- 바로 알아듣는 장면으로 써라. "사람을 만나고 조건을 맞추는 일", "거래처와 견적·단가·납기·거래처·입금일이 보이는 자리", "책임만 지고 이름도 몫도 안 남는 자리", "정 때문에 새는 돈"처럼 써라.
 - 유료 전환 후 이어지는 전체 리포트는 무료 판정을 더 깊게 파야 한다. 점수나 등급만 반복하지 말고, 그 점수의 뒷부분을 열어라.
 - 평생종합사주는 일반 카테고리보다 훨씬 깊게 써라. 초년·청년·중년·말년, 돈·일·사람·몸·자식·대운이 서로 어떻게 이어지는지 각 챕터 안에서 풀어라.
 - 평생종합사주는 짧으면 실패다. 각 챕터마다 최소 6문단 이상 쓰고, 각 문단은 한두 문장으로 끊어라. 초년에서 생긴 마음의 버릇이 청년운의 일·돈·사람에 어떻게 이어지고, 중년 이후 재물운·일운·건강운으로 어떻게 바뀌는지 반드시 연결해라.
@@ -4889,7 +5654,9 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 `;
 
   if (categoryId === "today" || title.includes("오늘")) {
-    return common + `
+    return (
+      common +
+      `
 [오늘운세 내용 규칙]
 - 오늘운세는 오늘 하루의 돈, 일, 사람, 몸을 나눠 판정한다.
 - 오늘운세에서는 20대, 30대, 40대, 중년, 올해 몇 월 같은 장기 시기 금지다. 오늘 하루의 오전·오후·저녁 또는 오늘 안에서만 말한다.
@@ -4901,11 +5668,14 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [오늘의 건강운]에서는 피로, 수면, 소화, 목·어깨, 두통, 순환, 무기력 중 오늘 무거운 흐름을 말한다. 의료 진단처럼 쓰지 않는다.
 - [오늘 피해야 할 악운]에서는 오늘 운을 꺾는 행동 하나를 딱 찍는다.
 - [도훈의 마지막 판정]에서는 오늘 돈·일·인연·건강·악운을 짧게 요약한다.
-`;
+`
+    );
   }
 
   if (categoryId === "money" || title.includes("재물")) {
-    return common + `
+    return (
+      common +
+      `
 [재물운 내용 규칙]
 - 재물운은 돈 관리법이 아니다. 언제 돈을 버는지, 뭘 해서 돈을 버는지, 뭐 때문에 돈을 잃는지 결과를 말한다.
 - 챕터는 다섯 개만 쓴다: 돈복 판정, 돈이 붙는 시기, 뭘 해서 돈을 버는 사주인가, 돈이 새는 이유와 피해야 할 돈, 도훈의 마지막 판정.
@@ -4916,11 +5686,14 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [돈이 새는 이유와 피해야 할 돈]에서는 정 때문에 나가는 돈, 사람 말 듣고 들어가는 돈, 급한 돈, 내 몫이 흐린 돈, 처음부터 크게 벌리는 돈 중 무엇인지 찍어라.
 - [도훈의 마지막 판정]에서는 몇 살 무렵부터 돈복이 강해지고, 무엇으로 돈이 붙고, 무엇 때문에 잃고, 어떤 돈은 건드리면 안 되는지 요약한다.
 - "돈이 붙는 시기"에서 조건문으로 답하면 실패다. 반드시 나이대와 월이 있어야 한다.
-`;
+`
+    );
   }
 
   if (isCareerCategory(categoryId, title)) {
-    return common + `
+    return (
+      common +
+      `
 [일·사업운 내용 규칙]
 - 일·사업운은 무슨 일을 해야 맞는지, 직장에 있으면 사는지 눌리는지, 사업을 해도 되는지, 언제 일이 풀리는지를 말한다.
 - 처음 판정이 사업형이면 뒤에서 직장형으로 뒤집지 마라. "사업형이지만 부업부터 키워야 하는 타입"은 직장에 묶여야 한다는 뜻이 아니다. 본업이나 안정 바닥을 발판으로 자기 돈길을 만들어야 한다는 뜻이다.
@@ -4932,11 +5705,14 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [피해야 할 일의 판]에서는 책임만 큰 자리, 이름도 몫도 안 남는 자리, 감정노동만 큰 자리, 남 말 듣고 따라가는 자리, 큰 비용부터 들어가는 일을 찍는다.
 - [일이 풀리는 시기]에서는 20대·30대·40대 흐름과 올해 일이 움직이는 달, 방향 전환달, 조심할 달을 말한다.
 - [도훈의 마지막 판정]에서는 무슨 일을 해야 돈이 붙는지, 직장/사업 중 어디가 맞는지, 언제 일이 풀리는지 요약한다.
-`;
+`
+    );
   }
 
   if (isLoveMarriageCategory(categoryId, title)) {
-    return common + `
+    return (
+      common +
+      `
 [사랑·결혼운 내용 규칙]
 - 사랑·결혼운은 올해 인연운, 맞는 사람, 피해야 할 사람, 결혼까지 갈 수 있는 운, 인연이 들어오는 시기를 말한다.
 - [사랑과 결혼운 결론부터 말하면]에서는 올해 인연운이 있는지, 결혼운은 빠른지 늦게 안정되는지 먼저 판정한다.
@@ -4945,11 +5721,14 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [인연이 들어오는 시기]에서는 올해 몇 월 전후 인연운이 움직이는지 말한다.
 - [결혼까지 갈 수 있는 운인가]에서는 감정으로만 가는 관계인지, 생활 기준까지 맞아야 열리는 관계인지 말한다.
 - [도훈의 마지막 판정]에서는 어떤 사람을 만나야 복이 붙고, 어떤 사람은 마음만 늙게 만드는지 요약한다.
-`;
+`
+    );
   }
 
   if (categoryId === "health" || title.includes("건강")) {
-    return common + `
+    return (
+      common +
+      `
 [건강운 내용 규칙]
 - 건강운은 의료 진단이 아니다. 사주상 몸이 무너지는 흐름을 말한다.
 - 반드시 "사주상 어디 계통이 약하게 잡히는지"를 말한다. 위장·소화·장, 수면·피로, 순환·냉함, 목·어깨, 허리·하체, 스트레스성 긴장 중 구체적으로 찍어라.
@@ -4960,21 +5739,27 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [몸이 무너지기 쉬운 시기]에서는 월 또는 계절을 말한다. 일이 몰릴 때, 잠이 깨질 때 같은 조건만 말하지 말고 몇 월 전후를 넣어라.
 - [피해야 할 습관과 맞는 흐름]에서는 야식, 찬 음료, 공복 커피, 과식, 수면 깨짐, 무리한 운동 중 사주에 맞는 것을 말한다.
 - [도훈의 마지막 판정]에서는 약한 흐름, 조심할 시기, 몸에서 먼저 오는 신호를 요약한다.
-`;
+`
+    );
   }
 
   if (isCompatibilityCategory(categoryId, title)) {
-    return common + `
+    return (
+      common +
+      `
 [궁합운 내용 규칙]
 - 궁합은 점수와 등급을 먼저 말한다. 애매하게 흐리지 않는다.
 - 연인/배우자 궁합은 끌림, 부딪힘, 결혼 가능성, 관계에서 복과 악운을 말한다.
 - 사업파트너 궁합은 같이 돈을 벌 수 있는지, 역할이 맞는지, 돈 앞에서 어디가 터지는지 말한다.
 - [도훈의 마지막 판정]에서는 점수, 계속 갈 수 있는지, 무엇 때문에 깨지는지, 맞추면 무엇이 사는지 요약한다.
-`;
+`
+    );
   }
 
   if (isMonthlyCategory(categoryId, title)) {
-    return common + `
+    return (
+      common +
+      `
 [올해운세 내용 규칙]
 - 1월부터 12월까지 전부 나열하지 않는다.
 - [올해 결론부터 말하면]에서는 올해가 벌리는 해인지, 지키는 해인지, 정리하는 해인지 먼저 판정한다.
@@ -4982,11 +5767,18 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [사람관계·건강을 조심할 달]에서는 사람관계가 흔들리는 달과 몸이 무거워지는 달을 찍는다.
 - [올해 피해야 할 악운과 잡아야 할 복]에서는 올해 가장 조심할 선택과 반드시 잡아야 할 운을 말한다.
 - [도훈의 마지막 판정]에서는 올해 돈·일·사람·건강 흐름을 요약한다.
-`;
+`
+    );
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
-    return common + `
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
+    return (
+      common +
+      `
 [인생대운 내용 규칙]
 - 인생대운은 초년·청년·중년·말년을 흐름으로 길게 말한다.
 - [인생 흐름 결론부터 말하면]에서는 초년형인지 중년형인지 말년형인지, 대운이 몇 번 크게 오는지 먼저 말한다.
@@ -4994,11 +5786,14 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [가장 크게 풀리는 대운]에서는 반드시 몇 살 전후로 말한다.
 - [대운을 막는 악운]에서는 사람, 돈, 건강, 가족 책임 중 무엇이 대운을 막는지 찍는다.
 - [도훈의 마지막 판정]에서는 어느 시기부터 인생운이 풀리고 무엇이 대운을 막는지 요약한다.
-`;
+`
+    );
   }
 
   if (categoryId === "traditional" || title.includes("평생")) {
-    return common + `
+    return (
+      common +
+      `
 [평생종합사주 내용 규칙]
 - 평생종합사주는 가장 길게 쓴다. 인생 전체판이다.
 - [평생 사주 결론부터 말하면]에서는 이 사람 인생이 초년부터 편한지, 중년 이후 풀리는지, 무엇이 복이고 무엇이 악운인지 먼저 판정한다.
@@ -5008,11 +5803,18 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [자식운과 인복]에서는 자식 유무를 단정하지 말고 자식 인연, 부모 역할, 귀인과 멀리할 사람을 말한다.
 - [평생 조심할 악운과 반드시 살려야 할 복]에서는 평생 반복되는 문제와 살려야 할 복을 찍는다.
 - [도훈의 마지막 판정]에서는 인생 전체 결과를 강하게 요약한다.
-`;
+`
+    );
   }
 
-  if (categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄")) {
-    return common + `
+  if (
+    categoryId === "premium" ||
+    title.includes("내 고민") ||
+    title.includes("프리미엄")
+  ) {
+    return (
+      common +
+      `
 [내 고민 사주풀이 내용 규칙 v56]
 - 사용자가 쓴 질문에 바로 답한다. 해라, 멈춰라, 기다려라, 정리해라, 조건부로 가능하다 중 하나로 분명히 판정한다.
 - 질문이 "돈을 많이 벌고 싶다"이면 답은 돈으로 가야 한다. 재물운처럼 흐리지 말고 아래 내용을 반드시 말한다.
@@ -5035,12 +5837,12 @@ function getCategoryGuide(categoryId: CategoryId, categoryTitle: string) {
 - [도훈의 현실적 조언]은 앞 결과 종합형으로 8문단 이상 쓴다. 돈·일·사람·몸 중 질문과 관련 있는 것만 묶어라.
 - [도훈의 최종 답]에서는 질문에 대한 답을 다시 찍는다. "너는 돈복이 있다"로 끝내지 말고 "너는 무엇으로 벌고, 언제 붙고, 무엇 때문에 잃고, 지금은 무엇을 잡아야 한다"까지 요약한다.
 - "사람과 조건을 맞추는 일이 ."처럼 말이 끊기면 실패다. 모든 문장은 완결해야 한다.
-`;
+`
+    );
   }
 
   return common;
 }
-
 
 function getPreviewTease(categoryId: CategoryId, categoryTitle: string) {
   const title = categoryTitle || "";
@@ -5065,7 +5867,11 @@ function getPreviewTease(categoryId: CategoryId, categoryTitle: string) {
   if (isMonthlyCategory(categoryId, title)) {
     return "무료에서 올해 전체 기운을 봤다면, 전체 리포트에서는 올해 돈이 움직이는 달, 일이 커지는 달, 사람관계가 흔들리는 달, 몸을 조심해야 할 달을 전부 나열하지 않고 강한 달만 찍어본다.";
   }
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
     return "무료에서 인생 흐름의 결을 봤다면, 전체 리포트에서는 초년·청년·중년·말년이 어떻게 이어지는지, 가장 큰 대운이 몇 살 전후에 들어오는지, 그 대운을 막는 악운이 무엇인지 본다.";
   }
   if (categoryId === "traditional" || title.includes("평생")) {
@@ -5116,7 +5922,6 @@ ${allowed}
 `;
 }
 
-
 function makeInternalReferenceText(text: string) {
   return (text || "")
     .replace(/\[[^\]]+\]/g, "")
@@ -5124,7 +5929,12 @@ function makeInternalReferenceText(text: string) {
     .map((line) => line.trim())
     .filter((line) => {
       if (!line) return false;
-      if (/^(AI는|첫 문장은|반드시|절대|다른 제목|마크다운|출력|작성|무료 결과|전체 리포트|질문 사용 제한)/.test(line)) return false;
+      if (
+        /^(AI는|첫 문장은|반드시|절대|다른 제목|마크다운|출력|작성|무료 결과|전체 리포트|질문 사용 제한)/.test(
+          line,
+        )
+      )
+        return false;
       if (line.includes("그대로 복붙")) return false;
       if (line.includes("참고만 하고")) return false;
       if (line.includes("출력 구조")) return false;
@@ -5148,11 +5958,19 @@ function makeInternalReferenceText(text: string) {
 
 function getCompatibilityKindFromTitle(title: string) {
   const source = title || "";
-  if (source.includes("사업") || source.includes("동업") || source.includes("파트너")) return "business";
+  if (
+    source.includes("사업") ||
+    source.includes("동업") ||
+    source.includes("파트너")
+  )
+    return "business";
   return "love";
 }
 
-function getAllowedFullSectionTitles(categoryId: CategoryId, categoryTitle: string) {
+function getAllowedFullSectionTitles(
+  categoryId: CategoryId,
+  categoryTitle: string,
+) {
   const title = categoryTitle || "";
 
   if (categoryId === "today" || title.includes("오늘")) {
@@ -5243,7 +6061,11 @@ function getAllowedFullSectionTitles(categoryId: CategoryId, categoryTitle: stri
 [도훈의 마지막 판정]`;
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
     return `[인생 흐름 결론부터 말하면]
 [내 사주상 분석]
 [초년·청년·중년·말년 흐름]
@@ -5268,7 +6090,11 @@ function getAllowedFullSectionTitles(categoryId: CategoryId, categoryTitle: stri
 [도훈의 마지막 판정]`;
   }
 
-  if (categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄")) {
+  if (
+    categoryId === "premium" ||
+    title.includes("내 고민") ||
+    title.includes("프리미엄")
+  ) {
     return `[질문에 대한 답부터 말하면]
 [내 사주상 분석]
 [이 고민의 핵심은 무엇인가]
@@ -5296,11 +6122,29 @@ function buildPreviewPrompt(params: {
   profileText: string;
   manse?: any;
 }) {
-  const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse } = params;
+  const {
+    user,
+    categoryId,
+    categoryTitle,
+    question,
+    manseText,
+    fixedConclusionText,
+    profileText,
+    manse,
+  } = params;
   const safeProfileText = makeInternalReferenceText(profileText);
   const safeCategoryGuide = getCategoryGuide(categoryId, categoryTitle);
-  const personalFingerprint = getPersonalStoryFingerprint(manse || manseText, categoryId, categoryTitle);
-  const soreumAddOnPrompt = getSoreumAddOnPrompt(user, manse || {}, categoryId, categoryTitle);
+  const personalFingerprint = getPersonalStoryFingerprint(
+    manse || manseText,
+    categoryId,
+    categoryTitle,
+  );
+  const soreumAddOnPrompt = getSoreumAddOnPrompt(
+    user,
+    manse || {},
+    categoryId,
+    categoryTitle,
+  );
 
   return `
 역할: 너는 소름사주의 사주풀이 도훈이다.
@@ -5352,25 +6196,41 @@ ${getPreviewTease(categoryId, categoryTitle)}
 `;
 }
 
-
 function isPremiumMoneyQuestion(question: string) {
   const q = String(question || "");
-  return /(돈|재물|부자|수익|매출|사업자금|부업|벌고|벌어|많이 벌|돈복|투자|장사|판매|월급|소득)/.test(q);
+  return /(돈|재물|부자|수익|매출|사업자금|부업|벌고|벌어|많이 벌|돈복|투자|장사|판매|월급|소득)/.test(
+    q,
+  );
 }
 
 function isPremiumCareerQuestion(question: string) {
   const q = String(question || "");
-  return /(일|직업|사업|창업|부업|이직|퇴사|회사|직장|장사|무슨 일을|뭘 해야|커리어)/.test(q);
+  return /(일|직업|사업|창업|부업|이직|퇴사|회사|직장|장사|무슨 일을|뭘 해야|커리어)/.test(
+    q,
+  );
 }
 
 function isPremiumLoveQuestion(question: string) {
   const q = String(question || "");
-  return /(연애|결혼|사랑|인연|재회|상대|남자|여자|배우자|궁합|만나|헤어|계속)/.test(q);
+  return /(연애|결혼|사랑|인연|재회|상대|남자|여자|배우자|궁합|만나|헤어|계속)/.test(
+    q,
+  );
 }
 
-function getPremiumQuestionSpecificStructure(categoryId: CategoryId, categoryTitle: string, question: string) {
+function getPremiumQuestionSpecificStructure(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  question: string,
+) {
   const title = categoryTitle || "";
-  if (!(categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄"))) return "";
+  if (
+    !(
+      categoryId === "premium" ||
+      title.includes("내 고민") ||
+      title.includes("프리미엄")
+    )
+  )
+    return "";
 
   if (isPremiumMoneyQuestion(question)) {
     return `[질문에 대한 답부터 말하면]
@@ -5413,9 +6273,20 @@ function getPremiumQuestionSpecificStructure(categoryId: CategoryId, categoryTit
   return "";
 }
 
-function getPremiumQuestionSpecificGuide(categoryId: CategoryId, categoryTitle: string, question: string) {
+function getPremiumQuestionSpecificGuide(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  question: string,
+) {
   const title = categoryTitle || "";
-  if (!(categoryId === "premium" || title.includes("내 고민") || title.includes("프리미엄"))) return "";
+  if (
+    !(
+      categoryId === "premium" ||
+      title.includes("내 고민") ||
+      title.includes("프리미엄")
+    )
+  )
+    return "";
 
   const common = `
 [내 고민 사주풀이 공통 강화 v58]
@@ -5429,7 +6300,9 @@ function getPremiumQuestionSpecificGuide(categoryId: CategoryId, categoryTitle: 
 `;
 
   if (isPremiumMoneyQuestion(question)) {
-    return common + `
+    return (
+      common +
+      `
 [내 고민 사주풀이 - 돈 많이 벌고 싶은 질문 전용 v58]
 사용자 질문이 돈을 많이 벌고 싶다는 뜻이면 반드시 아래를 구체적으로 답해라.
 
@@ -5475,7 +6348,8 @@ function getPremiumQuestionSpecificGuide(categoryId: CategoryId, categoryTitle: 
 - "그냥 열심히 하면 된다, 이런 말은 네 사주에 안 맞다. 너는 어디서 돈이 붙고 어디서 새는지를 갈라야 한다."
 - "큰 판부터 벌리는 돈은 복보다 부담이 먼저 붙는다."
 - "네가 잡아야 할 건 사람과 물건의 흐름에서 네 몫이 남는 돈이다."
-`;
+`
+    );
   }
 
   return common;
@@ -5532,13 +6406,34 @@ function cleanGeneratedText(text: string) {
   }
 
   source = source
-    .replace(/사람과의 관계에서 잘 맞는 사람과 조건을 맞추는 일이\s*[.。]?/g, "사람과 조건을 맞추는 일에서 운이 붙는다.")
-    .replace(/사람과 조건을 맞추는 일이\s*[.。]?/g, "사람과 조건을 맞추는 일에서 운이 붙는다.")
-    .replace(/물건 흐름을 보고, 사람과 조건을 맞추는 일이\s*[.。]?/g, "물건 흐름을 보고 사람과 조건을 맞추는 일에서 돈이 붙는다.")
-    .replace(/거래처나 사람과의 조건을 잘 맞추는 일이 흐름이다[.。]?/g, "거래처를 잡고, 물건이나 일의 조건을 맞추는 자리에서 돈이 붙는다.")
-    .replace(/사람과의 관계에서 조건을 맞추는 일이 흐름이다[.。]?/g, "사람과 조건을 맞추는 자리에서 돈이 붙는다.")
-    .replace(/([가-힣]+복이)\s*[.。](?=\s|$)/g, "$1 끊기지 않고 이어지는 흐름이다.")
-    .replace(/([가-힣]+는|[가-힣]+은|[가-힣]+이|[가-힣]+가)\s*[.。](?=\s|$)/g, "$1 흐름이다.")
+    .replace(
+      /사람과의 관계에서 잘 맞는 사람과 조건을 맞추는 일이\s*[.。]?/g,
+      "사람과 조건을 맞추는 일에서 운이 붙는다.",
+    )
+    .replace(
+      /사람과 조건을 맞추는 일이\s*[.。]?/g,
+      "사람과 조건을 맞추는 일에서 운이 붙는다.",
+    )
+    .replace(
+      /물건 흐름을 보고, 사람과 조건을 맞추는 일이\s*[.。]?/g,
+      "물건 흐름을 보고 사람과 조건을 맞추는 일에서 돈이 붙는다.",
+    )
+    .replace(
+      /거래처나 사람과의 조건을 잘 맞추는 일이 흐름이다[.。]?/g,
+      "거래처를 잡고, 물건이나 일의 조건을 맞추는 자리에서 돈이 붙는다.",
+    )
+    .replace(
+      /사람과의 관계에서 조건을 맞추는 일이 흐름이다[.。]?/g,
+      "사람과 조건을 맞추는 자리에서 돈이 붙는다.",
+    )
+    .replace(
+      /([가-힣]+복이)\s*[.。](?=\s|$)/g,
+      "$1 끊기지 않고 이어지는 흐름이다.",
+    )
+    .replace(
+      /([가-힣]+는|[가-힣]+은|[가-힣]+이|[가-힣]+가)\s*[.。](?=\s|$)/g,
+      "$1 흐름이다.",
+    )
     .replace(/\n{3,}/g, "\n\n");
 
   source = source
@@ -5549,11 +6444,14 @@ function cleanGeneratedText(text: string) {
     .replace(/^\s*그래서 이 카테고리의 최종 판정이 무엇인지\s*[:：]\s*/gm, "")
     .replace(/^\s*이 카테고리의 최종 판정이 무엇인지\s*[:：]\s*/gm, "")
     .replace(/돈을 다룰 때는\s*/g, "")
-     .replace(/이라는 걸 잊지 말아야 해/g, "이다")
-     .replace(/라는 걸 잊지 말아야 해/g, "다")
-     .replace(/을 잊지 말아야 해/g, "을 봐야 한다")
-     .replace(/를 잊지 말아야 해/g, "를 봐야 한다")
-    .replace(/자식 인연은 있을\s*[\.。]?/g, "자식 인연은 아주 끊긴 흐름으로 보지는 않는다")
+    .replace(/이라는 걸 잊지 말아야 해/g, "이다")
+    .replace(/라는 걸 잊지 말아야 해/g, "다")
+    .replace(/을 잊지 말아야 해/g, "을 봐야 한다")
+    .replace(/를 잊지 말아야 해/g, "를 봐야 한다")
+    .replace(
+      /자식 인연은 있을\s*[\.。]?/g,
+      "자식 인연은 아주 끊긴 흐름으로 보지는 않는다",
+    )
     .replace(/좋은 흐름이 이어질 거야/g, "복으로 붙는 흐름이 있다")
     .replace(/좋은 흐름이 이어진다/g, "복으로 붙는 흐름이다")
     .replace(/좋은 흐름을 이어가[^.\n。]*[.。]?/g, "")
@@ -5578,7 +6476,10 @@ function cleanGeneratedText(text: string) {
 
   for (const title of internalSectionTitles) {
     const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    source = source.replace(new RegExp(`\\n?\\[${escaped}\\][\\s\\S]*?(?=\\n\\[[^\\]]+\\]|$)`, "g"), "");
+    source = source.replace(
+      new RegExp(`\\n?\\[${escaped}\\][\\s\\S]*?(?=\\n\\[[^\\]]+\\]|$)`, "g"),
+      "",
+    );
   }
 
   const forbiddenExactIncludes = [
@@ -5631,10 +6532,23 @@ function cleanGeneratedText(text: string) {
     .filter((line) => {
       const trimmed = line.trim();
       if (!trimmed) return true;
-      if (forbiddenExactIncludes.some((item) => trimmed.includes(item))) return false;
-      if (trimmed.includes("이런 생각이 들 거야") || trimmed.includes("이런 마음이 들 거야") || trimmed.includes("머릿속을 맴돌")) return false;
-      if (trimmed === "그래서." || trimmed === "그래서" || trimmed === "결론이다." || trimmed === "결론이야.") return false;
-      if (forbiddenLinePatterns.some((pattern) => pattern.test(trimmed))) return false;
+      if (forbiddenExactIncludes.some((item) => trimmed.includes(item)))
+        return false;
+      if (
+        trimmed.includes("이런 생각이 들 거야") ||
+        trimmed.includes("이런 마음이 들 거야") ||
+        trimmed.includes("머릿속을 맴돌")
+      )
+        return false;
+      if (
+        trimmed === "그래서." ||
+        trimmed === "그래서" ||
+        trimmed === "결론이다." ||
+        trimmed === "결론이야."
+      )
+        return false;
+      if (forbiddenLinePatterns.some((pattern) => pattern.test(trimmed)))
+        return false;
       return true;
     })
     .join(NL);
@@ -5649,13 +6563,19 @@ function cleanGeneratedText(text: string) {
     .replace(/([가-힣]+할)\s*[.。]/g, "$1 흐름이다.")
     .replace(/\s+[.。]/g, ".")
     .replace(/\n{4,}/g, NL + NL + NL)
-    .replace(/\[결론부터 말하면\]\s*\n\s*\[결론부터 말하면\]/g, "[결론부터 말하면]")
+    .replace(
+      /\[결론부터 말하면\]\s*\n\s*\[결론부터 말하면\]/g,
+      "[결론부터 말하면]",
+    )
     .replace(/(결론부터 말하면,\s*[^\n]+)\n\s*\1/g, "$1")
     .trim();
 }
 
-
-function buildForcedSajuAnalysisSection(categoryId: CategoryId, categoryTitle: string, manse: any) {
+function buildForcedSajuAnalysisSection(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  manse: any,
+) {
   const flow = getReadableElementFlow(manse);
   const snap = getElementSnapshot(manse);
   const strongest = flow.strongest || "강한 기운";
@@ -5663,36 +6583,59 @@ function buildForcedSajuAnalysisSection(categoryId: CategoryId, categoryTitle: s
   const dayMaster = String(snap.dayMaster || "일간");
   const title = categoryTitle || "";
 
-  let focus = "그래서 너는 가만히 묶여 있으면 속이 답답해지고, 네가 직접 움직여 길을 만들 때 운이 살아나는 쪽이다.";
+  let focus =
+    "그래서 너는 가만히 묶여 있으면 속이 답답해지고, 네가 직접 움직여 길을 만들 때 운이 살아나는 쪽이다.";
 
   if (categoryId === "money" || title.includes("재물")) {
-    focus = "그래서 네 돈은 아무 데나 붙지 않는다. 정 때문에 흐려지는 돈, 남 말 듣고 들어가는 돈에는 복이 약하고, 네가 직접 보고 움직여 네 몫이 분명한 자리에서 돈이 머문다.";
+    focus =
+      "그래서 네 돈은 아무 데나 붙지 않는다. 정 때문에 흐려지는 돈, 남 말 듣고 들어가는 돈에는 복이 약하고, 네가 직접 보고 움직여 받을 금액·입금일·역할값이 정해진 자리에서 돈이 머문다.";
   } else if (isCareerCategory(categoryId, title)) {
-    focus = "그래서 너는 그냥 시키는 일만 오래 할 사주는 아니다. 네 판단이 들어가고, 네 이름과 몫이 남는 자리에서 일이 산다. 남 좋은 일만 하는 판에 오래 있으면 속에서 화가 쌓이는 흐름이다.";
+    focus =
+      "그래서 너는 그냥 시키는 일만 오래 할 사주는 아니다. 네 판단이 들어가고, 네 이름과 몫이 남는 자리에서 일이 산다. 남 좋은 일만 하는 판에 오래 있으면 속에서 화가 쌓이는 흐름이다.";
   } else if (isLoveMarriageCategory(categoryId, title)) {
-    focus = "그래서 너는 사람을 만나도 마음만 보고 가면 흔들린다. 말투, 생활 리듬, 돈 기준, 책임감이 맞아야 오래 가고, 책임이 흐린 사람은 네 마음만 늙게 만든다.";
+    focus =
+      "그래서 너는 사람을 만나도 마음만 보고 가면 흔들린다. 말투, 생활 리듬, 돈 기준, 책임감이 맞아야 오래 가고, 책임이 흐린 사람은 네 마음만 늙게 만든다.";
   } else if (categoryId === "health" || title.includes("건강")) {
-    focus = "그래서 네 몸은 약해서 바로 무너지는 쪽보다, 버티다가 늦게 꺼지는 흐름으로 본다. 위장·소화·수면·피로·목어깨 쪽 신호는 그냥 넘기면 안 된다.";
+    focus =
+      "그래서 네 몸은 약해서 바로 무너지는 쪽보다, 버티다가 늦게 꺼지는 흐름으로 본다. 위장·소화·수면·피로·목어깨 쪽 신호는 그냥 넘기면 안 된다.";
   } else if (isCompatibilityCategory(categoryId, title)) {
-    focus = "그래서 이 관계는 감정만 보면 안 된다. 서로의 속도, 돈 기준, 말투, 책임감을 같이 봐야 한다. 끌림이 있어도 기준이 흐리면 같은 문제로 반복해서 부딪힌다.";
+    focus =
+      "그래서 이 관계는 감정만 보면 안 된다. 서로의 속도, 돈 기준, 말투, 책임감을 같이 봐야 한다. 끌림이 있어도 기준이 흐리면 같은 문제로 반복해서 부딪힌다.";
   } else if (isMonthlyCategory(categoryId, title)) {
-    focus = "그래서 올해 운은 한 번에 확 터지는 게 아니라 돈, 일, 사람, 몸이 각각 다른 달에 움직이는 흐름으로 본다. 좋은 달과 새는 달이 따로 있다.";
-  } else if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
-    focus = "그래서 인생운은 초년에 편하게 풀리는 쪽보다, 시간이 지나며 네 몫과 방향이 잡히는 쪽으로 본다. 대운은 기다린다고 잡히는 게 아니라, 사람과 돈에 끌려가지 않을 때 네 것이 된다.";
+    focus =
+      "그래서 올해 운은 한 번에 확 터지는 게 아니라 돈, 일, 사람, 몸이 각각 다른 달에 움직이는 흐름으로 본다. 좋은 달과 새는 달이 따로 있다.";
+  } else if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
+    focus =
+      "그래서 인생운은 초년에 편하게 풀리는 쪽보다, 시간이 지나며 네 몫과 방향이 잡히는 쪽으로 본다. 대운은 기다린다고 잡히는 게 아니라, 사람과 돈에 끌려가지 않을 때 네 것이 된다.";
   } else if (categoryId === "traditional" || title.includes("평생")) {
-    focus = "그래서 네 평생운은 돈, 일, 사람, 몸이 따로 움직이지 않는다. 책임과 사람 일에서 막히기도 하고, 그걸 넘어 네 몫이 분명해질 때 복이 붙는 사주다.";
+    focus =
+      "그래서 네 평생운은 돈, 일, 사람, 몸이 따로 움직이지 않는다. 책임과 사람 일에서 막히기도 하고, 그걸 넘어 네 몫이 분명해질 때 복이 붙는 사주다.";
   } else if (categoryId === "today" || title.includes("오늘")) {
-    focus = "그래서 오늘은 네 기본 기질이 말, 돈, 사람, 몸에서 어떻게 튀어나오는지 보는 날이다. 오늘 하루 안에서 급한 말과 급한 돈이 먼저 운을 흔든다.";
+    focus =
+      "그래서 오늘은 네 기본 기질이 말, 돈, 사람, 몸에서 어떻게 튀어나오는지 보는 날이다. 오늘 하루 안에서 급한 말과 급한 돈이 먼저 운을 흔든다.";
   }
 
   return `[내 사주상 분석]\n\n너는 사주상 ${strongest}의 흐름이 강하게 잡히고, ${weakest}은 흔들리기 쉬운 쪽으로 본다.\n\n일간으로 보면 ${dayMaster}의 기운이 바탕에 깔려 있다. 쉽게 말하면, 겉으로는 버티는 힘이 있어도 속으로는 내 길과 내 몫을 따지는 힘이 같이 움직이는 사주다.\n\n${focus}`;
 }
 
-function ensureSajuAnalysisSection(text: string, categoryId: CategoryId, categoryTitle: string, manse: any) {
+function ensureSajuAnalysisSection(
+  text: string,
+  categoryId: CategoryId,
+  categoryTitle: string,
+  manse: any,
+) {
   const source = text || "";
   if (source.includes("[내 사주상 분석]")) return source;
 
-  const section = buildForcedSajuAnalysisSection(categoryId, categoryTitle, manse);
+  const section = buildForcedSajuAnalysisSection(
+    categoryId,
+    categoryTitle,
+    manse,
+  );
   const firstClose = source.indexOf("]");
   if (firstClose < 0) return `${section}${NL}${NL}${source}`.trim();
 
@@ -5707,7 +6650,8 @@ function ensureSajuAnalysisSection(text: string, categoryId: CategoryId, categor
 function getPublicFixedConclusionText(block: string) {
   const withoutTitle = (block || "").replace("[고정 결론]", "").trim();
   const aiIndex = withoutTitle.indexOf("AI는 ");
-  const publicPart = aiIndex >= 0 ? withoutTitle.slice(0, aiIndex) : withoutTitle;
+  const publicPart =
+    aiIndex >= 0 ? withoutTitle.slice(0, aiIndex) : withoutTitle;
 
   return publicPart
     .split(/\r?\n/)
@@ -5752,16 +6696,48 @@ function buildFullPrompt(params: {
   profileText: string;
   manse?: any;
 }) {
-  const { user, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse } = params;
+  const {
+    user,
+    categoryId,
+    categoryTitle,
+    question,
+    manseText,
+    fixedConclusionText,
+    profileText,
+    manse,
+  } = params;
   const safeProfileText = makeInternalReferenceText(profileText);
   const categoryGuide = getCategoryGuide(categoryId, categoryTitle);
-  const premiumSpecificStructure = getPremiumQuestionSpecificStructure(categoryId, categoryTitle, question);
-  const baseOutputStructure = premiumSpecificStructure || getAllowedFullSectionTitles(categoryId, categoryTitle);
-  const outputStructure = addSoreumAddOnSectionsToOutputStructure(baseOutputStructure, categoryId, categoryTitle);
+  const premiumSpecificStructure = getPremiumQuestionSpecificStructure(
+    categoryId,
+    categoryTitle,
+    question,
+  );
+  const baseOutputStructure =
+    premiumSpecificStructure ||
+    getAllowedFullSectionTitles(categoryId, categoryTitle);
+  const outputStructure = addSoreumAddOnSectionsToOutputStructure(
+    baseOutputStructure,
+    categoryId,
+    categoryTitle,
+  );
   const summaryGuide = getFinalSummaryGuide(categoryId, categoryTitle);
-  const premiumQuestionGuide = getPremiumQuestionSpecificGuide(categoryId, categoryTitle, question);
-  const personalFingerprint = getPersonalStoryFingerprint(manse || manseText, categoryId, categoryTitle);
-  const soreumAddOnPrompt = getSoreumAddOnPrompt(user, manse || {}, categoryId, categoryTitle);
+  const premiumQuestionGuide = getPremiumQuestionSpecificGuide(
+    categoryId,
+    categoryTitle,
+    question,
+  );
+  const personalFingerprint = getPersonalStoryFingerprint(
+    manse || manseText,
+    categoryId,
+    categoryTitle,
+  );
+  const soreumAddOnPrompt = getSoreumAddOnPrompt(
+    user,
+    manse || {},
+    categoryId,
+    categoryTitle,
+  );
 
   return `
 역할: 너는 소름사주의 사주풀이 도훈이다.
@@ -5839,20 +6815,41 @@ ${summaryGuide}
 `;
 }
 
-function fallbackPreview(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
-  const fixed = getPublicFixedConclusionText(getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse));
+function fallbackPreview(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  user: UserInfo,
+  manse: any,
+  partnerManse?: any | null,
+) {
+  const fixed = getPublicFixedConclusionText(
+    getFixedConclusionBlock(
+      categoryId,
+      categoryTitle,
+      user,
+      manse,
+      partnerManse,
+    ),
+  );
   const title = categoryTitle || "";
-  const profile = getCategoryProfileText(categoryId, categoryTitle, manse, safeText(user.question, ""));
+  const profile = getCategoryProfileText(
+    categoryId,
+    categoryTitle,
+    manse,
+    safeText(user.question, ""),
+  );
   const safeProfile = makeInternalReferenceText(profile);
   const flow = getReadableElementFlow(manse);
   const name = getName(user);
 
   let why = `제공된 만세력 기준으로 보면 ${name}에게는 ${flow.strongestText}이 비교적 강하게 잡히고, ${flow.weakestText}은 생활에서 보완해야 하는 흐름이야.`;
-  let caution = "오늘이나 지금 이 운을 무리하게 밀어붙이면 장점이 오히려 고집이나 부담으로 바뀔 수 있어.";
+  let caution =
+    "오늘이나 지금 이 운을 무리하게 밀어붙이면 장점이 오히려 고집이나 부담으로 바뀔 수 있어.";
 
   if (categoryId === "today" || title.includes("오늘")) {
     why = `오늘은 말, 돈, 약속에서 속도를 조금 늦춰야 하는 흐름이야. 특히 바로 답장하거나 급하게 결제하거나 불편한 부탁을 바로 받아들이는 건 한 번 더 보고 움직이는 게 좋아.`;
-    caution = "기분 상한 상태에서 바로 말하는 것, 필요 없는 지출, 누가 재촉한다고 바로 결정하는 걸 조심해야 해.";
+    caution =
+      "기분 상한 상태에서 바로 말하는 것, 필요 없는 지출, 누가 재촉한다고 바로 결정하는 걸 조심해야 해.";
   } else if (categoryId === "money" || title.includes("재물")) {
     const money = getMoneyProfile(manse);
     why = money.core;
@@ -5895,7 +6892,14 @@ ${fixed}
 
 ${why}
 
-${safeProfile ? safeProfile.split(NL).slice(0, 4).join(NL + NL) : "이 흐름은 만세력에서 보이는 강한 부분과 약한 부분을 선택 카테고리에 맞춰 현실적으로 풀어본 방향이야."}
+${
+  safeProfile
+    ? safeProfile
+        .split(NL)
+        .slice(0, 4)
+        .join(NL + NL)
+    : "이 흐름은 만세력에서 보이는 강한 부분과 약한 부분을 선택 카테고리에 맞춰 현실적으로 풀어본 방향이야."
+}
 
 [이 운에서 조심할 부분]
 
@@ -5908,8 +6912,22 @@ ${caution}
 ${getPreviewTease(categoryId, categoryTitle)}`);
 }
 
-function fallbackFull(categoryId: CategoryId, categoryTitle: string, user: UserInfo, manse: any, partnerManse?: any | null) {
-  const fixed = getPublicFixedConclusionText(getFixedConclusionBlock(categoryId, categoryTitle, user, manse, partnerManse));
+function fallbackFull(
+  categoryId: CategoryId,
+  categoryTitle: string,
+  user: UserInfo,
+  manse: any,
+  partnerManse?: any | null,
+) {
+  const fixed = getPublicFixedConclusionText(
+    getFixedConclusionBlock(
+      categoryId,
+      categoryTitle,
+      user,
+      manse,
+      partnerManse,
+    ),
+  );
   const title = categoryTitle || "";
   const name = getName(user);
   const money = getMoneyProfile(manse);
@@ -5918,9 +6936,18 @@ function fallbackFull(categoryId: CategoryId, categoryTitle: string, user: UserI
   const relation = getRelationshipProfile(manse, "love");
   const life = getLifeProfile(manse);
   const flow = getReadableElementFlow(manse);
-  const risk = makeInternalReferenceText(getRiskChoices(categoryId, categoryTitle)).split(NL).slice(0, 12).join(NL + NL);
-  const direction = makeInternalReferenceText(getDirectionChoices(categoryId, categoryTitle)).split(NL).slice(0, 12).join(NL + NL);
-
+  const risk = makeInternalReferenceText(
+    getRiskChoices(categoryId, categoryTitle),
+  )
+    .split(NL)
+    .slice(0, 12)
+    .join(NL + NL);
+  const direction = makeInternalReferenceText(
+    getDirectionChoices(categoryId, categoryTitle),
+  )
+    .split(NL)
+    .slice(0, 12)
+    .join(NL + NL);
 
   if (categoryId === "today" || title.includes("오늘")) {
     const moneyGrade = getMoneyGrade(manse);
@@ -6192,7 +7219,11 @@ ${name}, 건강운은 의료 진단이 아니다.
 `;
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
     return cleanGeneratedText(`[결론부터 말하면]
 
 ${fixed}
@@ -6336,8 +7367,6 @@ function getFullMaxTokens(categoryId: CategoryId) {
   return 8200;
 }
 
-
-
 type ComicChapter = {
   id: string;
   sceneType:
@@ -6358,6 +7387,7 @@ type ComicChapter = {
     | "dohoon-pointing"
     | "dohoon-warning"
     | "dohoon-smile"
+    | "dohoon-blessing"
     | "user-shadow"
     | "bad-luck-ghost"
     | "fortune-spirit";
@@ -6371,6 +7401,33 @@ type ComicChapter = {
 };
 
 type ComicMode = "preview" | "full";
+type TodayTone = "good" | "caution" | "mixed";
+
+type WebtoonCategoryScript = {
+  opening: string;
+  bigLuckTitle: string;
+  bigLuckText: string;
+  twistTitle: string;
+  twistText: string;
+  blockedTitle: string;
+  blockedText: string;
+  ghostTitle: string;
+  ghostText: string;
+  blessingTitle: string;
+  blessingText: string;
+  detailA: string;
+  detailB: string;
+  timing: string;
+  people: string;
+  money: string;
+  body: string;
+  yearCaution: string;
+  yearChance: string;
+  avoid: string;
+  choose: string;
+  final: string;
+  mood: ComicChapter["mood"];
+};
 
 function compactComicText(value: string, fallback = "") {
   const cleaned = cleanGeneratedText(String(value || ""))
@@ -6380,8 +7437,8 @@ function compactComicText(value: string, fallback = "") {
     .trim();
 
   const text = cleaned || fallback;
-  if (text.length <= 145) return text;
-  return `${text.slice(0, 142).trim()}...`;
+  if (text.length <= 170) return text;
+  return `${text.slice(0, 167).trim()}...`;
 }
 
 function stripSectionTitle(value: string) {
@@ -6409,143 +7466,1671 @@ function extractComicSections(resultText: string) {
 
   return text
     .split(/\n{2,}/)
-    .map((body, index) => ({ title: index === 0 ? "도훈의 첫 판정" : `사주 장면 ${index + 1}`, body: compactComicText(body) }))
+    .map((body, index) => ({
+      title: index === 0 ? "도훈의 첫 판정" : `사주 장면 ${index + 1}`,
+      body: compactComicText(body),
+    }))
     .filter((item) => item.body)
     .slice(0, 12);
 }
 
-function getComicCategoryTheme(categoryId: CategoryId, categoryTitle: string) {
-  const title = categoryTitle || "";
+function getTodayTone(params: {
+  user: UserInfo;
+  manse: any;
+  fortuneSeed?: number;
+}): TodayTone {
+  const seed =
+    Number(params.fortuneSeed || 0) ||
+    hashToSeed(
+      stableStringify({
+        year: safeText(params.user.year),
+        month: safeText(params.user.month),
+        day: safeText(params.user.day),
+        birthTime: safeText(params.user.birthTime, "모름"),
+        manse: params.manse,
+        logic: "today-tone-webtoon-v1",
+      }),
+    );
 
-  if (categoryId === "money" || title.includes("재물")) {
+  const snap = getElementSnapshot(params.manse);
+  let score = seed % 9;
+  if (snap.fire >= 2 || snap.wood >= 2) score += 1;
+  if (snap.fire === 0 || snap.earth >= 4) score -= 1;
+  if (score >= 7) return "good";
+  if (score <= 2) return "caution";
+  return "mixed";
+}
+
+function getTodayScript(tone: TodayTone): WebtoonCategoryScript {
+  if (tone === "good") {
     return {
-      question: "나는 왜 벌어도 남는 게 없나, 그 답답함을 보러 온 거다.",
-      coreTitle: "돈복부터 까보면",
-      warningTitle: "새는돈귀신",
-      warningText: "돈이 없는 게 아니다. 정, 사람 말, 급한 욕심이 끼면 들어온 돈이 오래 못 머문다.",
-      blessingTitle: "돈복도깨비",
-      blessingText: "네 돈은 네가 흐름을 보고, 네 몫이 분명한 자리에서 붙는다.",
+      opening: "어? 오늘 운 괜찮은데?",
+      bigLuckTitle: "작은 복이 먼저 보인다",
+      bigLuckText:
+        "오늘은 네가 억지로 크게 밀지 않아도 말, 연락, 제안, 작은 돈 이야기 중 하나가 슬쩍 붙을 수 있다.",
+      twistTitle: "근데 크게 떠들 운은 아니다",
+      twistText:
+        "오늘 복은 조용히 잡아야 오래 간다. 말이 많아지면 좋은 흐름이 가벼워진다.",
+      blockedTitle: "오늘 막히는 자리",
+      blockedText:
+        "기분 좋아서 바로 답하거나, 바로 쓰거나, 바로 약속 잡는 순간 운이 얇아진다. 한 박자 늦게 잡아야 산다.",
+      ghostTitle: "성급한말귀신",
+      ghostText:
+        "오늘 붙는 건 나쁜 운이 아니라 성급한 반응이다. 좋은 말도 빨리 나가면 힘이 빠진다.",
+      blessingTitle: "오늘의 작은 복",
+      blessingText:
+        "필요한 말만 하고, 돈은 늦게 쓰고, 오는 연락은 가볍게 받으면 오늘 운은 꽤 괜찮게 열린다.",
+      detailA:
+        "오늘은 사람 말 속에 작은 힌트가 있다. 흘려듣지 말고, 바로 결정하지도 마라.",
+      detailB:
+        "돈은 크게 벌 날이라기보다 새 지출을 막고 작은 이득을 챙기는 날이다.",
+      timing:
+        "오전보다 오후 쪽에 말과 연락 운이 더 살아난다. 저녁엔 피곤한 약속을 줄여라.",
+      people:
+        "가볍게 만나는 사람보다 필요한 말만 주고받는 사람이 오늘 복을 준다.",
+      money:
+        "충동구매는 약하다. 대신 밀린 정리, 받을 돈 확인, 작은 계산에는 운이 붙는다.",
+      body: "몸은 크게 무너지지 않아도 피로가 늦게 올라온다. 저녁에 무리하면 내일로 넘어간다.",
+      yearCaution:
+        "오늘 조심할 건 과한 확신이다. 느낌이 좋다고 바로 확정하지 마라.",
+      yearChance:
+        "오늘 잡을 건 작은 연락, 작은 정리, 작은 확인이다. 여기서 운이 붙는다.",
+      avoid:
+        "바로 답장하기, 바로 결제하기, 기분 좋아서 약속 늘리기. 이 세 개는 피하는 게 낫다.",
+      choose:
+        "필요한 말만 하고, 돈은 한 번 미루고, 사람 반응은 한 박자 늦게 봐라.",
+      final:
+        "오늘은 크게 이기는 날이 아니라, 작게 잡아도 남는 날이다. 조용히 잡으면 괜찮다.",
+      mood: "gold",
     };
   }
 
-  if (isCareerCategory(categoryId, title)) {
+  if (tone === "caution") {
     return {
-      question: "내가 지금 이 일 계속해도 되나, 아니면 내 판을 따로 잡아야 하나 그게 궁금한 거다.",
-      coreTitle: "일복부터 까보면",
-      warningTitle: "판벌림귀신",
-      warningText: "판을 너무 빨리 키우면 복보다 책임과 손해가 먼저 붙는다.",
-      blessingTitle: "밥줄신",
-      blessingText: "네 일복은 역할이 분명하고 이름값이 남는 자리에서 살아난다.",
-    };
-  }
-
-  if (isLoveMarriageCategory(categoryId, title)) {
-    return {
-      question: "사람이 없는 게 궁금한 게 아니다. 왜 비슷한 사람에게 흔들리는지 그게 궁금한 거다.",
-      coreTitle: "인연운부터 까보면",
-      warningTitle: "헛정귀신",
-      warningText: "끊어야 할 사람에게 마음이 묶이면 좋은 인연이 들어와도 자리가 안 난다.",
-      blessingTitle: "인연등불",
-      blessingText: "네 인연은 설렘보다 오래 편해지는 사람에게 복이 붙는다.",
-    };
-  }
-
-  if (isCompatibilityCategory(categoryId, title) || isPartnerCategory(categoryId, title)) {
-    return {
-      question: "이 사람과 계속 가도 되는지, 이미 마음속으로는 답을 확인받고 싶은 거다.",
-      coreTitle: "궁합부터 까보면",
-      warningTitle: "감정귀신",
-      warningText: "끌리는 이유와 오래 가는 이유는 다르다. 말, 돈, 책임에서 진짜 궁합이 갈린다.",
-      blessingTitle: "맞물림복",
-      blessingText: "둘의 역할과 선이 맞으면 관계가 복으로 바뀐다.",
-    };
-  }
-
-  if (categoryId === "health" || title.includes("건강")) {
-    return {
-      question: "몸이 왜 이렇게 무거운지, 그냥 피곤한 건지 운에서 신호가 온 건지 보러 온 거다.",
-      coreTitle: "몸운부터 까보면",
-      warningTitle: "피로귀신",
-      warningText: "몸이 약해서가 아니라 끝까지 버티다가 한 번에 꺼지는 흐름을 조심해야 한다.",
-      blessingTitle: "숨고르기복",
-      blessingText: "수면, 소화, 걷기 리듬을 잡으면 몸이 복을 받을 그릇이 된다.",
-    };
-  }
-
-  if (isMonthlyCategory(categoryId, title)) {
-    return {
-      question: "올해가 그냥 지나갈 해인지, 어디서 운이 움직이는지 알고 싶은 거다.",
-      coreTitle: "올해운부터 까보면",
-      warningTitle: "흔들림귀신",
-      warningText: "운이 약한 달에 크게 움직이면 복보다 손해가 먼저 붙는다.",
-      blessingTitle: "천운문",
-      blessingText: "강한 달을 잡고 흔들리는 달을 피하면 올해 판이 달라진다.",
-    };
-  }
-
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
-    return {
-      question: "내 인생이 언제 제대로 풀리는지, 그 문이 어디서 열리는지 보러 온 거다.",
-      coreTitle: "대운부터 까보면",
-      warningTitle: "막힘귀신",
-      warningText: "초년의 답답함을 평생 운으로 착각하면 들어올 복도 늦어진다.",
-      blessingTitle: "천운문",
-      blessingText: "대운은 기다리는 게 아니라 잡을 준비가 된 사람에게 열린다.",
+      opening: "어? 오늘은 그냥 넘기면 안 되겠는데?",
+      bigLuckTitle: "나쁜 날로만 보면 안 된다",
+      bigLuckText:
+        "오늘은 운이 없어서 막히는 날이 아니다. 작은 선택 하나가 커지는 날이다.",
+      twistTitle: "먼저 새는 구멍이 보인다",
+      twistText:
+        "말 한마디, 작은 지출, 괜한 눈치. 여기서 오늘 운이 샐 수 있다.",
+      blockedTitle: "오늘 막히는 자리",
+      blockedText:
+        "급하게 답하고, 급하게 쓰고, 사람 기분 맞추려고 내 리듬을 깨면 하루가 꼬인다.",
+      ghostTitle: "작은악운귀신",
+      ghostText:
+        "오늘 악운은 크게 오지 않는다. 작게 붙어서 크게 피곤하게 만든다.",
+      blessingTitle: "막으면 사는 운",
+      blessingText:
+        "오늘은 뭘 얻는 날보다 새는 걸 막는 날이다. 안 건드리면 오히려 편하게 지나간다.",
+      detailA:
+        "말은 짧게 가라. 설명을 길게 하면 상대가 다르게 받아들이기 쉽다.",
+      detailB:
+        "돈은 지금 꼭 써야 하는 것만 써라. 기분 따라 나가는 돈은 남는 게 없다.",
+      timing:
+        "오전엔 말조심, 오후엔 돈조심, 저녁엔 피로조심이다. 하루가 뒤로 갈수록 몸이 무거워질 수 있다.",
+      people:
+        "오늘은 말 많은 사람, 부탁 많은 사람, 감정이 앞서는 사람을 가볍게 넘겨라.",
+      money:
+        "큰돈을 움직일 날은 아니다. 예약, 결제, 약속금, 빌려주는 돈은 한 번 더 늦춰라.",
+      body: "소화, 목어깨, 두통, 잠 부족 쪽 신호를 넘기지 마라. 몸이 먼저 브레이크를 건다.",
+      yearCaution:
+        "오늘 조심할 건 사람 말에 끌려가는 선택이다. 네 리듬이 깨지는 순간 운이 빠진다.",
+      yearChance: "오늘 잡을 건 정리다. 정리만 잘해도 내일 운이 덜 막힌다.",
+      avoid:
+        "급한 답장, 충동 지출, 감정 섞인 약속, 무리한 야식. 오늘은 이 네 개가 약하다.",
+      choose:
+        "늦게 답하고, 늦게 쓰고, 짧게 말하고, 일찍 쉬어라. 그게 오늘 복을 지키는 방식이다.",
+      final:
+        "오늘은 겁먹을 날은 아니다. 다만 건드리면 꼬이는 날이다. 안 건드리면 산다.",
+      mood: "black",
     };
   }
 
   return {
-    question: "재미로만 보는 척하지만, 속으론 하나가 걸려 있다. 이대로 가도 되나, 그걸 확인하러 온 거다.",
-    coreTitle: "사주부터 까보면",
-    warningTitle: "반복귀신",
-    warningText: "같은 장면에서 같은 선택을 반복하면 운이 들어와도 막힌다.",
-    blessingTitle: "복의 자리",
-    blessingText: "피해야 할 악운과 잡아야 할 복을 나누면 길이 보인다.",
+    opening: "어? 오늘 운이 묘하다.",
+    bigLuckTitle: "복도 있고 구멍도 있다",
+    bigLuckText: "오늘은 좋은 흐름 하나와 새는 구멍 하나가 같이 붙어 있다.",
+    twistTitle: "잡는 손보다 새는 손",
+    twistText:
+      "기회는 보이는데, 말이나 돈에서 한 번 삐끗하면 좋은 운이 얇아진다.",
+    blockedTitle: "오늘 갈리는 자리",
+    blockedText:
+      "연락 하나가 기회가 될 수도 있고, 말 한마디가 피곤함이 될 수도 있다. 돈도 마찬가지다.",
+    ghostTitle: "갈림길귀신",
+    ghostText:
+      "오늘은 운이 한쪽으로만 가지 않는다. 네 반응에 따라 복이 되거나 피곤함이 된다.",
+    blessingTitle: "잡을 수 있는 복",
+    blessingText:
+      "필요한 건 잡고, 감정 섞인 건 넘겨라. 오늘은 구분하는 사람이 이긴다.",
+    detailA:
+      "오늘 들어오는 말과 연락은 바로 믿지 말고 한 번 걸러라. 그 안에 쓸 만한 힌트가 있다.",
+    detailB:
+      "돈은 작은 이득과 작은 지출이 같이 보인다. 남기는 쪽을 먼저 봐야 한다.",
+    timing:
+      "점심 전후로 한 번 흐름이 바뀐다. 오전에 꼬였어도 오후에 풀릴 수 있고, 반대로 방심하면 오후에 샌다.",
+    people:
+      "오늘은 가까운 사람보다 애매한 사람이 더 피곤하게 만들 수 있다. 선을 흐리지 마라.",
+    money:
+      "작은 돈이라도 기분 따라 쓰면 아깝다. 받을 것, 확인할 것, 미룰 것을 나눠라.",
+    body: "몸은 버티지만 신경이 예민해질 수 있다. 카페인, 야식, 늦은 화면은 줄여라.",
+    yearCaution:
+      "오늘 조심할 건 애매한 약속이다. 확실하지 않은 말에 네 시간을 내주지 마라.",
+    yearChance:
+      "오늘 잡을 건 필요한 연락, 필요한 정리, 필요한 확인이다. 이 셋이 오늘의 복이다.",
+    avoid:
+      "애매한 사람에게 오래 답하기, 필요 없는 돈 쓰기, 감정으로 일정 바꾸기. 이건 피하자.",
+    choose:
+      "말은 반만 하고, 결정은 하루 미루고, 돈은 필요한 데만 써라. 그러면 복 쪽으로 기운다.",
+    final:
+      "오늘은 운이 없는 날이 아니다. 복과 구멍이 같이 있다. 구멍만 막으면 괜찮게 지나간다.",
+    mood: "redDark",
   };
 }
 
-function getComicCoreLine(params: {
+function getConcreteMoneyDirection(manse: any) {
+  const pattern = getMoneyPattern(manse);
+
+  const base = {
+    workAnswer:
+      "회사냐 장사냐부터 정하면 틀린다. 먼저 봐야 할 건 돈 받을 사람, 받을 금액, 입금일, 네가 맡은 역할이다. 이 네 개가 보이지 않는 일은 시작하지 마라.",
+    earn:
+      "돈은 네가 직접 조건을 맞추고, 물건이나 서비스를 넘기고, 입금일까지 확인하는 일에서 붙는다. 돈이 어디서 들어오고 어디서 빠지는지 네 눈에 보여야 한다.",
+    start:
+      "처음부터 큰돈 넣지 마라. 주문이 먼저 있고 발주가 뒤에 오는 일, 월세와 재고가 먼저 묶이지 않는 일, 받을 금액과 입금일이 먼저 정해진 일부터 잡아라.",
+    avoid:
+      "남 말만 믿고 들어가는 투자, 친하다고 돈 섞는 동업, 받을 금액이 흐린 일, 재고·월세·광고비가 먼저 나가는 판은 버려라.",
+  };
+
+  if (pattern === "cashflow_manager") {
+    return {
+      workAnswer:
+        "너는 회사 월급만 보고 살 사주는 아니다. 하지만 처음부터 가게 차리고 재고 안고 기다리는 장사는 버려라. 회사 안에서는 구매, 납품관리, 거래처관리, 영업관리, 물류, 품질, 현장관리처럼 단가·마진·입금일을 직접 보는 자리를 잡아라.",
+      earn:
+        "밖으로 돈을 만들면 B2B 납품, 구매대행, 소싱대행, 유통 중개, 기존 업체 물건을 필요한 곳에 맞춰주는 일을 잡아라. 쉽게 말하면 필요한 물건을 찾아주고, 가격 맞추고, 납기 맞추고, 중간에서 네 역할값을 받는 돈이다.",
+      start:
+        "순서는 이거다. 고정수입을 바닥에 두고, 한두 거래처에서 필요한 물건을 받아 적고, 견적 받고, 납기 맞추고, 입금일을 정해라. 주문이 먼저이고 발주가 뒤인 구조부터 잡아라.",
+      avoid:
+        "큰 매장, 큰 재고, 큰 광고비, 지인이 좋다 해서 들어가는 투자, 돈 받을 사람과 입금일이 흐린 일은 버려라. 돈의 입구와 출구를 남이 쥐는 판은 손해가 먼저 붙는다.",
+    };
+  }
+
+  if (pattern === "small_sales_tester") {
+    return {
+      workAnswer:
+        "너는 장사 기운이 있다. 단, 오프라인 매장 크게 열고 월세·직원·재고부터 안는 장사는 버려라. 온라인 판매, 위탁판매, 주문 후 발주, 소량 사입처럼 팔리는지 먼저 보이는 장사를 잡아라.",
+      earn:
+        "돈은 사람 반응을 보고 물건을 바꾸는 데서 붙는다. 한두 품목을 올리고, 문의가 들어오는 물건만 남기고, 팔리지 않는 물건은 바로 빼라. 필요한 물건을 찾아 납품하는 작은 거래도 맞다.",
+      start:
+        "시작은 소량 사입, 위탁판매, 주문 후 발주다. 광고비부터 태우지 마라. 팔린 물건, 반복 문의, 남는 금액이 먼저 보여야 돈을 더 넣는다.",
+      avoid:
+        "유행 끝물 상품, 대량 재고, 카드값으로 버티는 장사, 월세 먼저 나가는 매장, 남들이 대박 났다는 상품은 버려라. 팔리기 전에 돈이 먼저 나가면 복보다 부담이 먼저 붙는다.",
+    };
+  }
+
+  if (pattern === "skill_price_builder") {
+    return {
+      workAnswer:
+        "너는 물건보다 기술값을 받아야 돈이 남는 사주다. 회사 안에서는 설비, 품질, 현장관리, 기술지원, 고객관리처럼 문제를 잡고 끝내는 자리를 잡아라.",
+      earn:
+        "밖으로 돈을 만들면 수리, 설치, 세팅, 유지보수, 정기 점검, 납품 후 사후관리, 예약제 서비스로 받아라. '이 일 해주면 얼마'가 바로 나오는 메뉴를 만들어야 돈이 남는다.",
+      start:
+        "처음부터 사무실 차리고 사람 쓰지 마라. 네가 직접 끝낼 수 있는 서비스 3개를 만들고 가격을 붙여라. 방문비, 작업비, 부품비, 사후관리 기한을 처음부터 정해라.",
+      avoid:
+        "공짜로 더 해주는 일, 지인 부탁, 돈 얘기 못 하고 몸만 쓰는 일, 끝이 없는 AS는 버려라. 잘해주기만 하면 복이 아니라 피로가 먼저 붙는다.",
+    };
+  }
+
+  if (pattern === "knowledge_packager") {
+    return {
+      workAnswer:
+        "너는 무작정 장사판으로 뛰는 사주가 아니다. 회사 안에서는 구매, 소싱, 견적비교, 기획, 운영관리, 품질관리처럼 비교하고 정리해서 돈을 아끼거나 남기는 자리를 잡아라.",
+      earn:
+        "밖으로 돈을 만들면 정보가 돈이 되는 일을 잡아라. 제품 비교, 견적 정리, 소싱 대행, 구매대행, 거래처 조사, 필요한 물건을 찾아 연결해주는 일이다.",
+      start:
+        "머릿속에만 두면 돈이 안 된다. 비교표, 견적서, 납기표, 원가표, 거래처 리스트로 꺼내라. 네 생각이 문서와 거래로 바뀌는 순간 돈길이 열린다.",
+      avoid:
+        "공부만 늘리고 실행 없는 것, 말만 많은 사람과 붙는 것, 돈 받을 구조 없이 정보만 퍼주는 것, 무료 상담처럼 빠지는 일은 버려라.",
+    };
+  }
+
+  if (pattern === "relationship_settlement") {
+    return {
+      workAnswer:
+        "너는 혼자 틀어박혀 하는 일보다 사람 사이에서 돈길을 보는 사주다. 회사라면 영업관리, 거래처관리, 구매, 납품, 고객관리를 잡아라.",
+      earn:
+        "밖으로는 중개, 소개, 대행, 납품 연결이 맞다. 물건만 올려놓는 온라인몰보다 필요한 사람과 필요한 물건을 이어주고, 수수료·납품 마진·관리비·소개비를 받는 구조를 잡아라.",
+      start:
+        "친분으로 시작하지 마라. 금액, 역할, 입금일, 책임 범위를 먼저 정해라. 사람복이 돈복이 되려면 정이 아니라 계약과 입금일이 있어야 한다.",
+      avoid:
+        "지인과 대충 시작하는 동업, 돈 나누는 기준 없는 소개, 미안해서 못 받는 돈, 좋은 사람 노릇으로 끝나는 일은 버려라. 정으로 시작한 돈은 나중에 악운으로 돌아온다.",
+    };
+  }
+
+  if (pattern === "slow_asset_accumulator") {
+    return {
+      workAnswer:
+        "너는 급하게 창업해서 한 방에 뒤집는 사주가 아니다. 회사든 사업이든 고정으로 들어오는 돈을 깔고, 늦게라도 남는 돈을 쌓는 구조를 잡아라.",
+      earn:
+        "회사 안에서는 관리, 운영, 구매, 품질, 현장관리처럼 오래 갈 수 있는 자리를 잡아라. 밖으로는 정기 납품, 반복 주문, 위탁, 관리대행처럼 한 번 팔고 끝나지 않는 돈을 잡아라.",
+      start:
+        "처음에는 작아 보여도 반복되는 돈을 잡아라. 매달 들어오는 돈, 재고가 오래 묶이지 않는 돈, 계약과 납기가 분명한 돈이 네 사주에서 커진다.",
+      avoid:
+        "빚내서 크게 여는 가게, 급등주식·코인 같은 한 방 돈, 남들이 뛰어든다고 따라가는 장사, 월 고정비가 먼저 커지는 판은 버려라. 이 사주는 빠른 돈보다 지키는 돈에서 커진다.",
+    };
+  }
+
+  if (pattern === "high_leakage_controller") {
+    return {
+      workAnswer:
+        "장사를 하느냐 회사에 있느냐보다 먼저 볼 게 있다. 너는 돈이 들어와도 새는 구멍을 막지 않으면 어떤 판에 있어도 남는 게 약하다.",
+      earn:
+        "돈은 재고 없는 판매, 예약제 서비스, 납품 연결, 구매대행, 수수료형 일에서 붙는다. 회사 안에서는 돈, 물건, 사람, 입금일을 확인하는 관리 자리에서 돈눈이 산다.",
+      start:
+        "먼저 돈 새는 관계를 끊어라. 그다음 작은 판에서 실제로 남는지 봐라. 팔리는 것보다 남는 것이 먼저다. 남는 금액이 안 보이면 시작하지 마라.",
+      avoid:
+        "정 때문에 빌려주는 돈, 지인 부탁으로 들어가는 돈, 빨리 벌겠다고 먼저 넣는 돈, 내역이 흐린 돈은 버려라. 이 네 개가 돈복을 가장 많이 막는다.",
+    };
+  }
+
+  return base;
+}
+
+
+function getWebtoonClosingPage(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  script: WebtoonCategoryScript;
+  manse: any;
+  partnerManse?: any | null;
+}) {
+  const title = params.categoryTitle || "";
+  const moneyTiming = getMoneyTimingText(params.user, params.manse);
+  const moneyDirection = getConcreteMoneyDirection(params.manse);
+  const career = getCareerArchetype(params.manse);
+  const careerProfile = getCareerProfile(params.manse);
+  const health = getHealthProfile(params.manse);
+  const love = getLovePartnerProfile(params.manse);
+  const loveTiming = getLoveTimingProfile(params.manse);
+  const marriage = getMarriageTimingProfile(params.manse);
+  const marriagePartner = getMarriagePartnerProfile(params.manse);
+  const ghost = getRepeatGhostProfile(params.user, params.manse);
+
+  if (params.categoryId === "today" || title.includes("오늘")) {
+    return {
+      title: "오늘 최종 판정",
+      text: comicText(
+        params.script.final,
+        `오늘 잡을 건 이것이다. ${params.script.yearChance}`,
+        `오늘 버릴 건 이것이다. ${params.script.avoid}`,
+        `말은 짧게, 돈은 늦게, 사람 반응은 한 박자 뒤에 봐라. 오늘 운은 크게 맞히는 사람이 아니라 새는 구멍을 먼저 막는 사람이 이긴다.`,
+      ),
+    };
+  }
+
+  if (params.categoryId === "money" || title.includes("재물")) {
+    const grade = getMoneyGrade(params.manse);
+    return {
+      title: "재물운 최종 판정",
+      text: comicText(
+        `재물운은 '${grade}'로 찍는다. 돈복은 있다. 문제는 돈복이 열리는 방식이 좁고, 새는 문도 같이 보인다는 것이다.`,
+        `시기는 ${moneyTiming.firstMoneyAge}~${moneyTiming.firstMoneyAge + 2}세에 돈눈이 뜨고, ${moneyTiming.strongMoneyAge}~${moneyTiming.strongMoneyAge + 3}세에 돈길이 단단해진다. ${moneyTiming.assetAge}세 이후에는 빨리 버는 돈보다 지키고 쌓는 돈이 강해진다.`,
+        `올해는 ${moneyTiming.moneyMoveMonth}월에 돈 이야기가 움직이고, ${moneyTiming.moneyLeakMonth}월에는 돈이 샌다. ${moneyTiming.moneyCatchMonth}월에는 다시 잡을 기회가 온다.`,
+        moneyDirection.workAnswer,
+        moneyDirection.earn,
+        `시작은 이렇게 해라. ${moneyDirection.start}`,
+        `버릴 것은 이것이다. ${moneyDirection.avoid}`,
+        `최종 판정은 이거다. 너는 아무 장사나 벌려서 돈 버는 사주가 아니다. 돈의 입구와 출구가 보이는 판, 재고가 오래 묶이지 않는 판, 네 역할값이 분명한 판에서 돈이 열린다.`,
+      ),
+    };
+  }
+
+  if (isCareerCategory(params.categoryId, title)) {
+    return {
+      title: "일·사업운 최종 판정",
+      text: comicText(
+        `일·사업 판정은 '${career.combined}'이다. 이 판정은 뒤집지 않는다. 시키는 일만 하다 끝날 사주가 아니다. 네 판단과 네 역할이 들어가야 일이 산다.`,
+        `회사에 있으면 ${careerProfile.action.join(", ")} 중에서 견적·단가·납기·거래처·입금일을 직접 보는 자리를 잡아라. 그냥 오래 버티는 일은 버려라.`,
+        `밖으로 판을 열면 ${career.warning} 쪽은 버려라. 처음부터 돈, 책임, 사람을 크게 안는 판은 복보다 부담이 먼저 붙는다.`,
+        `피할 일은 ${careerProfile.avoid.join(", ")}이다. 이 일은 이름도 몫도 남기지 않는다.`,
+        `최종 판정은 이거다. 회사냐 사업이냐가 핵심이 아니다. 네가 무엇을 맡고, 얼마가 남고, 언제 돈이 들어오는지 보이는 일이냐가 핵심이다. 이 네 개가 없으면 바빠도 운이 눌린다.`,
+      ),
+    };
+  }
+
+  if (isLoveMarriageCategory(params.categoryId, title)) {
+    return {
+      title: "사랑·결혼운 최종 판정",
+      text: comicText(
+        `인연운은 있다. 그런데 아무나 만나서 편해지는 사주가 아니다. 마음을 흔드는 사람과 오래 가는 사람을 갈라야 한다.`,
+        `올해 인연운은 이렇게 찍는다. ${loveTiming.chance}`,
+        `인연 시기는 ${loveTiming.timing}이다. 결혼까지 보는 시기는 ${marriage.timing}이고, ${marriage.timingReason}`,
+        `잡을 사람은 ${love.good}이다. ${love.reason}`,
+        `피할 사람은 ${love.avoid}이다. 이런 사람은 처음엔 설레도 끝에 가면 네 마음만 늙힌다.`,
+        `결혼으로 보면 ${marriagePartner.good}을 잡고, ${marriagePartner.avoid}은 버려라. 결혼 전에는 ${marriagePartner.check}을 반드시 확인해라.`,
+        `최종 판정은 이거다. 너는 인연이 없는 사주가 아니다. 피해야 할 사람에게 먼저 흔들리는 사주다. 사람을 고르는 기준을 바꾸면 인연운이 열린다.`,
+      ),
+    };
+  }
+
+  if (
+    isCompatibilityCategory(params.categoryId, title) ||
+    isPartnerCategory(params.categoryId, title)
+  ) {
+    const isBusiness =
+      isPartnerCategory(params.categoryId, title) ||
+      params.user.compatibilityType === "사업파트너 궁합";
+    const score = isBusiness
+      ? getBusinessPartnerScore(params.manse, params.partnerManse || null)
+      : getCompatibilityScore(params.manse, params.partnerManse || null);
+    return {
+      title: isBusiness ? "사업파트너 궁합 최종 판정" : "궁합 최종 판정",
+      text: comicText(
+        `점수는 ${score.score}점, '${score.grade}'이다. ${score.summary}`,
+        isBusiness
+          ? `이 관계는 친하냐보다 같이 돈을 만들 수 있느냐가 먼저다. 역할, 수익배분, 비용부담, 결정권을 흐리면 돈부터 깨진다.`
+          : `끌림은 있다. 하지만 끌림과 같이 사는 운은 다르다. 말투, 돈 기준, 생활 리듬, 가족 거리감이 맞아야 오래 간다.`,
+        `조심할 건 ${score.risk}이다. ${params.script.avoid}`,
+        `잡을 건 ${params.script.choose}`,
+        isBusiness
+          ? `최종 판정은 이거다. 계약 없이 의리로 가면 깨진다. 역할과 돈 기준을 문서처럼 선명하게 잡으면 같이 갈 수 있다.`
+          : `최종 판정은 이거다. 좋아하는 마음만으로 밀면 안 된다. 이 관계는 생활 기준을 맞추면 살고, 감정만 믿으면 지친다.`,
+      ),
+    };
+  }
+
+  if (params.categoryId === "health" || title.includes("건강")) {
+    return {
+      title: "건강운 최종 판정",
+      text: comicText(
+        `건강운은 '${getHealthGrade(params.manse)}'로 찍는다. 몸이 약해서 바로 무너지는 사주가 아니다. 버티다가 늦게 꺼지는 사주다.`,
+        `먼저 잡을 신호는 ${health.type}이다. ${health.risk}`,
+        `오늘부터 바꿀 건 ${health.action.join(", ")}이다. 이건 선택이 아니라 몸이 운을 받기 위한 기본값이다.`,
+        `버릴 건 ${health.avoid.join(", ")}이다. 이걸 계속하면 운이 들어와도 몸이 못 받친다.`,
+        `최종 판정은 이거다. 네 건강은 병명 맞히는 문제가 아니다. 잠, 소화, 피로, 목어깨 중 먼저 무너지는 자리를 잡아야 돈과 일도 오래 간다.`,
+      ),
+    };
+  }
+
+  if (isMonthlyCategory(params.categoryId, title)) {
+    return {
+      title: "올해운세 최종 판정",
+      text: comicText(
+        `올해는 한 줄로 끝나는 해가 아니다. 움직일 달과 멈출 달이 갈린다.`,
+        `돈은 ${moneyTiming.moneyMoveMonth}월에 움직이고, ${moneyTiming.moneyLeakMonth}월에 샌다. ${moneyTiming.moneyCatchMonth}월에는 다시 잡을 문이 온다.`,
+        `일은 '${career.combined}' 판정대로 움직인다. 역할과 결과가 보이는 달에는 잡고, 감정으로 벌리는 달에는 멈춰라.`,
+        `사람관계는 ${params.script.people}`,
+        `몸은 ${health.type}을 먼저 잡아라. 올해 몸이 무너지면 좋은 달도 못 받친다.`,
+        `최종 판정은 이거다. 올해는 무조건 밀어붙이는 해가 아니다. 움직일 달에는 잡고, 새는 달에는 말·돈·사람을 줄여라.`,
+      ),
+    };
+  }
+
+  if (
+    params.categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
+    return {
+      title: "인생대운 최종 판정",
+      text: comicText(
+        `인생대운은 전체 종합풀이가 아니다. 어느 나이대에 문이 열리고, 어느 나이대에 잘못 잡으면 꺾이는지를 보는 메뉴다.`,
+        getConcreteLifeTimingSummary(params.user, params.manse),
+        `큰 방향 전환은 ${getMajorLuckChanceCount(params.manse)}번 들어온다. 제일 중요한 문은 ${getMostImportantLuckPhase(params.manse)}이다. 이때 이직, 업종 변경, 거래처 변경, 거주지 변화, 사람 정리 중 하나가 실제로 움직인다.`,
+        `이 시기에 잡을 신호는 분명하다. 월급만 오르는 일이 아니라 맡는 권한이 커지는 일, 거래처나 고객이 새로 붙는 일, 돈 받을 날짜와 금액이 문서로 보이는 일, 오래 끌던 사람관계가 정리되는 일이다.`,
+        `이 시기에 버릴 것도 분명하다. 부탁 때문에 떠안는 일, 지인 말만 듣고 들어가는 돈, 재고·월세·광고비가 먼저 나가는 판, 입금일 없이 몸만 쓰는 일이다. 이 네 개는 대운 문 앞에서 발목을 잡는다.`,
+        `인생대운 결론은 이거다. 초년이 답답했다고 평생 같은 운이 아니다. ${getMostImportantLuckPhase(params.manse)}에 들어오는 변화는 그냥 지나가면 안 된다. 그때 돈 받을 날짜, 맡는 역할, 책임 범위, 같이 가는 사람을 잘라서 고르면 판이 바뀐다.`,
+      ),
+    };
+  }
+
+  if (
+    params.categoryId === "traditional" ||
+    title.includes("평생") ||
+    isChildrenCategory(params.categoryId, title)
+  ) {
+    return {
+      title: "평생종합 최종 판정",
+      text: comicText(
+        `평생종합은 인생대운처럼 시기만 보는 메뉴가 아니다. 돈, 일, 사람, 몸, 가족·자식, 말년까지 한꺼번에 묶어서 보는 전체판이다.`,
+        `시기부터 찍는다. 초년은 책임과 눈치가 먼저 붙고, 20대에는 방향을 찾느라 흔들린다. 30대 중반부터 돈을 보는 눈이 뜨고, 40대 초중반부터 일과 돈이 굵어진다. 말년은 새로 벌리는 운보다 지키는 돈, 몸, 사람 거리에서 편해진다.`,
+        `돈은 이렇게 잡는다. ${moneyDirection.workAnswer} ${moneyDirection.earn}`,
+        `회사 안에 있으면 '${career.combined}' 판정대로 간다. 그냥 오래 앉아 있는 자리가 아니다. 견적, 단가, 납기, 거래처, 입금일, 원가, 재고를 직접 보는 자리를 잡아라. 이 숫자들을 못 보는 일은 오래 해도 돈눈이 안 뜬다.`,
+        `밖으로 돈을 만들면 ${moneyDirection.start} 재고를 오래 안고 기다리는 장사, 월세부터 나가는 매장, 광고비 먼저 태우는 온라인몰은 버려라. 주문, 견적, 납기, 입금일이 먼저 보이는 돈만 잡아라.`,
+        `사람은 정으로 보면 망한다. ${ghost.primary}이 반복된다. ${ghost.risk} 불쌍해서 챙기는 사람, 책임을 네 쪽으로 미루는 사람, 돈과 시간을 계속 빼가는 사람은 끊어라. 가까운 사람이라도 생활비·보증·빚·감정노동을 떠넘기면 복이 아니다.`,
+        `몸은 '${getHealthGrade(params.manse)}'로 찍는다. ${health.type}을 먼저 잡아라. ${health.action.join(", ")}부터 바꾸고, ${health.avoid.join(", ")}은 버려라. 네 사주는 몸을 갈아 넣어서 평생운을 여는 사주가 아니다. 몸이 무너지면 돈과 사람도 같이 샌다.`,
+        `가족·자식운은 자식 수나 성별을 맞히는 문제가 아니다. 기대를 앞세우면 관계가 무거워지고, 돈 기준을 흐리면 가족 안에서 피로가 쌓인다. 도와줄 돈, 못 도와줄 돈, 같이 살 거리, 감정노동의 선을 정해야 가족복이 남는다.`,
+        `평생종합 결론은 이거다. 너는 초년부터 편하게 풀리는 사주는 아니다. 30대 중반부터 돈눈이 뜨고 40대 초중반부터 일과 돈이 굵어진다. 그때 잡을 건 견적·단가·납기·거래처·입금일이 보이는 일이고, 버릴 건 정 때문에 떠안는 사람, 재고·월세·광고비가 먼저 나가는 판, 잠·소화·피로를 무시하는 생활이다.`,
+      ),
+    };
+  }
+
+  const domain = getPremiumQuestionDomain(safeText(params.user.question, ""));
+  return {
+    title: "내 고민 최종 판정",
+    text: comicText(
+      `이 질문의 핵심은 ${domain.focus}이다. 답을 흐리면 안 된다.`,
+      `판단 기준은 ${domain.criteria.join(", ")}이다. 이 기준에서 벗어나면 답은 틀린다.`,
+      `피해야 할 선택은 ${domain.avoid.join(", ")}이다.`,
+      `잡아야 할 행동은 ${domain.action.join(", ")}이다.`,
+      `최종 판정은 이거다. 이 고민은 오래 생각한다고 풀리는 문제가 아니다. 해도 되는지, 멈춰야 하는지, 기다려야 하는지를 사주판 기준으로 잘라야 한다.`,
+    ),
+  };
+}
+
+function getWebtoonCategoryScript(params: {
   user: UserInfo;
   categoryId: CategoryId;
   categoryTitle: string;
   manse: any;
   partnerManse?: any | null;
-}) {
-  const { user, categoryId, categoryTitle, manse, partnerManse } = params;
-  const name = getName(user);
+  fortuneSeed?: number;
+}): WebtoonCategoryScript {
+  const { user, categoryId, categoryTitle, manse, partnerManse, fortuneSeed } =
+    params;
   const title = categoryTitle || "";
 
+  if (categoryId === "today" || title.includes("오늘")) {
+    return getTodayScript(getTodayTone({ user, manse, fortuneSeed }));
+  }
+
   if (categoryId === "money" || title.includes("재물")) {
-    return `${name}, 네 돈복은 '${getMoneyGrade(manse)}'으로 본다. 돈이 없는 사주가 아니라, 돈이 붙는 자리와 새는 자리가 분명한 사주다.`;
+    const grade = getMoneyGrade(manse);
+    const timing = getMoneyTimingText(user, manse);
+    return {
+      opening: "어? 너 돈복이 작진 않은데?",
+      bigLuckTitle: "이거 일반 재물운은 아니다",
+      bigLuckText: `돈복 등급은 '${grade}'이다. 작게만 벌고 끝날 사주는 아니다. 다만 이 돈복은 아무 데서나 열리는 게 아니라, 돈을 버는 방식이 맞아야 커진다.`,
+      twistTitle: "근데 이상하지?",
+      twistText:
+        "돈복은 보이는데 왜 아직 손에 크게 잡힌 게 없을까. 여기서 하나가 막혀 있다.",
+      blockedTitle: "돈길을 막는 문",
+      blockedText:
+        "돈이 없는 게 문제가 아니다. 들어오기 전에 빠져나가는 문이 먼저 열린다.",
+      ghostTitle: "새는돈귀신",
+      ghostText:
+        "정 때문에 새고, 사람 말에 끌려가서 새고, 급하게 잡은 돈에서 샌다. 이게 네 돈복을 늦춘다.",
+      blessingTitle: "돈길이 열리는 자리",
+      blessingText:
+        "흐름을 직접 보고, 내 몫이 분명하고, 돈이 어디서 들어와 어디로 나가는지 보이는 자리에서 재물운이 산다.",
+      detailA: getConcreteMoneyDirection(manse).workAnswer,
+      detailB: getConcreteMoneyDirection(manse).earn,
+      timing: timing.text,
+      people:
+        "사람 때문에 돈이 새는 흐름이 있다. 친하다고 흐려지는 돈, 미안해서 쓰는 돈, 거절 못 해서 나가는 돈이 약하다.",
+      money:
+        "돈은 벌 수 있다. 문제는 남기는 힘이다. 들어오는 돈보다 빠지는 돈을 먼저 막아야 손에 잡힌다.",
+      body: "돈 움직일 때 몸도 같이 긴장한다. 잠 줄이고 무리해서 잡는 돈은 오래 못 간다.",
+      yearCaution: `올해 ${timing.moneyLeakMonth}월 전후에는 사람이나 급한 지출 때문에 돈이 새기 쉽다.`,
+      yearChance: `올해 ${timing.moneyMoveMonth}월과 ${timing.moneyCatchMonth}월 전후에는 돈 이야기가 움직이고 다시 잡을 기회가 보인다.`,
+      avoid: getConcreteMoneyDirection(manse).avoid,
+      choose: getConcreteMoneyDirection(manse).start,
+      final:
+        "결론은 이거다. 너는 돈복이 없는 게 아니다. 돈복이 네 손에 닿기 전에 새는 문부터 닫아야 한다.",
+      mood: "gold",
+    };
   }
 
   if (isCareerCategory(categoryId, title)) {
-    return `${name}, 너는 '${getCareerArchetype(manse).combined}'에 가깝다. 일은 이름보다 네 역할과 몫이 남는 구조를 봐야 한다.`;
+    const career = getCareerArchetype(manse);
+    return {
+      opening: "어? 너 일운이 가볍진 않은데?",
+      bigLuckTitle: "시키는 일만 하다 끝날 사주는 아니다",
+      bigLuckText: `너는 '${career.combined}'에 가깝다. 네 이름, 네 역할, 네 판단이 들어가야 일이 살아난다.`,
+      twistTitle: "근데 이상하다",
+      twistText:
+        "일은 하는데 왜 네 몫은 늦게 올까. 책임은 네가 지고 결과는 남한테 가는 자리, 거기서 운이 막힌다.",
+      blockedTitle: "일복이 눌리는 자리",
+      blockedText: `네 일운을 막는 건 ${career.warning}이다. 여기 들어가면 바쁘기만 하고 남는 게 약하다.`,
+      ghostTitle: "남좋은일귀신",
+      ghostText:
+        "일은 네가 하고, 이름은 남이 가져가고, 책임만 남는 흐름. 이게 반복되면 일복이 돈복으로 못 바뀐다.",
+      blessingTitle: "이름값이 붙는 일",
+      blessingText:
+        "역할이 분명하고 결과가 남고, 네 판단이 들어가는 일에서 복이 붙는다.",
+      detailA:
+        "직업명보다 구조를 봐야 한다. 같은 회사 일도 네 몫이 보이면 살고, 흐리면 눌린다.",
+      detailB:
+        "판을 열어도 된다면 천천히가 아니라 정확히 열어야 한다. 먼저 빠지는 돈, 책임, 시간부터 봐야 한다.",
+      timing:
+        "올해 일운은 한 번에 터지기보다 방향을 고르는 흐름이다. 움직일 때와 버틸 때를 헷갈리면 힘만 빠진다.",
+      people:
+        "일에서 조심할 사람은 말만 많고 책임을 나누지 않는 사람이다. 가까워 보여도 네 일을 흐리게 만든다.",
+      money:
+        "일복이 돈복으로 바뀌려면 네가 한 만큼 돌아오는 구조가 있어야 한다.",
+      body: "일 때문에 몸을 너무 갈면 운이 와도 못 잡는다. 피로가 쌓이는 방식부터 봐야 한다.",
+      yearCaution: "올해는 감정으로 퇴사하거나 급하게 벌리는 선택이 약하다.",
+      yearChance:
+        "올해 잡을 건 네 역할이 선명해지는 자리다. 직함보다 실제 권한과 결과를 봐라.",
+      avoid:
+        "책임만 큰 자리, 이름이 안 남는 일, 돈부터 빠지는 판. 이건 피해야 한다.",
+      choose:
+        "네 판단이 들어가고 결과가 남고, 다음 일이 이어지는 자리를 잡아라.",
+      final:
+        "결론은 이거다. 너는 남 좋은 일만 하다 끝날 사주가 아니다. 네 몫이 보이는 자리로 가야 산다.",
+      mood: "redDark",
+    };
+  }
+
+  if (isLoveMarriageCategory(categoryId, title)) {
+    const love = getLovePartnerProfile(manse);
+    const marriage = getMarriageTimingProfile(manse);
+    return {
+      opening: "어? 너 인연운이 없는 사람은 아닌데?",
+      bigLuckTitle: "사람이 안 들어오는 사주는 아니다",
+      bigLuckText:
+        "오히려 마음을 건드리는 인연은 들어온다. 문제는 좋은 사람보다 먼저 흔드는 사람이 보인다는 거다.",
+      twistTitle: "근데 왜 끝이 이상하지?",
+      twistText:
+        "처음엔 끌리는데 끝에 가면 네 마음만 늙는 관계. 그 흐름이 사주 안에 보인다.",
+      blockedTitle: "인연을 막는 자리",
+      blockedText:
+        "인연이 없는 게 아니다. 피해야 할 사람한테 먼저 흔들리면 좋은 사람 자리가 비어 있지 않는다.",
+      ghostTitle: "헛정귀신",
+      ghostText:
+        "말은 달콤한데 행동이 늦고, 가까운 척하지만 책임이 흐린 사람. 이런 사람한테 마음을 쓰면 인연운이 흐려진다.",
+      blessingTitle: "인연등불",
+      blessingText: `잘 맞는 사람은 ${love.good}이다. 설렘보다 오래 편해지는 사람이 복이다.`,
+      detailA: `피해야 할 사람은 ${love.avoid}이다. 처음 끌려도 이 타입은 오래 보면 마음이 늙는다.`,
+      detailB: `잘 맞는 상대의 분위기는 ${love.jobs} 쪽이다. 화려함보다 생활 리듬이 맞는지를 봐야 한다.`,
+      timing: `${marriage.chance} 인연이 살아나는 시기는 ${getLoveTimingProfile(manse).timing} 전후로 본다.`,
+      people: "가까워질수록 말투와 책임감이 드러난다. 말보다 반복 행동을 봐라.",
+      money:
+        "관계에서 돈 기준이 흐려지면 마음도 같이 흔들린다. 초반부터 시간과 돈의 선을 봐야 한다.",
+      body: "마음이 피곤한 관계는 몸도 무겁게 만든다. 설레는데 자꾸 지치면 그건 좋은 인연이 아니다.",
+      yearCaution: "올해는 외로움 때문에 아무 사람이나 붙잡는 선택이 약하다.",
+      yearChance: `올해 인연운은 ${getLoveTimingProfile(manse).chance}`,
+      avoid:
+        "확답 없는 사람, 책임 흐린 사람, 말만 뜨거운 사람. 이 셋은 피해야 한다.",
+      choose:
+        "반복 행동이 일정하고, 불편한 말도 피하지 않고, 생활 리듬이 맞는 사람을 봐라.",
+      final:
+        "결론은 이거다. 너는 인연이 없는 게 아니다. 먼저 흔드는 사람을 걸러야 진짜 인연이 보인다.",
+      mood: "mist",
+    };
+  }
+
+  if (
+    isCompatibilityCategory(categoryId, title) ||
+    isPartnerCategory(categoryId, title)
+  ) {
+    const isBusiness =
+      isPartnerCategory(categoryId, title) ||
+      user.compatibilityType === "사업파트너 궁합";
+    const score = isBusiness
+      ? getBusinessPartnerScore(manse, partnerManse || null)
+      : getCompatibilityScore(manse, partnerManse || null);
+    return {
+      opening: isBusiness
+        ? "어? 같이 돈 이야기는 나올 수 있는 궁합인데?"
+        : "어? 둘이 아예 안 맞는 궁합은 아닌데?",
+      bigLuckTitle: isBusiness
+        ? "좋은 사람이랑 돈 버는 사람은 다르다"
+        : "끌림은 있다",
+      bigLuckText: isBusiness
+        ? `동업궁합은 ${score.score}점, '${score.grade}'으로 본다. 같이 움직일 수는 있지만 돈 기준을 봐야 한다.`
+        : `두 사람의 궁합은 ${score.score}점, '${score.grade}'으로 본다. 처음 마음이 움직이는 이유는 있다.`,
+      twistTitle: "근데 여기서 봐야 할 게 있다",
+      twistText: isBusiness
+        ? "친하다고 같이 돈을 벌 수 있는 건 아니다. 역할, 돈 기준, 책임에서 진짜 궁합이 갈린다."
+        : "좋아하는 마음이랑 끝까지 같이 가는 운은 다르다.",
+      blockedTitle: "갈리는 자리",
+      blockedText: score.risk,
+      ghostTitle: isBusiness ? "몫다툼귀신" : "감정귀신",
+      ghostText: isBusiness
+        ? "처음엔 같이 가자고 하지만, 돈이 들어오면 누가 했고 누가 가져가는지가 나온다."
+        : "좋을 때는 다 맞는 것 같아도, 피곤할 때 말투와 책임에서 진짜 모습이 나온다.",
+      blessingTitle: isBusiness ? "맞물림복" : "인연맞물림",
+      blessingText: score.summary,
+      detailA: isBusiness
+        ? "같이 일하려면 역할을 먼저 잘라야 한다. 좋은 말보다 누가 무엇을 맡는지가 중요하다."
+        : "연애로 좋은 궁합과 결혼까지 가는 궁합은 다르다. 생활 기준을 봐야 한다.",
+      detailB: isBusiness
+        ? "돈 기준을 말로만 넘기면 나중에 관계보다 돈이 먼저 깨진다."
+        : "가까워질수록 돈, 가족, 말투, 쉬는 방식이 드러난다.",
+      timing:
+        "이 관계는 빠르게 확정하기보다 반복 상황을 봐야 한다. 좋은 때보다 불편할 때의 태도가 답이다.",
+      people:
+        "둘 사이에 제3자의 말이 끼면 흐려질 수 있다. 둘이 직접 정한 기준이 있어야 한다.",
+      money: isBusiness
+        ? "수익 배분, 비용 부담, 결정권을 미리 정하지 않으면 복이 아니라 다툼이 된다."
+        : "연인 궁합도 돈 기준이 맞아야 오래 간다. 쓰는 방식이 다르면 마음도 피곤해진다.",
+      body: "관계가 맞으면 몸이 편하고, 안 맞으면 계속 긴장한다. 몸이 먼저 알려준다.",
+      yearCaution: "지금 조심할 건 감정만 보고 확정하는 선택이다.",
+      yearChance:
+        "좋아지는 조건은 선명하다. 말보다 역할, 책임, 생활 기준을 맞춰라.",
+      avoid: isBusiness
+        ? "계약 없는 동업, 친분으로 나누는 돈, 책임 흐린 역할은 피해야 한다."
+        : "좋아한다는 말만 믿고 생활 기준을 나중으로 미루는 건 피해야 한다.",
+      choose: isBusiness
+        ? "역할, 돈 기준, 빠져나오는 조건까지 정하면 같이 갈 수 있다."
+        : "끌림보다 반복 행동, 말투, 돈 기준, 가족 거리감을 봐라.",
+      final: isBusiness
+        ? "결론은 이거다. 같이 돈 이야기는 가능하다. 다만 기준 없이 가면 돈보다 관계가 먼저 깨진다."
+        : "결론은 이거다. 안 맞는 궁합은 아니다. 근데 좋아하는 마음만으로 끝까지 가는 궁합도 아니다.",
+      mood: "redDark",
+    };
   }
 
   if (categoryId === "health" || title.includes("건강")) {
-    return `${name}, 네 건강운은 '${getHealthGrade(manse)}'으로 본다. 몸이 약해서가 아니라 오래 버티다가 꺼지는 흐름을 조심해야 한다.`;
-  }
-
-  if (isPartnerCategory(categoryId, title)) {
-    const score = getBusinessPartnerScore(manse, partnerManse || null);
-    return `두 사람의 동업궁합은 ${score.score}점, '${score.grade}'으로 본다. 같이 벌 수 있는지는 역할과 돈 기준에서 갈린다.`;
-  }
-
-  if (isCompatibilityCategory(categoryId, title)) {
-    const score = getCompatibilityScore(manse, partnerManse || null);
-    return `두 사람의 궁합은 ${score.score}점, '${score.grade}'으로 본다. 끌림보다 오래 갈 기준을 봐야 한다.`;
+    const health = getHealthProfile(manse);
+    const grade = getHealthGrade(manse);
+    return {
+      opening: "어? 너 몸이 약한 사주는 아닌데?",
+      bigLuckTitle: "버티는 힘은 있다",
+      bigLuckText: `네 건강운은 '${grade}'으로 본다. 약해서 무너지는 게 아니라 버티는 힘이 있어서 늦게 꺼지는 쪽이다.`,
+      twistTitle: "그래서 더 문제다",
+      twistText:
+        "약한 사람은 빨리 멈춘다. 너는 끝까지 간다. 그러다 어느 순간 확 꺼진다.",
+      blockedTitle: "몸이 먼저 막히는 자리",
+      blockedText: health.core,
+      ghostTitle: "피로귀신",
+      ghostText:
+        "피곤한데 괜찮은 척하고, 속이 불편한데 넘기고, 잠이 부족한데 밀어붙이는 흐름이 붙는다.",
+      blessingTitle: "회복문",
+      blessingText: health.direction,
+      detailA:
+        "몸이 보내는 신호는 사소한 게 아니다. 잠, 소화, 피로, 목어깨 중 먼저 흔들리는 곳이 있다.",
+      detailB:
+        "이 신호를 잡으면 운이 들어올 때 몸이 받친다. 못 잡으면 좋은 일 앞에서도 지친다.",
+      timing:
+        "무리한 날 바로 무너지는 게 아니라 며칠 뒤에 피로가 올라올 수 있다. 누적을 봐야 한다.",
+      people:
+        "사람 때문에 리듬 깨지는 게 약하다. 부탁, 약속, 눈치 때문에 쉬는 시간을 뺏기면 몸이 먼저 반응한다.",
+      money:
+        "건강운이 흔들리면 돈도 샌다. 병원비보다 먼저 빠지는 건 집중력과 일의 흐름이다.",
+      body: health.risk,
+      yearCaution: "올해 조심할 건 버티면 괜찮겠지 하는 생각이다.",
+      yearChance:
+        "수면, 식사, 걷기 리듬을 잡는 시기에는 몸운이 빠르게 안정된다.",
+      avoid: health.avoid.join(", "),
+      choose: health.action.join(", "),
+      final:
+        "결론은 이거다. 너는 약해서 문제가 아니라 너무 버텨서 문제다. 꺼지기 전에 멈추면 산다.",
+      mood: "mist",
+    };
   }
 
   if (isMonthlyCategory(categoryId, title)) {
-    return `${name}, 올해는 아무 달이나 움직이는 해가 아니다. 돈, 일, 사람, 몸에서 강한 달과 피해야 할 달이 갈린다.`;
+    return {
+      opening: "어? 올해 운이 한 줄로 끝날 해는 아닌데?",
+      bigLuckTitle: "좋은 달은 분명히 있다",
+      bigLuckText:
+        "올해는 무조건 나쁜 해도 아니고, 무조건 밀어붙일 해도 아니다. 운이 붙는 달이 따로 보인다.",
+      twistTitle: "근데 나쁜 달도 같이 세다",
+      twistText:
+        "움직일 달, 멈춰야 할 달, 돈이 붙는 달, 사람 때문에 꼬이는 달이 갈린다.",
+      blockedTitle: "올해 막히는 자리",
+      blockedText:
+        "달을 모르고 움직이면 복보다 손해가 먼저 붙는다. 좋은 달에 움직여야 산다.",
+      ghostTitle: "엇박자귀신",
+      ghostText:
+        "운이 약한 달에 큰 결정을 하고, 운이 강한 달에 머뭇거리면 한 해가 꼬인다.",
+      blessingTitle: "올해 천운문",
+      blessingText: "강한 달을 잡고 흔들리는 달을 피하면 올해 흐름이 달라진다.",
+      detailA:
+        "올해는 돈, 일, 사람, 몸이 한꺼번에 같은 방향으로 가지 않는다. 항목별로 달이 다르다.",
+      detailB:
+        "좋은 달엔 작게라도 움직이고, 약한 달엔 새는 것부터 막아야 한다.",
+      timing:
+        "1~12월을 전부 나열하는 게 아니라, 돈이 움직이는 달과 조심할 달을 찍어야 한다.",
+      people:
+        "사람관계가 흔들리는 달에는 말이 길어지면 손해다. 약속과 부탁을 줄여야 한다.",
+      money:
+        "돈이 붙는 달과 새는 달이 다르다. 같은 돈도 달에 따라 복이 되거나 부담이 된다.",
+      body: "몸운이 약한 달에는 좋은 일도 버거워진다. 무리한 일정부터 줄여라.",
+      yearCaution: "올해 조심할 건 아무 달이나 크게 움직이는 선택이다.",
+      yearChance: "올해 잡을 건 강한 달에 오는 연락, 제안, 돈의 움직임이다.",
+      avoid: "운이 약한 달의 큰돈, 큰 약속, 감정적 결정은 피해야 한다.",
+      choose: "운이 붙는 달엔 미루지 말고, 약한 달엔 정리하고 기다려라.",
+      final:
+        "결론은 이거다. 올해는 한 줄 운세가 아니다. 달을 갈라 봐야 복을 잡는다.",
+      mood: "gold",
+    };
   }
 
-  if (categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
-    return `${name}, 네 인생 흐름은 '${getLifeFlow(manse)}'으로 본다. 크게 방향이 바뀌는 대운 문을 놓치면 안 된다.`;
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
+    return {
+      opening: "어? 너 초반부터 편하게 풀리는 사주는 아닌데?",
+      bigLuckTitle: "근데 나이대가 바뀌면 문도 바뀐다",
+      bigLuckText: `인생대운은 전체 종합이 아니다. 초년, 20대, 30대, 40대, 말년에 어느 문이 열리는지 찍는 메뉴다. 네 인생 흐름은 '${getLifeFlow(manse)}'이다.`,
+      twistTitle: "초반이 전부가 아니다",
+      twistText:
+        "초년에 마음이 눌렸다고 그게 평생 결론은 아니다. 다만 그때 생긴 버릇을 계속 들고 가면 30대와 40대의 문 앞에서도 멈춘다.",
+      blockedTitle: "대운을 막는 착각",
+      blockedText:
+        "대운은 기분으로 열리지 않는다. 이직, 업종 변경, 거래처 변경, 이사, 사람 정리처럼 실제 사건으로 문이 열린다.",
+      ghostTitle: "초년막힘귀신",
+      ghostText:
+        "초반의 답답함을 자기 팔자 전체로 믿게 만드는 흐름이다. 이게 붙으면 바꿔야 할 때도 익숙한 고생을 붙잡는다.",
+      blessingTitle: "대운문",
+      blessingText: `크게 방향이 바뀌는 기회는 ${getMajorLuckChanceCount(manse)} 들어온다. 중요한 시기는 ${getMostImportantLuckPhase(manse)}이다.`,
+      detailA:
+        "초년은 버티는 시기다. 20대는 방향을 찾는 시기다. 30대 중반부터 돈과 일의 눈이 뜨고, 40대 초중반에는 직업·거래처·사람관계 중 하나를 갈아야 하는 문이 온다.",
+      detailB:
+        "인생대운에서 잡을 건 직업명 하나가 아니다. 어느 시기에 움직여야 하고, 어느 시기에는 버려야 하는지다.",
+      timing: `가장 중요한 대운은 ${getMostImportantLuckPhase(manse)}에 잡아야 한다. 이때 오는 변화는 미루면 늦어진다.`,
+      people:
+        "사람 책임을 떠안는 선택은 대운을 늦춘다. 특히 돈, 보증, 생활비, 감정노동을 네 쪽으로 미루는 사람은 이 시기에 정리해야 한다.",
+      money:
+        "돈은 초년보다 뒤에서 모양이 잡힌다. 대운기에 볼 것은 큰 말이 아니라 받을 금액, 입금일, 계약서, 견적서, 맡는 역할이다.",
+      body: "대운기에는 몸도 같이 본다. 잠, 소화, 피로가 망가지면 좋은 변화가 와도 오래 못 끌고 간다.",
+      yearCaution: "조심할 건 초년의 실패감 때문에 바꿀 때를 놓치는 것이다.",
+      yearChance:
+        "잡을 건 변화의 신호다. 직장 역할이 바뀌거나, 거래처가 생기거나, 돈 받는 구조가 달라지거나, 오래 끌던 사람이 정리되는 때다.",
+      avoid:
+        "익숙한 고생, 부탁 때문에 떠안는 일, 재고·월세·광고비가 먼저 나가는 판, 입금일 없는 일은 버려라.",
+      choose:
+        "대운 시기에는 받을 금액, 입금일, 맡는 역할, 책임 범위가 보이는 변화만 잡아라.",
+      final:
+        "결론은 이거다. 인생대운은 돈·일·사람·몸 전체를 길게 푸는 메뉴가 아니다. 어느 나이대에 바꿀 문이 오는지 찍는 메뉴다. 그 문은 중년 전후에 크게 열린다.",
+      mood: "redDark",
+    };
   }
 
-  return `${name}, 이 운은 지금 방향을 먼저 잡아야 풀리는 흐름이다. 감정으로 밀면 꼬이고, 사주가 가리키는 자리를 봐야 한다.`;
+  if (
+    categoryId === "traditional" ||
+    title.includes("평생") ||
+    isChildrenCategory(categoryId, title)
+  ) {
+    const moneyDirection = getConcreteMoneyDirection(manse);
+    const career = getCareerArchetype(manse);
+    const health = getHealthProfile(manse);
+    const ghost = getRepeatGhostProfile(user, manse);
+    return {
+      opening: "어? 이 사주 한 줄로 못 끝낸다.",
+      bigLuckTitle: "평생종합은 전체판이다",
+      bigLuckText: `평생 흐름은 '${getLifeFlow(manse)}'이다. 인생대운처럼 시기만 보는 게 아니라 돈, 일, 사람, 몸, 가족·자식까지 같이 본다.`,
+      twistTitle: "같은 문제가 이름만 바꿔 나온다",
+      twistText:
+        "돈에서는 지출로 나오고, 일에서는 책임으로 나오고, 사람에서는 정으로 나오고, 몸에서는 피로로 나온다. 그래서 평생종합은 한 가지만 보면 틀린다.",
+      blockedTitle: "평생운을 누르는 자리",
+      blockedText:
+        "정 때문에 떠안는 사람, 받을 금액과 입금일이 흐린 일, 재고·월세·광고비가 먼저 나가는 돈, 잠·소화·피로를 무시하는 생활. 이 네 개가 같이 오면 인생이 무거워진다.",
+      ghostTitle: ghost.primary,
+      ghostText:
+        `${ghost.summary} ${ghost.risk} 이 기운은 돈, 일, 사람, 몸에서 모양만 바꿔 반복된다.`,
+      blessingTitle: "평생복이 붙는 조건",
+      blessingText:
+        "견적, 단가, 납기, 거래처, 입금일, 원가, 재고가 눈에 보이는 일. 생활비·보증·빚·감정노동의 선을 지키는 사람관계. 잠·소화·피로를 망가뜨리지 않는 생활. 이 세 개가 맞아야 평생복이 남는다.",
+      detailA:
+        `돈은 이렇게 잡는다. ${moneyDirection.workAnswer} ${moneyDirection.earn}`,
+      detailB:
+        `일은 '${career.combined}' 판정이다. 회사 안이면 견적·단가·납기·거래처·입금일·원가·재고를 직접 보는 자리로 가라. 밖이면 ${moneyDirection.start}`,
+      timing:
+        `초년은 책임과 눈치가 먼저 붙고, 20대는 방향을 찾느라 흔들린다. 30대 중반부터 돈눈이 뜨고, 40대 초중반부터 일과 돈이 굵어진다. 말년은 새로 벌리는 운보다 지키는 돈, 몸, 사람 거리에서 편해진다.`,
+      people:
+        `${ghost.primary}이 반복된다. 불쌍해서 챙기는 사람, 책임을 네 쪽으로 미루는 사람, 돈과 시간을 빼가는 사람은 복이 아니라 누르는 사람이다.`,
+      money:
+        `돈은 '${getMoneyGrade(manse)}'로 찍는다. ${moneyDirection.start} 재고를 오래 안고 기다리는 장사, 월세부터 나가는 매장, 광고비 먼저 태우는 온라인몰은 버려라.`,
+      body:
+        `건강은 '${getHealthGrade(manse)}'로 찍는다. ${health.type}을 먼저 잡아라. ${health.action.join(", ")}부터 바꾸고, ${health.avoid.join(", ")}은 버려라.`,
+      yearCaution:
+        "평생 조심할 건 정 때문에 떠안는 사람, 받을 날짜 없는 일, 재고·월세·광고비가 먼저 나가는 돈, 몸의 신호 무시하기다.",
+      yearChance:
+        `잡을 시기는 30대 중반과 40대 초중반이다. 그때 견적·단가·납기·거래처·입금일이 보이는 일, 책임을 나누는 사람, 몸을 망가뜨리지 않는 생활을 잡아라.`,
+      avoid:
+        "정 때문에 떠안는 책임, 받을 금액과 입금일이 흐린 일, 재고 먼저 안는 장사, 잠·소화·피로를 무시하는 생활은 버려라.",
+      choose:
+        "회사 안이면 견적·단가·납기·거래처·입금일·원가·재고를 직접 보는 자리를 잡아라. 밖이면 주문 먼저 받고 물건을 맞추는 납품, 구매대행, 소싱대행, 거래처 연결을 잡아라. 사람은 돈과 책임을 네 쪽으로 미루지 않는 사람만 남겨라.",
+      final:
+        "결론은 이거다. 평생종합은 인생대운과 다르다. 시기만 보는 게 아니라 돈을 어떻게 벌고, 어떤 일을 잡고, 어떤 사람을 끊고, 몸 어디를 먼저 지켜야 하는지까지 보는 전체판이다.",
+      mood: "paper",
+    };
+  }
+
+  const domain = getPremiumQuestionDomain(safeText(user.question, ""));
+  return {
+    opening: "어? 이 질문 그냥 고민상담으로 보면 안 되겠는데?",
+    bigLuckTitle: "이미 마음속으로 몇 번 답을 냈을 거다",
+    bigLuckText:
+      "근데 아직 못 움직이고 있지. 이건 생각이 부족해서가 아니라 운이 막힌 자리랑 붙어 있다.",
+    twistTitle: "해도 되는지, 멈춰야 하는지",
+    twistText: `${domain.focus}. 여기서 바로 갈린다.`,
+    blockedTitle: "질문 속 막힌 자리",
+    blockedText:
+      "질문은 하나처럼 보여도 그 안에 돈, 사람, 일, 몸 중 하나가 먼저 막혀 있다.",
+    ghostTitle: "망설임귀신",
+    ghostText:
+      "이미 알고 있는데도 움직이지 못하게 만드는 흐름이다. 같은 생각을 계속 돌게 만든다.",
+    blessingTitle: "답이 열리는 자리",
+    blessingText:
+      "질문을 흐리지 말고 하나로 좁히면 사주가 답하는 방향도 선명해진다.",
+    detailA: `이 고민에서 봐야 할 기준은 ${domain.criteria.join(", ")}이다.`,
+    detailB: `피해야 할 선택은 ${domain.avoid.join(", ")}이다.`,
+    timing:
+      "지금 당장 결정할 것과 미룰 것을 갈라야 한다. 급한 마음이 붙으면 답이 흐려진다.",
+    people:
+      "이 고민에 사람이 엮여 있다면 좋은 사람인지보다 네 운을 살리는 사람인지 봐야 한다.",
+    money:
+      "돈이 엮여 있다면 먼저 빠지는 돈과 나중에 돌아오는 돈을 구분해야 한다.",
+    body: "고민이 길어지면 몸이 먼저 눌린다. 잠, 소화, 피로가 같이 흔들리면 이미 오래 들고 간 문제다.",
+    yearCaution: "조심할 건 불안해서 크게 결정하는 것이다.",
+    yearChance: "잡을 건 질문의 핵심 하나다. 하나만 잡으면 길이 보인다.",
+    avoid: domain.avoid.join(", "),
+    choose: domain.action.join(", "),
+    final:
+      "결론은 이거다. 이 질문은 가볍게 넘길 고민이 아니다. 사주에서 막힌 자리를 보고 답을 잘라야 한다.",
+    mood: "black",
+  };
+}
+
+function makeComicChapter(
+  params: Omit<ComicChapter, "visualHint"> & { visualHint?: string },
+): ComicChapter {
+  return {
+    ...params,
+    visualHint:
+      params.visualHint || "도훈이 사주판 앞에서 장면을 넘기는 웹툰 컷",
+  };
+}
+
+function hardenComicText(value: string) {
+  return String(value || "")
+    .replace(/받을 금액·입금일·역할값이 정해진 자리/g, "돈 받을 사람·받을 금액·입금일·네 역할값이 정해진 일")
+    .replace(/네 몫이 보이는 자리/g, "돈 받을 사람·받을 금액·입금일·네 역할값이 보이는 일")
+    .replace(/네 몫이 남는 자리/g, "돈 받을 사람·받을 금액·입금일·네 역할값이 남는 일")
+    .replace(/네 이름과 몫이 남는 자리/g, "네가 한 일이 견적서·입금액·거래처 이름으로 남는 일")
+    .replace(/결과와 권한과 네 몫이 보이는 자리/g, "무엇을 맡고 얼마가 남고 언제 돈이 들어오는지 보이는 일")
+    .replace(/견적·단가·납기·거래처·입금일이 보이는 자리/g, "돈이 들어오는 곳과 빠지는 곳을 직접 보는 자리")
+    .replace(/돈 흐름이 보이는/g, "돈이 들어오는 곳과 빠지는 곳을 직접 보는")
+    .replace(/돈 흐름/g, "돈길")
+    .replace(/잠·소화·피로를 망가뜨리지 않는 생활/g, "잠·소화·피로를 망가뜨리지 않는 생활")
+    .replace(/기준을 잡아라/g, "돈 받을 사람·받을 금액·입금일·네 역할값부터 잘라라")
+    .replace(/기준을 봐라/g, "돈 받을 사람·받을 금액·입금일·네 역할값을 봐라")
+    .replace(/쪽이 먼저 맞다/g, "부터 잡아라")
+    .replace(/쪽이 맞다/g, "을 잡아라")
+    .replace(/쪽이 좋다/g, "을 잡아라")
+    .replace(/흐름이 있다/g, "자리가 보인다")
+    .replace(/흐름이다/g, "사주다");
+}
+
+function cleanComicSourceText(value: string) {
+  return hardenComicText(String(value || ""))
+    .replace(/^\|\s*/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function comicText(...parts: Array<string | undefined | null>) {
+  return parts
+    .map((part) => cleanComicSourceText(String(part || "")))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function categoryLabelForComic(categoryId: CategoryId, categoryTitle: string) {
+  const title = categoryTitle || "";
+  if (categoryId === "today" || title.includes("오늘")) return "오늘운";
+  if (categoryId === "money" || title.includes("재물")) return "재물운";
+  if (isCareerCategory(categoryId, title)) return "일·사업운";
+  if (isLoveMarriageCategory(categoryId, title)) return "사랑·결혼운";
+  if (
+    isCompatibilityCategory(categoryId, title) ||
+    isPartnerCategory(categoryId, title)
+  )
+    return "궁합운";
+  if (categoryId === "health" || title.includes("건강")) return "건강운";
+  if (isMonthlyCategory(categoryId, title)) return "올해운세";
+  if (
+    categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  )
+    return "인생대운";
+  if (
+    categoryId === "traditional" ||
+    title.includes("평생") ||
+    isChildrenCategory(categoryId, title)
+  )
+    return "평생종합사주";
+  return "내 고민 사주풀이";
+}
+
+function getComicDeepFocus(params: {
+  categoryId: CategoryId;
+  categoryTitle: string;
+  script: WebtoonCategoryScript;
+}) {
+  const title = params.categoryTitle || "";
+  const script = params.script;
+
+  if (params.categoryId === "today" || title.includes("오늘")) {
+    return {
+      mind: "오늘운은 거창한 인생 얘기가 아니다. 아침부터 밤까지 네 말, 돈, 연락, 몸 컨디션 중 어디가 먼저 흔들리는지 보는 거다.",
+      core: "좋은 날이면 필요한 연락과 정리가 들어오고, 조심할 날이면 작은 말 하나가 커진다. 오늘은 운이 좋냐 나쁘냐보다 어디서 갈라지는지가 중요하다.",
+      lock: "전체판에서는 오늘 들어오는 작은 복, 오늘 새는 구멍, 말조심, 돈조심, 사람 반응, 몸 신호까지 하루 안에서 바로 보이는 것만 연다.",
+    };
+  }
+
+  if (params.categoryId === "money" || title.includes("재물")) {
+    return {
+      mind: "재물운은 돈이 있냐 없냐로 끝나지 않는다. 돈이 들어오는 모양, 빠지는 구멍, 손에 남는 방식이 전부 다르다.",
+      core: "네 돈복은 작게만 볼 흐름이 아니다. 다만 돈이 붙는 문보다 빠지는 문이 먼저 열리면, 벌어도 남는 게 약해진다.",
+      lock: "전체판에서는 언제 돈이 움직이는지, 뭘 해야 돈이 붙는지, 어떤 사람 말에 돈이 새는지, 올해 어느 달을 조심해야 하는지까지 연다.",
+    };
+  }
+
+  if (isCareerCategory(params.categoryId, title)) {
+    return {
+      mind: "일운은 직업 이름보다 자리가 중요하다. 같은 일을 해도 네 이름이 남는 자리와 책임만 남는 자리는 완전히 다르다.",
+      core: "일은 하는데 내 몫이 늦게 오는 느낌이 있었다면, 그건 게으름 문제가 아니라 일복이 돈복으로 바뀌는 문이 막힌 흐름이다.",
+      lock: "전체판에서는 네가 들어가면 사는 일 구조, 들어가면 눌리는 일 구조, 올해 움직일 타이밍과 피해야 할 판을 나눠서 연다.",
+    };
+  }
+
+  if (isLoveMarriageCategory(params.categoryId, title)) {
+    return {
+      mind: "사랑운은 사람이 있냐 없냐가 전부가 아니다. 먼저 흔드는 사람과 오래 편해지는 사람을 구분해야 한다.",
+      core: "마음이 움직이는 인연은 들어올 수 있다. 문제는 피해야 할 사람에게 먼저 반응하면, 좋은 사람이 와도 자리가 비지 않는다는 거다.",
+      lock: "전체판에서는 끌리는 사람, 피해야 할 사람, 결혼까지 볼 수 있는 기준, 올해 인연이 살아나는 시기를 따로 연다.",
+    };
+  }
+
+  if (
+    isCompatibilityCategory(params.categoryId, title) ||
+    isPartnerCategory(params.categoryId, title)
+  ) {
+    return {
+      mind: "궁합은 좋다 나쁘다 한 줄로 끝내면 틀린다. 끌림, 생활, 돈, 책임, 말투가 전부 다른 자리에서 맞물린다.",
+      core: "처음엔 맞아 보이는 관계도 불편할 때 진짜 궁합이 나온다. 좋을 때보다 힘들 때 누가 책임을 지는지 봐야 한다.",
+      lock: "전체판에서는 점수보다 중요한 충돌 자리, 좋아지는 조건, 같이 가도 되는 기준, 절대 흐리면 안 되는 선을 연다.",
+    };
+  }
+
+  if (params.categoryId === "health" || title.includes("건강")) {
+    return {
+      mind: "건강운은 겁주는 게 아니다. 몸이 어디서 먼저 신호를 보내는지, 운이 와도 몸이 받을 수 있는지 보는 거다.",
+      core: "약해서 바로 무너지는 게 아니라, 버티다가 늦게 꺼지는 흐름이면 더 조심해야 한다. 신호가 늦게 보일 뿐, 몸은 먼저 알고 있다.",
+      lock: "전체판에서는 수면, 소화, 피로, 목어깨, 스트레스성 긴장 중 어디가 먼저 흔들리는지와 바로 바꿔야 할 생활 리듬을 연다.",
+    };
+  }
+
+  if (isMonthlyCategory(params.categoryId, title)) {
+    return {
+      mind: "올해운세는 한 줄 총평으로 보면 안 된다. 움직일 달과 멈출 달이 다르고, 돈이 붙는 달과 사람이 꼬이는 달이 다르다.",
+      core: "좋은 달에 머뭇거리고 약한 달에 크게 벌리면 한 해가 꼬인다. 올해는 달을 갈라 봐야 운을 잡는다.",
+      lock: "전체판에서는 돈이 움직이는 달, 일·사업운이 살아나는 달, 사람관계가 흔들리는 달, 몸을 조심할 달만 찍어서 연다.",
+    };
+  }
+
+  if (
+    params.categoryId === "lifeFlow" ||
+    title.includes("인생") ||
+    title.includes("대운")
+  ) {
+    return {
+      mind: "인생대운은 지금까지 답답했는지만 보는 게 아니다. 어느 시점에 판이 바뀌고, 어떤 신호가 오면 잡아야 하는지 보는 거다.",
+      core: "초반이 편하지 않았다고 평생 그렇게 가는 사주는 아니다. 다만 문이 열리는 때를 놓치면 같은 막힘을 오래 끌고 간다.",
+      lock: "전체판에서는 초년·청년·중년·말년 흐름, 큰 대운 기회, 중년 이후 돈과 일이 맞물리는 자리를 연다.",
+    };
+  }
+
+  if (
+    params.categoryId === "traditional" ||
+    title.includes("평생") ||
+    isChildrenCategory(params.categoryId, title)
+  ) {
+    return {
+      mind: "평생종합은 돈만 보고 끝내면 놓친다. 돈, 일, 사람, 몸이 어디서 같은 뿌리로 반복되는지 봐야 한다.",
+      core: "돈이 안 남는 이유와 사람이 피곤한 이유, 일을 해도 몫이 늦는 이유가 따로가 아닐 수 있다. 한 뿌리에서 같이 움직인다.",
+      lock: "전체판에서는 평생 돈복, 일복, 인연운, 건강운, 자식·가족 흐름, 시기별 대운까지 한 줄기로 묶어서 연다.",
+    };
+  }
+
+  return {
+    mind: "내 고민 사주풀이는 일반 상담이 아니다. 질문 하나 안에 돈, 사람, 일, 몸 중 어디가 먼저 막혔는지 보는 거다.",
+    core: "이미 마음속으로 답을 몇 번 냈는데도 못 움직이는 건, 생각이 부족해서가 아니라 막힌 자리가 아직 안 보였기 때문이다.",
+    lock: "전체판에서는 해도 되는지, 멈춰야 하는지, 기다려야 하는지, 1년 안에 어떤 선택을 해야 하는지까지 질문 중심으로 연다.",
+  };
+}
+
+function buildPreviewComicChapters(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  manse: any;
+  partnerManse?: any | null;
+  fortuneSeed?: number;
+}): ComicChapter[] {
+  const script = getWebtoonCategoryScript(params);
+  const focus = getComicDeepFocus({
+    categoryId: params.categoryId,
+    categoryTitle: params.categoryTitle,
+    script,
+  });
+  const label = categoryLabelForComic(params.categoryId, params.categoryTitle);
+  const snap = getElementSnapshot(params.manse);
+  const ghost = getRepeatGhostProfile(params.user, params.manse);
+
+  return [
+    makeComicChapter({
+      id: "preview-01-found",
+      sceneType: "entrance",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "shock",
+      mood: "dark",
+      title: "어? 잠깐만",
+      text: comicText(
+        script.opening,
+        "사주판에서 먼저 튀어나오는 게 하나 있다. 이건 그냥 좋은 말 몇 줄 듣고 넘길 운이 아니다.",
+        "지금부터 봐야 할 건 운이 있냐 없냐가 아니다. 어디서 열리고, 어디서 막히는지다.",
+      ),
+      visualHint: "검붉은 방 안에서 도훈이 사주판을 보다가 멈칫하는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-02-big-door",
+      sceneType: "core",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: script.mood,
+      title: script.bigLuckTitle,
+      text: comicText(
+        script.bigLuckText,
+        "여기까지 보면 괜찮아 보인다. 그런데 여기서 바로 움직이면 반쪽만 본 거다.",
+        "진짜 중요한 건 다음 장이다. 왜 이 운이 아직 네 손에 확 잡히지 않았는지 봐야 한다.",
+      ),
+      visualHint: "사주판 위로 금빛 문이 열리려다 멈추는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-03-strange",
+      sceneType: "mind",
+      speaker: "dohoon",
+      character: "user-shadow",
+      emotion: "serious",
+      mood: "mist",
+      title: script.twistTitle,
+      text: comicText(
+        script.twistText,
+        focus.mind,
+        "사람들은 여기서 착각한다. 좋은 운이 보이면 다 끝난 줄 안다. 아니다. 좋은 운 옆에 붙은 막힌 문까지 봐야 판정이 나온다.",
+      ),
+      visualHint: "내담자 그림자 뒤로 닫힌 문과 작은 균열이 보이는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-04-door",
+      sceneType: "warning",
+      speaker: "dohoon",
+      character: "dohoon-warning",
+      emotion: "warning",
+      mood: "redDark",
+      title: script.blockedTitle,
+      text: comicText(
+        script.blockedText,
+        `이 막힘은 네 사주에서 ${snap.strongestElement} 쪽 힘과 ${snap.weakestElement} 쪽 흔들림이 부딪히는 자리에서 먼저 드러난다.`,
+        "쉽게 말하면, 잘하는 쪽으로만 밀면 안 풀린다. 약하게 새는 쪽을 잡아야 열린다.",
+      ),
+      visualHint: "도훈이 붉은 실로 막힌 문고리를 가리키는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-05-ghost",
+      sceneType: "warning",
+      speaker: "badLuckGhost",
+      character: "bad-luck-ghost",
+      emotion: "warning",
+      mood: "black",
+      title: ghost.primary,
+      text: comicText(
+        ghost.summary,
+        ghost.risk,
+        "이건 진짜 귀신이 아니다. 같은 장면에서 같은 선택을 하게 만드는 반복 기운이다. 이걸 모르면 다음에도 같은 문 앞에서 막힌다.",
+      ),
+      visualHint: "작은 악운 캐릭터가 닫힌 문틈에서 얼굴을 내미는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-06-half-open",
+      sceneType: "blessing",
+      speaker: "fortuneSpirit",
+      character: "fortune-spirit",
+      emotion: "smile",
+      mood: "gold",
+      title: script.blessingTitle,
+      text: comicText(
+        script.blessingText,
+        "여기서 방향이 바뀐다. 막힌 문을 모르고 움직이면 운이 새고, 문을 알고 움직이면 같은 사주도 결과가 달라진다.",
+        "무료판에서 보여줄 수 있는 건 여기까지다. 이제 진짜 판정은 안쪽에 있다.",
+      ),
+      visualHint: "금빛 복 캐릭터가 닫힌 문에 손을 대자 틈이 열리는 장면",
+    }),
+    makeComicChapter({
+      id: "preview-07-locked-report",
+      sceneType: "lock",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "black",
+      title: `${label} 20페이지 안쪽`,
+      text: comicText(
+        "여기서부터는 짧게 못 본다.",
+        focus.lock,
+        "언제 열리는지, 뭘 잡아야 하는지, 뭘 버려야 하는지, 마지막 판정까지 20페이지로 갈라서 본다.",
+      ),
+      visualHint: "검붉은 문 뒤로 스무 장의 금빛 페이지가 차례로 켜지는 장면",
+      isLocked: true,
+      ctaText: "20페이지 사주극장 열기",
+    }),
+  ];
+}
+
+
+function getConcreteLifeTimingSummary(user: UserInfo, manse: any) {
+  const moneyTiming = getMoneyTimingText(user, manse);
+  return comicText(
+    "초년은 편한 운으로 보지 않는다. 책임, 눈치, 사람 피로가 먼저 붙는 구간이다.",
+    "20대 후반부터 30대 초반은 방향을 바꾸는 구간이다. 사람 따라 움직이면 흔들리고, 돈 받을 구조가 보이는 일로 좁히면 산다.",
+    `${moneyTiming.firstMoneyAge}~${moneyTiming.firstMoneyAge + 2}세에는 돈 보는 눈이 뜬다. 이때부터 지인 말, 급한 투자, 재고 안는 장사를 갈라내야 한다.`,
+    `${moneyTiming.strongMoneyAge}~${moneyTiming.strongMoneyAge + 3}세에는 일과 돈이 같이 굵어진다. 구매, 납품, 소싱, 기술값, 관리비, 반복 주문처럼 받을 금액과 입금일이 보이는 돈을 잡아라.`,
+    `${moneyTiming.assetAge}세 이후에는 빠르게 벌어 쓰는 돈보다 쌓고 지키는 돈이 강해진다. 월세·재고·광고비가 먼저 나가는 판은 줄이고, 반복으로 들어오는 돈을 남겨라.`
+  );
+}
+
+function getConcreteChoosePage(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  script: WebtoonCategoryScript;
+  manse: any;
+  partnerManse?: any | null;
+}) {
+  const title = params.categoryTitle || "";
+  const moneyDirection = getConcreteMoneyDirection(params.manse);
+  const moneyTiming = getMoneyTimingText(params.user, params.manse);
+  const career = getCareerArchetype(params.manse);
+  const health = getHealthProfile(params.manse);
+  const love = getLovePartnerProfile(params.manse);
+
+  if (params.categoryId === "money" || title.includes("재물")) {
+    return comicText(
+      moneyDirection.workAnswer,
+      moneyDirection.earn,
+      `시작은 이렇게 자른다. ${moneyDirection.start}`,
+      `시기는 ${moneyTiming.firstMoneyAge}~${moneyTiming.firstMoneyAge + 2}세에 돈눈이 뜨고, ${moneyTiming.strongMoneyAge}~${moneyTiming.strongMoneyAge + 3}세에 돈길이 굵어진다. 올해는 ${moneyTiming.moneyMoveMonth}월과 ${moneyTiming.moneyCatchMonth}월에 잡고, ${moneyTiming.moneyLeakMonth}월에는 돈을 넣지 마라.`
+    );
+  }
+
+  if (isCareerCategory(params.categoryId, title)) {
+    return comicText(
+      `일 판정은 '${career.combined}'이다. 이 판정은 회사냐 창업이냐보다 먼저다.`,
+      "회사에 있으면 그냥 오래 버티는 자리 말고, 견적·단가·납기·거래처·품질·현장 결과를 직접 보는 자리를 잡아라.",
+      "밖으로 판을 열면 먼저 사무실 차리고 사람 쓰지 마라. 주문, 받을 금액, 입금일, 네 역할값이 먼저 보이는 작은 판부터 잡아라.",
+      `버릴 판은 ${career.warning}이다. 이 판은 바쁘기만 하고 돈과 이름이 남지 않는다.`
+    );
+  }
+
+  if (isLoveMarriageCategory(params.categoryId, title)) {
+    return comicText(
+      `잡을 사람은 ${love.good}이다.`,
+      `피할 사람은 ${love.avoid}이다. 이 사람은 처음엔 설레도 끝에 가면 네 마음만 늙힌다.`,
+      "좋은 사람인지 보려면 말보다 약속 시간, 돈 쓰는 방식, 불편한 말에 답하는 태도, 가족과의 거리감을 봐라.",
+      "연애는 감정으로 시작해도 결혼은 생활로 버틴다. 생활비·시간·연락·가족 거리감이 흐리면 멈춰라."
+    );
+  }
+
+  if (params.categoryId === "health" || title.includes("건강")) {
+    return comicText(
+      `먼저 잡을 몸 신호는 ${health.type}이다.`,
+      `오늘부터 바꿀 것은 ${health.action.join(", ")}이다.`,
+      `버릴 습관은 ${health.avoid.join(", ")}이다.`,
+      "운동은 센 운동부터 하지 마라. 걷기, 하체 스트레칭, 수면 시간 고정, 소화가 덜 부담되는 식사부터 잡아라."
+    );
+  }
+
+  if (isMonthlyCategory(params.categoryId, title)) {
+    return comicText(
+      `올해는 ${moneyTiming.moneyMoveMonth}월에 돈 이야기가 움직이고, ${moneyTiming.moneyLeakMonth}월에 돈이 샌다. ${moneyTiming.moneyCatchMonth}월에 다시 잡을 문이 온다.`,
+      "움직일 달에는 연락, 견적, 거래, 제안, 이직 이야기를 잡아라. 새는 달에는 계약·투자·지인 부탁·큰 지출을 미뤄라.",
+      "올해는 무조건 밀어붙이는 해가 아니다. 달마다 문이 다르다. 잡을 달과 멈출 달을 갈라라."
+    );
+  }
+
+  if (params.categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운")) {
+    return comicText(
+      getConcreteLifeTimingSummary(params.user, params.manse),
+      "대운이 열린다는 말은 추상적인 말이 아니다. 이 시기에 직업, 거래처, 돈 버는 방식, 사람관계 중 하나를 갈아야 한다는 뜻이다.",
+      "그때 잡을 건 월세·재고·광고비가 먼저 나가는 판이 아니라 받을 금액, 입금일, 네 역할값이 먼저 정해진 일이다."
+    );
+  }
+
+  if (params.categoryId === "traditional" || title.includes("평생") || isChildrenCategory(params.categoryId, title)) {
+    return comicText(
+      getConcreteLifeTimingSummary(params.user, params.manse),
+      `돈은 이렇게 잡아라. ${moneyDirection.workAnswer} ${moneyDirection.earn}`,
+      "사람은 불쌍해서 챙기는 사람, 책임을 미루는 사람, 돈과 시간을 계속 빼가는 사람을 끊어라.",
+      `몸은 ${health.type}부터 잡아라. ${health.action.join(", ")}부터 바꾸고, ${health.avoid.join(", ")}은 버려라.`
+    );
+  }
+
+  return params.script.choose;
+}
+
+function getConcreteAvoidPage(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  script: WebtoonCategoryScript;
+  manse: any;
+}) {
+  const title = params.categoryTitle || "";
+  const moneyDirection = getConcreteMoneyDirection(params.manse);
+  const career = getCareerArchetype(params.manse);
+  const health = getHealthProfile(params.manse);
+  const love = getLovePartnerProfile(params.manse);
+
+  if (params.categoryId === "money" || title.includes("재물")) return moneyDirection.avoid;
+  if (isCareerCategory(params.categoryId, title)) return `버릴 건 ${career.warning}이다. 책임은 네가 지고 돈 받을 사람, 받을 금액, 입금일이 남 손에 있는 일은 버려라.`;
+  if (isLoveMarriageCategory(params.categoryId, title)) return `버릴 사람은 ${love.avoid}이다. 말은 뜨겁고 책임이 늦은 사람, 돈과 시간 기준을 흐리는 사람, 가족 문제를 나중으로 미루는 사람은 피하라.`;
+  if (params.categoryId === "health" || title.includes("건강")) return `버릴 습관은 ${health.avoid.join(", ")}이다. 이걸 계속하면 운이 들어와도 몸이 못 받친다.`;
+  return params.script.avoid;
+}
+
+function getConcreteTimingPage(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  script: WebtoonCategoryScript;
+  manse: any;
+}) {
+  const title = params.categoryTitle || "";
+  const moneyTiming = getMoneyTimingText(params.user, params.manse);
+  const loveTiming = getLoveTimingProfile(params.manse);
+  const marriageTiming = getMarriageTimingProfile(params.manse);
+
+  if (params.categoryId === "money" || title.includes("재물")) {
+    return comicText(
+      `${moneyTiming.firstMoneyAge}~${moneyTiming.firstMoneyAge + 2}세에 돈 보는 눈이 뜬다.`,
+      `${moneyTiming.strongMoneyAge}~${moneyTiming.strongMoneyAge + 3}세에 재물운이 굵어진다. 이때 거래처, 반복 주문, 납품, 기술값, 관리비처럼 다시 들어오는 돈을 잡아라.`,
+      `${moneyTiming.assetAge}세 이후에는 빨리 버는 돈보다 쌓고 지키는 돈이 강하다.`,
+      `올해는 ${moneyTiming.moneyMoveMonth}월에 돈 이야기가 움직이고, ${moneyTiming.moneyLeakMonth}월에는 돈이 샌다. ${moneyTiming.moneyCatchMonth}월에는 다시 잡을 문이 열린다.`
+    );
+  }
+
+  if (params.categoryId === "lifeFlow" || title.includes("인생") || title.includes("대운") || params.categoryId === "traditional" || title.includes("평생")) {
+    return getConcreteLifeTimingSummary(params.user, params.manse);
+  }
+
+  if (isMonthlyCategory(params.categoryId, title)) {
+    return comicText(
+      `${moneyTiming.moneyMoveMonth}월은 돈 이야기가 움직이는 달이다. 견적, 거래, 제안, 판매, 받을 돈 확인을 잡아라.`,
+      `${moneyTiming.moneyLeakMonth}월은 돈이 새는 달이다. 투자, 지인 부탁, 큰 지출, 재고 안는 선택을 미뤄라.`,
+      `${moneyTiming.moneyCatchMonth}월은 다시 잡을 달이다. 앞에서 놓친 거래나 정리한 일을 다시 잡아라.`
+    );
+  }
+
+  if (isLoveMarriageCategory(params.categoryId, title)) {
+    return comicText(
+      `인연이 살아나는 시기는 ${loveTiming.timing}이다.`,
+      `결혼으로 보는 시기는 ${marriageTiming.timing}이다.`,
+      "이 시기에 들어오는 사람은 말보다 반복 행동을 봐라. 약속, 돈, 가족 거리감에서 답이 나온다."
+    );
+  }
+
+  return params.script.timing;
+}
+
+function buildFullComicChapters(params: {
+  user: UserInfo;
+  categoryId: CategoryId;
+  categoryTitle: string;
+  resultText: string;
+  manse: any;
+  partnerManse?: any | null;
+  fortuneSeed?: number;
+}): ComicChapter[] {
+  const script = getWebtoonCategoryScript(params);
+  const focus = getComicDeepFocus({
+    categoryId: params.categoryId,
+    categoryTitle: params.categoryTitle,
+    script,
+  });
+  const closing = getWebtoonClosingPage({
+    user: params.user,
+    categoryId: params.categoryId,
+    categoryTitle: params.categoryTitle,
+    script,
+    manse: params.manse,
+    partnerManse: params.partnerManse || null,
+  });
+  const ghost = getRepeatGhostProfile(params.user, params.manse);
+  const past = getPastLifeProfile(params.user, params.manse);
+  const snap = getElementSnapshot(params.manse);
+  const label = categoryLabelForComic(params.categoryId, params.categoryTitle);
+  const flow = getReadableElementFlow(params.manse);
+
+  const pages: Array<
+    Omit<ComicChapter, "visualHint"> & { visualHint?: string }
+  > = [
+    {
+      id: "full-01-stop",
+      sceneType: "entrance",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "shock",
+      mood: "dark",
+      title: "어? 잠깐만",
+      text: comicText(
+        script.opening,
+        "여기까지 열었으면 이제 대충 못 본다. 무료에서 본 건 문 앞에 묻은 그림자다.",
+        "지금부터는 사주판 안쪽으로 들어간다. 좋은 운, 막힌 문, 새는 자리, 잡아야 할 선택까지 전부 갈라본다.",
+        "첫 장에서 답을 다 주지 않는다. 이 사주는 페이지를 넘기면서 문이 열린다.",
+      ),
+      visualHint: "도훈이 검붉은 사주방에서 사주판을 다시 펼치는 장면",
+    },
+    {
+      id: "full-02-not-normal",
+      sceneType: "core",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: script.mood,
+      title: "평범하게 볼 운 아니다",
+      text: comicText(
+        script.bigLuckText,
+        focus.core,
+        "여기서 이미 한 번 갈린다. 이 운은 없는 운이 아니다. 그런데 아무 데서나 열리는 운도 아니다.",
+        "좋은 기운이 보이면 끝이 아니다. 그 기운이 네 손에 남는 자리까지 봐야 진짜 판정이다.",
+      ),
+      visualHint:
+        "금빛 기운이 크게 올라오지만 옆에 검은 균열도 같이 보이는 장면",
+    },
+    {
+      id: "full-03-why-not-yet",
+      sceneType: "mind",
+      speaker: "dohoon",
+      character: "user-shadow",
+      emotion: "serious",
+      mood: "mist",
+      title: script.twistTitle,
+      text: comicText(
+        script.twistText,
+        "이 대목이 제일 중요하다. 운은 보이는데 결과가 늦다. 마음은 아는데 현실이 안 따라온다. 잡힐 듯하다가 빠진다.",
+        "그럼 답은 둘 중 하나다. 애초에 없는 운이거나, 앞에서 막고 있는 문이 있거나.",
+        "네 사주는 뒤쪽이다. 없는 게 아니라 막힌 문이 먼저 보인다.",
+      ),
+      visualHint: "내담자 그림자 앞에 두 갈래 문이 서 있는 장면",
+    },
+    {
+      id: "full-04-blocked-door",
+      sceneType: "warning",
+      speaker: "dohoon",
+      character: "dohoon-warning",
+      emotion: "warning",
+      mood: "redDark",
+      title: script.blockedTitle,
+      text: comicText(
+        script.blockedText,
+        "이 문은 겉으로 크게 티가 안 난다. 처음엔 성격 같고, 사람 문제 같고, 상황 탓처럼 보인다.",
+        "근데 사주로 보면 같은 문을 반복해서 밟는다. 그래서 비슷한 장면이 오면 비슷한 방식으로 또 막힌다.",
+        "지금은 이 문부터 봐야 한다. 이 문을 모르고 움직이면 운이 들어와도 샌다.",
+      ),
+      visualHint: "붉은 실이 감긴 문고리와 그 앞에 선 도훈",
+    },
+    {
+      id: "full-05-saju-shape",
+      sceneType: "personality",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "serious",
+      mood: "paper",
+      title: "사주판 모양",
+      text: comicText(
+        `일간은 ${snap.dayMaster}. 강하게 잡힌 축은 ${snap.strongestElement}, 약하게 흔들리는 축은 ${snap.weakestElement}.`,
+        `강한 축은 ${flow.strongestText}이다. 네가 버티고 밀어붙이는 힘이다. 약한 축은 ${flow.weakestText}이다. 같은 자리에서 새는 구멍이다.`,
+        "그러니까 이 사주는 장점만 키운다고 끝나지 않는다. 약한 문을 닫아야 강한 기운이 돈, 일, 사람, 몸으로 제대로 내려온다.",
+      ),
+      visualHint: "한지 위에 오행 기호와 붉은 표식이 번지는 장면",
+    },
+    {
+      id: "full-06-repeat-ghost",
+      sceneType: "warning",
+      speaker: "badLuckGhost",
+      character: "bad-luck-ghost",
+      emotion: "warning",
+      mood: "black",
+      title: ghost.primary,
+      text: comicText(
+        ghost.summary,
+        ghost.risk,
+        ghost.direction,
+        "이건 겁주는 귀신 이야기가 아니다. 네가 같은 선택을 반복하게 만드는 그림자다. 이 그림자가 붙으면 좋은 운도 이상한 데로 빠진다.",
+        "그래서 이 페이지부터는 복만 보지 않는다. 복이 새는 그림자까지 같이 본다.",
+      ),
+      visualHint: "작은 악운 캐릭터가 같은 문 앞을 빙빙 도는 장면",
+    },
+    {
+      id: "full-07-past-habit",
+      sceneType: "mind",
+      speaker: "dohoon",
+      character: "user-shadow",
+      emotion: "serious",
+      mood: "mist",
+      title: "전생기질",
+      text: comicText(
+        `전생기질로 보면 ${past.pastType}. ${past.image}의 흔적이 있다.`,
+        past.habit,
+        past.blessing,
+        past.shadow,
+        "실제 전생을 확정하는 말이 아니다. 네가 왜 특정 장면에서 유독 늦게 놓고, 특정 말에 약해지고, 특정 선택을 반복하는지 보여주는 비유다.",
+      ),
+      visualHint: "흐릿한 전생 실루엣이 현재의 내담자 그림자와 겹치는 장면",
+    },
+    {
+      id: "full-08-core-a",
+      sceneType: "detail",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "paper",
+      title: `${label} 첫 번째 판정`,
+      text: comicText(
+        script.detailA,
+        "이건 조언이 아니다. 사주판에서 먼저 보이는 자리다. 네가 들어가야 사는 자리와 들어가면 눌리는 자리가 갈린다.",
+        "여기서 흐리면 안 된다. 맞는 자리는 잡고, 아닌 자리는 버려야 한다.",
+      ),
+      visualHint: "도훈이 사주판 위의 첫 번째 붉은 표식을 가리키는 장면",
+    },
+    {
+      id: "full-09-core-b",
+      sceneType: "detail",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "serious",
+      mood: "mist",
+      title: `${label} 두 번째 판정`,
+      text: comicText(
+        script.detailB,
+        "첫 번째 판정이 방향이라면, 두 번째 판정은 반복되는 함정이다.",
+        "처음엔 달라 보여도 끝에 같은 피로, 같은 손해, 같은 마음 상함이 남으면 같은 문을 또 밟은 거다.",
+        "이번엔 그 문을 그냥 지나가면 안 된다.",
+      ),
+      visualHint: "비슷한 모양의 문들이 복도처럼 이어지는 장면",
+    },
+    {
+      id: "full-10-what-to-do",
+      sceneType: "blessing",
+      speaker: "dohoon",
+      character: "dohoon-blessing",
+      emotion: "pointing",
+      mood: "gold",
+      title: "그래서 뭘 잡나",
+      text: getConcreteChoosePage({
+        user: params.user,
+        categoryId: params.categoryId,
+        categoryTitle: params.categoryTitle,
+        script,
+        manse: params.manse,
+        partnerManse: params.partnerManse || null,
+      }),
+      visualHint: "도훈이 금빛 문 하나를 열고 나머지 문은 닫는 장면",
+    },
+    {
+      id: "full-11-what-not",
+      sceneType: "warning",
+      speaker: "dohoon",
+      character: "dohoon-warning",
+      emotion: "warning",
+      mood: "redDark",
+      title: "이건 버려라",
+      text: comicText(
+        getConcreteAvoidPage({
+          user: params.user,
+          categoryId: params.categoryId,
+          categoryTitle: params.categoryTitle,
+          script,
+          manse: params.manse,
+        }),
+        "버릴 건 처음부터 악하게 보이지 않는다. 좋아 보이는 말, 빠른 제안, 미안한 마음, 외로운 마음으로 들어온다.",
+        "돈 받을 사람·받을 금액·입금일·네 역할값이 흐리면 그 선택은 버려라.",
+      ),
+      visualHint: "붉은 미끼 줄이 손목에 감기려는 장면",
+    },
+    {
+      id: "full-12-timing",
+      sceneType: "timing",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "gold",
+      title: "언제 열리나",
+      text: comicText(
+        getConcreteTimingPage({
+          user: params.user,
+          categoryId: params.categoryId,
+          categoryTitle: params.categoryTitle,
+          script,
+          manse: params.manse,
+        }),
+        "시기는 흐리면 안 된다. 운세에서 '언젠가', '준비되면', '상황 봐서'는 답이 아니다.",
+        "움직일 때와 늦출 때를 갈라라. 잡을 달에는 잡고, 새는 달에는 돈·사람·계약을 늦춰라.",
+      ),
+      visualHint: "달력 위에 금빛 표시와 붉은 표시가 나란히 찍히는 장면",
+    },
+    {
+      id: "full-13-people",
+      sceneType: "detail",
+      speaker: "dohoon",
+      character: "user-shadow",
+      emotion: "serious",
+      mood: "mist",
+      title: "사람이 문을 흔든다",
+      text: comicText(
+        script.people,
+        "사람 문제는 좋은 사람 나쁜 사람으로만 보면 틀린다. 네 운을 열어주는 사람과 네 기운을 빼는 사람이 다르다.",
+        "책임을 미루는 사람, 돈 기준을 흐리는 사람, 정을 건드리는 사람, 말로만 끌고 가는 사람. 이런 사람이 들어오면 운이 샌다.",
+      ),
+      visualHint: "여러 사람 그림자 사이에서 하나의 붉은 실이 흔들리는 장면",
+    },
+    {
+      id: "full-14-money-reality",
+      sceneType: "detail",
+      speaker: "dohoon",
+      character: "dohoon-serious",
+      emotion: "serious",
+      mood: "paper",
+      title: "돈과 현실",
+      text: comicText(
+        script.money,
+        "돈은 재물운에서만 보이는 게 아니다. 관계에도 돈 기준이 있고, 일에도 돈으로 돌아오는 구조가 있고, 건강에도 몸이 무너지며 새는 돈이 있다.",
+        "현실에서 돈이 어디서 묶이고, 어디서 빠지고, 어디서 남는지 봐야 한다. 이걸 안 보면 운을 봐도 행동이 흐려진다.",
+      ),
+      visualHint: "동전과 서류, 사람 그림자가 한 사주판 위에서 얽히는 장면",
+    },
+    {
+      id: "full-15-body",
+      sceneType: "detail",
+      speaker: "dohoon",
+      character: "dohoon-warning",
+      emotion: "warning",
+      mood: "mist",
+      title: "몸이 먼저 안다",
+      text: comicText(
+        script.body,
+        "몸은 거짓말을 못 한다. 마음은 괜찮은 척해도 잠, 소화, 피로, 목어깨는 먼저 반응한다.",
+        "운이 들어와도 몸이 못 받치면 오래 못 간다. 그래서 건강은 부록이 아니다. 운을 받을 그릇이다.",
+      ),
+      visualHint: "내담자 실루엣 안에서 잠, 소화, 피로 표시가 붉게 켜지는 장면",
+    },
+    {
+      id: "full-16-caution-period",
+      sceneType: "warning",
+      speaker: "badLuckGhost",
+      character: "bad-luck-ghost",
+      emotion: "warning",
+      mood: "black",
+      title: "조심할 때",
+      text: comicText(
+        script.yearCaution,
+        "이 구간에서 무서운 건 크게 망하는 일이 아니다. 작게 흘린 판단이 나중에 크게 돌아오는 거다.",
+        "말 한마디, 돈 한 번, 부탁 하나, 무리한 일정 하나. 여기서 악운이 조용히 붙는다.",
+      ),
+      visualHint: "검은 달력 위 작은 붉은 점들이 번지는 장면",
+    },
+    {
+      id: "full-17-chance-period",
+      sceneType: "blessing",
+      speaker: "fortuneSpirit",
+      character: "fortune-spirit",
+      emotion: "smile",
+      mood: "gold",
+      title: "잡을 때",
+      text: comicText(
+        script.yearChance,
+        "기회는 꼭 크게 떠들고 오지 않는다. 연락, 제안, 작은 변화, 마음이 덜 무거워지는 느낌으로 조용히 들어온다.",
+        "그때는 오래 재면 놓친다. 대신 잡을 때도 네 기운이 남는 자리인지 확인하고 잡아라.",
+      ),
+      visualHint: "금빛 달력의 한 날짜에서 작은 문이 열리는 장면",
+    },
+    {
+      id: "full-18-before-final",
+      sceneType: "final",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "redDark",
+      title: "여기서 결론이 갈린다",
+      text: comicText(
+        "여기까지 보면 답이 흐려지면 안 된다.",
+        `이 ${label}은 좋은 말로 포장할 운이 아니다. 열리는 자리, 새는 자리, 버릴 선택, 잡을 선택이 분명히 갈린다.`,
+        "다음 페이지에서 마지막으로 종합한다. 그래서 언제 열리고, 뭘 잡고, 뭘 버릴지 한 번에 정리한다.",
+      ),
+      visualHint: "도훈이 마지막 페이지를 넘기기 직전 손을 멈추는 장면",
+    },
+    {
+      id: "full-19-final-verdict",
+      sceneType: "final",
+      speaker: "dohoon",
+      character: "dohoon-pointing",
+      emotion: "pointing",
+      mood: "redDark",
+      title: "최종 판정",
+      text: comicText(
+        script.final,
+        closing.title,
+        "이건 겁주는 말도 아니고 좋은 말만 하는 것도 아니다. 사주판에 보이는 대로 찍는 판정이다.",
+        "믿고 말고는 보는 사람 몫이다. 하지만 흐리게 말하면 사주가 아니다.",
+      ),
+      visualHint: "도훈이 붉은 도장을 사주판 위에 찍는 장면",
+    },
+    {
+      id: "full-20-final-summary",
+      sceneType: "final",
+      speaker: "dohoon",
+      character: "dohoon-smile",
+      emotion: "smile",
+      mood: "dark",
+      title: closing.title,
+      text: closing.text,
+      visualHint: "검붉은 방의 문이 열리고 금빛 길이 이어지는 장면",
+    },
+  ];
+
+  return pages.map(makeComicChapter);
 }
 
 function buildComicChapters(params: {
@@ -6558,134 +9143,8 @@ function buildComicChapters(params: {
   partnerManse?: any | null;
   fortuneSeed?: number;
 }): ComicChapter[] {
-  const { mode, user, categoryId, categoryTitle, resultText, manse, partnerManse } = params;
-  const theme = getComicCategoryTheme(categoryId, categoryTitle);
-  const name = getName(user);
-  const isFull = mode === "full";
-  const baseMood: ComicChapter["mood"] = categoryId === "money" ? "gold" : categoryId === "health" ? "mist" : "redDark";
-
-  const chapters: ComicChapter[] = [
-    {
-      id: "comic-01-entrance",
-      sceneType: "entrance",
-      speaker: "dohoon",
-      character: "dohoon-serious",
-      emotion: "serious",
-      mood: "dark",
-      title: "도훈의 사주극장",
-      text: "야, 이거 그냥 운세가 아니다. 네가 왜 여기까지 왔는지부터 보인다.",
-      visualHint: "검붉은 배경, 중앙에 도훈, 사주 종이가 천천히 펼쳐지는 장면",
-    },
-    {
-      id: "comic-02-mind",
-      sceneType: "mind",
-      speaker: "dohoon",
-      character: "dohoon-pointing",
-      emotion: "pointing",
-      mood: "redDark",
-      title: "너 이거 재미로만 온 거 아니지",
-      text: theme.question,
-      visualHint: "도훈이 손가락으로 화면 밖 사용자를 짚고, 뒤에는 내담자 실루엣",
-    },
-    {
-      id: "comic-03-personality",
-      sceneType: "personality",
-      speaker: "dohoon",
-      character: "user-shadow",
-      emotion: "serious",
-      mood: "mist",
-      title: "넌 이런 사람이다",
-      text: `${name}, 넌 대충 넘기는 척해도 속으로는 오래 계산하는 사람이다. 손해 본 장면은 쉽게 잊지 않고, 중요한 선택 앞에서는 마음이 먼저 무거워진다.`,
-      visualHint: "고개 숙인 내담자 실루엣, 주변에 생각 말풍선이 떠 있는 장면",
-    },
-    {
-      id: "comic-04-core",
-      sceneType: "core",
-      speaker: "dohoon",
-      character: "dohoon-warning",
-      emotion: "warning",
-      mood: baseMood,
-      title: theme.coreTitle,
-      text: getComicCoreLine({ user, categoryId, categoryTitle, manse, partnerManse }),
-      visualHint: "도훈이 사주 명식 위에 붉은 도장을 찍는 장면",
-    },
-  ];
-
-  if (!isFull) {
-    chapters.push({
-      id: "comic-05-lock",
-      sceneType: "lock",
-      speaker: "dohoon",
-      character: "dohoon-serious",
-      emotion: "serious",
-      mood: "black",
-      title: "여기서부터가 진짜다",
-      text: "네 팔자에서 복이 붙는 자리와 악운이 달라붙는 자리는 완전히 다르다. 전체 풀이를 열면 그 지점을 장면별로 까준다.",
-      visualHint: "닫힌 붉은 문, 문틈 사이로 금빛 기운이 새어 나오는 장면",
-      isLocked: true,
-      ctaText: "전체 사주풀이 열기",
-    });
-
-    return chapters;
-  }
-
-  chapters.push(
-    {
-      id: "comic-05-warning",
-      sceneType: "warning",
-      speaker: "badLuckGhost",
-      character: "bad-luck-ghost",
-      emotion: "warning",
-      mood: "black",
-      title: theme.warningTitle,
-      text: theme.warningText,
-      visualHint: "작은 악운 캐릭터가 어깨 뒤에서 귓속말하는 장면",
-    },
-    {
-      id: "comic-06-blessing",
-      sceneType: "blessing",
-      speaker: "fortuneSpirit",
-      character: "fortune-spirit",
-      emotion: "smile",
-      mood: "gold",
-      title: theme.blessingTitle,
-      text: theme.blessingText,
-      visualHint: "금빛 복 캐릭터가 닫힌 문 앞에 등불을 드는 장면",
-    }
-  );
-
-  const sections = extractComicSections(resultText)
-    .filter((section) => !/결론부터|도훈의 사주극장/.test(section.title))
-    .slice(0, 14);
-
-  sections.forEach((section, index) => {
-    const isTiming = /시기|월|올해|대운|앞으로|흐름/.test(section.title);
-    chapters.push({
-      id: `comic-detail-${String(index + 1).padStart(2, "0")}`,
-      sceneType: isTiming ? "timing" : "detail",
-      speaker: "dohoon",
-      character: index % 3 === 0 ? "dohoon-pointing" : index % 3 === 1 ? "dohoon-serious" : "user-shadow",
-      emotion: isTiming ? "pointing" : "serious",
-      mood: isTiming ? "gold" : index % 2 === 0 ? "paper" : "mist",
-      title: section.title,
-      text: section.body,
-      visualHint: isTiming ? "달력 위에 붉은 표시가 찍히는 장면" : "웹툰 말풍선과 사주 종이가 겹쳐지는 장면",
-    });
-  });
-
-  chapters.push({
-    id: "comic-final",
-    sceneType: "final",
-    speaker: "dohoon",
-    character: "dohoon-smile",
-    emotion: "smile",
-    mood: "redDark",
-    title: "도훈의 마지막 판정",
-    text: "이 사주는 겁주려고 보는 게 아니다. 어디서 막히고, 어디서 복이 붙는지 알면 같은 악운을 반복하지 않는다.",
-    visualHint: "도훈이 붉은 도장을 찍고, 뒤쪽 문이 열리는 마지막 장면",
-  });
-
-  return chapters.slice(0, 24);
+  if (params.mode === "preview") return buildPreviewComicChapters(params);
+  return buildFullComicChapters(params);
 }
 
 function responsePayload(params: {
@@ -6719,12 +9178,13 @@ function responsePayload(params: {
     fixedCareerLogic: "single-career-archetype-across-categories-v2",
     profileLogic: PROFILE_LOGIC,
     previewLogic: PREVIEW_LOGIC,
-    preserveLogic: "original-final-route-preserved-premium-question-core-only-no-shrink-v4",
+    preserveLogic:
+      "original-final-route-preserved-premium-question-core-only-no-shrink-v4",
     promptLeakFixLogic: "v24-internal-data-separated-no-bracket-leak-v1",
     sajuTypeStoryLogic: "v29-ghost-saju-story-paid-structure-v1",
     ghostSajuLogic: "ghost-metaphor-no-fear-story-layer-v1",
     todayFourCardLogic: "today-total-money-love-badluck-4sections-v1",
-    comicTheaterLogic: "dohoon-comic-chapters-v1",
+    comicTheaterLogic: "tight-webtoon-7free-20paid-v1",
   };
 }
 
@@ -6734,7 +9194,11 @@ export async function POST(request: Request) {
     const mode = body.mode || "preview";
     const user = body.user || {};
     const categoryId = body.categoryId || "today";
-    const categoryTitle = getEffectiveCategoryTitle(categoryId, getCategoryTitle(categoryId, body.categoryTitle), user);
+    const categoryTitle = getEffectiveCategoryTitle(
+      categoryId,
+      getCategoryTitle(categoryId, body.categoryTitle),
+      user,
+    );
     const question = safeText(body.question || user.question, "");
 
     const userForManse = convertUserBirthForManse(user);
@@ -6780,9 +9244,22 @@ export async function POST(request: Request) {
       ? formatManseForPrompt(partnerManse)
       : "상대방 만세력 정보: 상대방 생년월일 또는 출생 정보가 부족합니다.";
 
-    const rawFixedConclusionText = getFixedConclusionBlock(categoryId, categoryTitle, userForManse, myManse, partnerManse);
-    const fixedConclusionText = buildSafeFixedConclusionBlock(rawFixedConclusionText);
-    const profileText = getCategoryProfileText(categoryId, categoryTitle, myManse, question);
+    const rawFixedConclusionText = getFixedConclusionBlock(
+      categoryId,
+      categoryTitle,
+      userForManse,
+      myManse,
+      partnerManse,
+    );
+    const fixedConclusionText = buildSafeFixedConclusionBlock(
+      rawFixedConclusionText,
+    );
+    const profileText = getCategoryProfileText(
+      categoryId,
+      categoryTitle,
+      myManse,
+      question,
+    );
     const careerBlock = shouldUseCareerArchetype(categoryId)
       ? getCareerArchetypeGuide(myManse)
       : `[고정 직업 성향 판정]
@@ -6792,7 +9269,13 @@ export async function POST(request: Request) {
     const globalCareer = getCareerArchetype(myManse);
     const globalMoneyGrade = getMoneyGrade(myManse);
     const globalHealthGrade = getHealthGrade(myManse);
-    const fortuneSeed = buildFortuneSeed({ user: userForManse, categoryId, categoryTitle, manse: myManse, partnerManse });
+    const fortuneSeed = buildFortuneSeed({
+      user: userForManse,
+      categoryId,
+      categoryTitle,
+      manse: myManse,
+      partnerManse,
+    });
     const repeatGhostProfile = getRepeatGhostProfile(user, myManse);
     const pastLifeProfile = getPastLifeProfile(user, myManse);
 
@@ -6803,10 +9286,18 @@ export async function POST(request: Request) {
       day: userForManse.day,
       calendar: "양력",
       lunarLeapMonth: user.lunarLeapMonth === true,
-      partnerYear: hasPartnerBirthInfo(user) ? partnerForManse.year : user.partnerYear,
-      partnerMonth: hasPartnerBirthInfo(user) ? partnerForManse.month : user.partnerMonth,
-      partnerDay: hasPartnerBirthInfo(user) ? partnerForManse.day : user.partnerDay,
-      partnerCalendar: hasPartnerBirthInfo(user) ? "양력" : user.partnerCalendar,
+      partnerYear: hasPartnerBirthInfo(user)
+        ? partnerForManse.year
+        : user.partnerYear,
+      partnerMonth: hasPartnerBirthInfo(user)
+        ? partnerForManse.month
+        : user.partnerMonth,
+      partnerDay: hasPartnerBirthInfo(user)
+        ? partnerForManse.day
+        : user.partnerDay,
+      partnerCalendar: hasPartnerBirthInfo(user)
+        ? "양력"
+        : user.partnerCalendar,
       partnerLunarLeapMonth: user.partnerLunarLeapMonth === true,
     };
 
@@ -6829,7 +9320,10 @@ export async function POST(request: Request) {
     });
 
     console.log("SOREUM_MANSE_DEBUG", {
-      dayMaster: (myManse as any)?.dayMaster?.label || (myManse as any)?.dayMaster || (myManse as any)?.ilgan,
+      dayMaster:
+        (myManse as any)?.dayMaster?.label ||
+        (myManse as any)?.dayMaster ||
+        (myManse as any)?.ilgan,
       year: userForManse.year,
       month: userForManse.month,
       day: userForManse.day,
@@ -6870,34 +9364,132 @@ ${partnerManseText}
       });
 
     if (!process.env.OPENAI_API_KEY) {
-      const preview = fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
-      const full = fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+      const preview = fallbackPreview(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
+      const full = fallbackFull(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
 
       if (mode === "full") {
-        return NextResponse.json(responsePayload({ preview: "", full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(full, "full") }));
+        return NextResponse.json(
+          responsePayload({
+            preview: "",
+            full: ensureSajuAnalysisSection(
+              cleanGeneratedText(full),
+              categoryId,
+              categoryTitle,
+              myManse,
+            ),
+            result: ensureSajuAnalysisSection(
+              cleanGeneratedText(full),
+              categoryId,
+              categoryTitle,
+              myManse,
+            ),
+            manse: myManse,
+            partnerManse,
+            fixedConclusion: getPublicFixedConclusionText(
+              rawFixedConclusionText,
+            ),
+            profileText,
+            fortuneSeed,
+            birthConversion,
+            comicChapters: makeComicChapters(full, "full"),
+          }),
+        );
       }
 
       if (mode === "both") {
-        return NextResponse.json(responsePayload({ preview: cleanGeneratedText(preview), full: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), result: ensureSajuAnalysisSection(cleanGeneratedText(full), categoryId, categoryTitle, myManse), manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(full, "full") }));
+        return NextResponse.json(
+          responsePayload({
+            preview: cleanGeneratedText(preview),
+            full: ensureSajuAnalysisSection(
+              cleanGeneratedText(full),
+              categoryId,
+              categoryTitle,
+              myManse,
+            ),
+            result: ensureSajuAnalysisSection(
+              cleanGeneratedText(full),
+              categoryId,
+              categoryTitle,
+              myManse,
+            ),
+            manse: myManse,
+            partnerManse,
+            fixedConclusion: getPublicFixedConclusionText(
+              rawFixedConclusionText,
+            ),
+            profileText,
+            fortuneSeed,
+            birthConversion,
+            comicChapters: makeComicChapters(full, "full"),
+          }),
+        );
       }
 
-      return NextResponse.json(responsePayload({ preview, full: "", result: preview, manse: myManse, partnerManse, fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText), profileText, fortuneSeed, birthConversion, comicChapters: makeComicChapters(preview, "preview") }));
+      return NextResponse.json(
+        responsePayload({
+          preview,
+          full: "",
+          result: preview,
+          manse: myManse,
+          partnerManse,
+          fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
+          profileText,
+          fortuneSeed,
+          birthConversion,
+          comicChapters: makeComicChapters(preview, "preview"),
+        }),
+      );
     }
 
     if (mode === "preview") {
       let preview = "";
       try {
         preview = await generateText(
-          buildPreviewPrompt({ user: promptUser, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse: myManse }),
+          buildPreviewPrompt({
+            user: promptUser,
+            categoryId,
+            categoryTitle,
+            question,
+            manseText,
+            fixedConclusionText,
+            profileText,
+            manse: myManse,
+          }),
           getPreviewMaxTokens(categoryId),
-          fortuneSeed
+          fortuneSeed,
         );
       } catch (error) {
         console.error("preview generation error:", error);
-        preview = fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+        preview = fallbackPreview(
+          categoryId,
+          categoryTitle,
+          promptUser,
+          myManse,
+          partnerManse,
+        );
       }
 
-      const finalPreview = preview || fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+      const finalPreview =
+        preview ||
+        fallbackPreview(
+          categoryId,
+          categoryTitle,
+          promptUser,
+          myManse,
+          partnerManse,
+        );
 
       return NextResponse.json(
         responsePayload({
@@ -6912,8 +9504,11 @@ ${partnerManseText}
           birthConversion,
           repeatGhostProfile,
           pastLifeProfile,
-          comicChapters: makeComicChapters(cleanGeneratedText(finalPreview), "preview"),
-        })
+          comicChapters: makeComicChapters(
+            cleanGeneratedText(finalPreview),
+            "preview",
+          ),
+        }),
       );
     }
 
@@ -6921,22 +9516,55 @@ ${partnerManseText}
       let full = "";
       try {
         full = await generateText(
-          buildFullPrompt({ user: promptUser, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse: myManse }),
+          buildFullPrompt({
+            user: promptUser,
+            categoryId,
+            categoryTitle,
+            question,
+            manseText,
+            fixedConclusionText,
+            profileText,
+            manse: myManse,
+          }),
           getFullMaxTokens(categoryId),
-          fortuneSeed
+          fortuneSeed,
         );
       } catch (error) {
         console.error("full generation error:", error);
-        full = fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+        full = fallbackFull(
+          categoryId,
+          categoryTitle,
+          promptUser,
+          myManse,
+          partnerManse,
+        );
       }
 
-      const finalFull = full || fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+      const finalFull =
+        full ||
+        fallbackFull(
+          categoryId,
+          categoryTitle,
+          promptUser,
+          myManse,
+          partnerManse,
+        );
 
       return NextResponse.json(
         responsePayload({
           preview: "",
-          full: ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse),
-          result: ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse),
+          full: ensureSajuAnalysisSection(
+            cleanGeneratedText(finalFull),
+            categoryId,
+            categoryTitle,
+            myManse,
+          ),
+          result: ensureSajuAnalysisSection(
+            cleanGeneratedText(finalFull),
+            categoryId,
+            categoryTitle,
+            myManse,
+          ),
           manse: myManse,
           partnerManse,
           fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
@@ -6945,8 +9573,16 @@ ${partnerManseText}
           birthConversion,
           repeatGhostProfile,
           pastLifeProfile,
-          comicChapters: makeComicChapters(ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse), "full"),
-        })
+          comicChapters: makeComicChapters(
+            ensureSajuAnalysisSection(
+              cleanGeneratedText(finalFull),
+              categoryId,
+              categoryTitle,
+              myManse,
+            ),
+            "full",
+          ),
+        }),
       );
     }
 
@@ -6955,34 +9591,90 @@ ${partnerManseText}
 
     try {
       preview = await generateText(
-        buildPreviewPrompt({ user: promptUser, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse: myManse }),
+        buildPreviewPrompt({
+          user: promptUser,
+          categoryId,
+          categoryTitle,
+          question,
+          manseText,
+          fixedConclusionText,
+          profileText,
+          manse: myManse,
+        }),
         getPreviewMaxTokens(categoryId),
-        fortuneSeed
+        fortuneSeed,
       );
     } catch (error) {
       console.error("preview generation error:", error);
-      preview = fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+      preview = fallbackPreview(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
     }
 
     try {
       full = await generateText(
-        buildFullPrompt({ user: promptUser, categoryId, categoryTitle, question, manseText, fixedConclusionText, profileText, manse: myManse }),
+        buildFullPrompt({
+          user: promptUser,
+          categoryId,
+          categoryTitle,
+          question,
+          manseText,
+          fixedConclusionText,
+          profileText,
+          manse: myManse,
+        }),
         getFullMaxTokens(categoryId),
-        fortuneSeed
+        fortuneSeed,
       );
     } catch (error) {
       console.error("full generation error:", error);
-      full = fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+      full = fallbackFull(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
     }
 
-    const finalPreview = preview || fallbackPreview(categoryId, categoryTitle, promptUser, myManse, partnerManse);
-    const finalFull = full || fallbackFull(categoryId, categoryTitle, promptUser, myManse, partnerManse);
+    const finalPreview =
+      preview ||
+      fallbackPreview(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
+    const finalFull =
+      full ||
+      fallbackFull(
+        categoryId,
+        categoryTitle,
+        promptUser,
+        myManse,
+        partnerManse,
+      );
 
     return NextResponse.json(
       responsePayload({
         preview: cleanGeneratedText(finalPreview),
-        full: ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse),
-        result: ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse),
+        full: ensureSajuAnalysisSection(
+          cleanGeneratedText(finalFull),
+          categoryId,
+          categoryTitle,
+          myManse,
+        ),
+        result: ensureSajuAnalysisSection(
+          cleanGeneratedText(finalFull),
+          categoryId,
+          categoryTitle,
+          myManse,
+        ),
         manse: myManse,
         partnerManse,
         fixedConclusion: getPublicFixedConclusionText(rawFixedConclusionText),
@@ -6991,8 +9683,16 @@ ${partnerManseText}
         birthConversion,
         repeatGhostProfile,
         pastLifeProfile,
-        comicChapters: makeComicChapters(ensureSajuAnalysisSection(cleanGeneratedText(finalFull), categoryId, categoryTitle, myManse), "full"),
-      })
+        comicChapters: makeComicChapters(
+          ensureSajuAnalysisSection(
+            cleanGeneratedText(finalFull),
+            categoryId,
+            categoryTitle,
+            myManse,
+          ),
+          "full",
+        ),
+      }),
     );
   } catch (error) {
     console.error("fortune route error:", error);
@@ -7017,7 +9717,7 @@ ${partnerManseText}
         full: "",
         result: "",
       }),
-      { status: 200 }
+      { status: 200 },
     );
   }
 }
@@ -7039,6 +9739,6 @@ export async function GET() {
     previewLogic: PREVIEW_LOGIC,
     ghostSajuLogic: "ghost-metaphor-no-fear-story-layer-v1",
     todayFourCardLogic: "today-total-money-love-badluck-4sections-v1",
-    comicTheaterLogic: "dohoon-comic-chapters-v1",
+    comicTheaterLogic: "tight-webtoon-7free-20paid-v1",
   });
 }

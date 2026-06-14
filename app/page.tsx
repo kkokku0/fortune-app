@@ -1,5 +1,7 @@
 "use client";
 
+// PAGE_BASE_USER_VERSION_FREE_TEXT_REMOVED_CONFIRMED - based on uploaded previous page, free text report UI removed.
+
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 declare global {
@@ -90,6 +92,18 @@ type ConsultPlan = {
   title: string;
   price: number;
   desc: string;
+};
+
+type ComicChapter = {
+  sceneType?: string;
+  speaker?: string;
+  emotion?: string;
+  title?: string;
+  text?: string;
+  character?: string;
+  mood?: string;
+  background?: string;
+  visualHint?: string;
 };
 
 const emptyUser: UserInfo = {
@@ -546,9 +560,22 @@ const questionExamples: Record<CategoryId, string[]> = {
   ],
 };
 
-const maritalStatuses: MaritalStatus[] = ["미혼", "연애중", "기혼", "이혼/재혼 고민", "비공개"];
+const maritalStatuses: MaritalStatus[] = [
+  "미혼",
+  "연애중",
+  "기혼",
+  "이혼/재혼 고민",
+  "비공개",
+];
 
-const blockedLuckOptions = ["돈", "일·사업", "사람관계", "사랑·결혼", "몸·건강", "마음·불안"] as const;
+const blockedLuckOptions = [
+  "돈",
+  "일·사업",
+  "사람관계",
+  "사랑·결혼",
+  "몸·건강",
+  "마음·불안",
+] as const;
 
 function cx(...items: Array<string | false | undefined>) {
   return items.filter(Boolean).join(" ");
@@ -601,48 +628,102 @@ function makeSafeFileName(value: string) {
 
 function getPaidBullets(categoryId: CategoryId) {
   if (categoryId === "today") {
-    return ["오늘 돈에서 조심할 선택", "오늘 사람관계에서 피해야 할 말", "오늘 몸 컨디션에서 신경 쓸 부분", "오늘 운을 살리는 한 가지 행동"];
+    return [
+      "오늘 돈에서 조심할 선택",
+      "오늘 사람관계에서 피해야 할 말",
+      "오늘 몸 컨디션에서 신경 쓸 부분",
+      "오늘 운을 살리는 한 가지 행동",
+    ];
   }
 
   if (categoryId === "money") {
-    return ["돈복 상·중상·중·중하·하 명확한 판정", "돈이 붙는 방식과 돈이 새는 이유", "돈복이 강해지는 시기", "잡아야 할 돈과 피해야 할 돈"];
+    return [
+      "돈복 상·중상·중·중하·하 명확한 판정",
+      "돈이 붙는 방식과 돈이 새는 이유",
+      "돈복이 강해지는 시기",
+      "잡아야 할 돈과 피해야 할 돈",
+    ];
   }
 
   if (categoryId === "career") {
-    return ["직장형·사업형·자기수익형 판정", "일복이 돈복으로 바뀌는 자리", "내 사주에 맞는 일의 형태", "기운만 빠지는 일의 판"];
+    return [
+      "직장형·사업형·자기수익형 판정",
+      "일복이 돈복으로 바뀌는 자리",
+      "내 사주에 맞는 일의 형태",
+      "기운만 빠지는 일의 판",
+    ];
   }
 
   if (categoryId === "love") {
-    return ["사랑운과 결혼운의 진짜 흐름", "들어오는 인연과 피해야 할 사람", "결혼까지 갈 수 있는 기준", "결혼으로 가려면 맞춰야 할 것"];
+    return [
+      "사랑운과 결혼운의 진짜 흐름",
+      "들어오는 인연과 피해야 할 사람",
+      "결혼까지 갈 수 있는 기준",
+      "결혼으로 가려면 맞춰야 할 것",
+    ];
   }
 
   if (categoryId === "health") {
-    return ["사주상 몸이 무너지는 방식", "몸이 먼저 보내는 신호", "건강을 조심해야 할 시기", "몸을 살리는 생활 리듬"];
+    return [
+      "사주상 몸이 무너지는 방식",
+      "몸이 먼저 보내는 신호",
+      "건강을 조심해야 할 시기",
+      "몸을 살리는 생활 리듬",
+    ];
   }
 
   if (categoryId === "compatibility") {
-    return ["궁합 점수와 등급", "왜 끌리고 왜 부딪히는지", "결혼까지 갈 수 있는 궁합인지", "사업파트너라면 돈 앞에서 맞는지"];
+    return [
+      "궁합 점수와 등급",
+      "왜 끌리고 왜 부딪히는지",
+      "결혼까지 갈 수 있는 궁합인지",
+      "사업파트너라면 돈 앞에서 맞는지",
+    ];
   }
 
   if (categoryId === "monthly") {
-    return ["올해 전체 운의 결론", "돈복이 움직이는 달", "일·사업운이 강해지는 달", "사람관계와 건강을 조심할 달"];
+    return [
+      "올해 전체 운의 결론",
+      "돈복이 움직이는 달",
+      "일·사업운이 강해지는 달",
+      "사람관계와 건강을 조심할 달",
+    ];
   }
 
   if (categoryId === "lifeFlow") {
-    return ["초년운·청년운·중년운·말년운", "인생 대운 기회가 몇 번 오는지", "가장 중요한 대운 시기", "대운을 막는 악운과 잡아야 할 복"];
+    return [
+      "초년운·청년운·중년운·말년운",
+      "인생 대운 기회가 몇 번 오는지",
+      "가장 중요한 대운 시기",
+      "대운을 막는 악운과 잡아야 할 복",
+    ];
   }
 
   if (categoryId === "traditional") {
-    return ["초년운·청년운·중년운·말년운", "재물운·일사업운·사랑결혼운", "건강운·자식 흐름·인복", "평생 조심할 악운과 반드시 살려야 할 복"];
+    return [
+      "초년운·청년운·중년운·말년운",
+      "재물운·일사업운·사랑결혼운",
+      "건강운·자식 흐름·인복",
+      "평생 조심할 악운과 반드시 살려야 할 복",
+    ];
   }
 
   if (categoryId === "premium") {
-    return ["질문에 대한 결론", "왜 이 고민이 반복되는지", "잡아야 할 것과 내려놔야 할 것", "도훈의 최종 판정"];
+    return [
+      "질문에 대한 결론",
+      "왜 이 고민이 반복되는지",
+      "잡아야 할 것과 내려놔야 할 것",
+      "도훈의 최종 판정",
+    ];
   }
 
-  return ["내 사주에 맞는 핵심 방향", "피해야 할 선택과 반복 패턴", "앞으로 참고할 흐름", "전체 운의 방향"];
+  return [
+    "내 사주에 맞는 핵심 방향",
+    "피해야 할 선택과 반복 패턴",
+    "앞으로 참고할 흐름",
+    "전체 운의 방향",
+  ];
 }
-
 
 type PaidHook = {
   title: string;
@@ -656,81 +737,151 @@ function getPaidHook(categoryId: CategoryId): PaidHook {
   const common = {
     title: "무료 판정만 보고 끊기면, 진짜 열리는 자리를 못 봅니다",
     body: "무료에서는 지금 먼저 봐야 할 막힌 자리만 열었습니다. 전체 리포트에서는 그 막힘이 어디서 왔는지, 어느 시기에 풀리는지, 무엇을 잡아야 복이 붙는지까지 이어서 봅니다.",
-    warning: "좋은 말만 듣고 넘기면 같은 자리에서 또 막힐 수 있습니다. 점수와 등급 뒤에 숨어 있는 돈·일·사람·몸의 흐름을 끝까지 확인해야 합니다.",
-    points: ["복이 붙는 자리", "악운이 붙는 선택", "운이 움직이는 시기", "도훈의 마지막 판정"],
-    buttonText: "전체 리포트 열기",
+    warning:
+      "좋은 말만 듣고 넘기면 같은 자리에서 또 막힐 수 있습니다. 점수와 등급 뒤에 숨어 있는 돈·일·사람·몸의 흐름을 끝까지 확인해야 합니다.",
+    points: [
+      "복이 붙는 자리",
+      "악운이 붙는 선택",
+      "운이 움직이는 시기",
+      "도훈의 마지막 판정",
+    ],
+    buttonText: "도훈의 20페이지 사주극장 열기",
   };
 
   const hooks: Partial<Record<CategoryId, PaidHook>> = {
     today: {
       title: "오늘 운은 짧게 지나가지만, 놓치면 바로 새는 날입니다",
       body: "무료에서는 오늘 가장 먼저 조심할 기운만 봤습니다. 전체 리포트에서는 오늘의 재물운, 일·사업운, 인연운, 건강운을 따로 열어서 돈이 새는 순간과 말이 꼬이는 지점을 봅니다.",
-      warning: "오늘은 하루 운이라 길게 끌지 않습니다. 대신 오늘 돈을 써도 되는지, 연락을 해도 되는지, 몸을 무리해도 되는지 바로 확인해야 합니다.",
-      points: ["오늘의 재물운", "오늘의 일·사업운", "오늘의 인연운", "오늘의 건강운"],
-      buttonText: "오늘 전체 흐름 열기",
+      warning:
+        "오늘은 하루 운이라 길게 끌지 않습니다. 대신 오늘 돈을 써도 되는지, 연락을 해도 되는지, 몸을 무리해도 되는지 바로 확인해야 합니다.",
+      points: [
+        "오늘의 재물운",
+        "오늘의 일·사업운",
+        "오늘의 인연운",
+        "오늘의 건강운",
+      ],
+      buttonText: "도훈의 오늘운 20페이지 열기",
     },
     money: {
       title: "방금 나온 돈복, 등급만 보고 끝내면 또 새는 돈을 못 막습니다",
       body: "무료에서 돈복이 보였다면 이제 봐야 할 건 더 분명합니다. 언제 돈이 붙는지, 뭘 해서 돈을 버는지, 어떤 돈을 건드리면 손해가 먼저 붙는지까지 봐야 재물운이 남습니다.",
-      warning: "돈복이 있어도 새는 자리 못 막으면 벌어도 남는 게 없습니다. 특히 정 때문에 쓰는 돈, 남 말 듣고 들어가는 돈, 내 몫이 흐린 돈은 끝까지 봐야 합니다.",
-      points: ["돈복이 강해지는 나이대", "올해 돈이 움직이는 달", "뭘 해서 돈을 버는지", "피해야 할 돈"],
-      buttonText: "재물운 전체 열기",
+      warning:
+        "돈복이 있어도 새는 자리 못 막으면 벌어도 남는 게 없습니다. 특히 정 때문에 쓰는 돈, 남 말 듣고 들어가는 돈, 내 몫이 흐린 돈은 끝까지 봐야 합니다.",
+      points: [
+        "돈복이 강해지는 나이대",
+        "올해 돈이 움직이는 달",
+        "뭘 해서 돈을 버는지",
+        "피해야 할 돈",
+      ],
+      buttonText: "재물운 20페이지 사주극장 열기",
     },
     career: {
-      title: "방금 나온 일 성향 판정, 여기서 끊기면 또 남 좋은 일만 할 수 있습니다",
+      title:
+        "방금 나온 일 성향 판정, 여기서 끊기면 또 남 좋은 일만 할 수 있습니다",
       body: "진짜 중요한 건 네가 무슨 일을 해야 사주가 사는지입니다. 직장에 있으면 살아나는지, 사업으로 가야 하는지, 어느 판에 들어가면 이름도 몫도 남는지까지 봐야 합니다.",
-      warning: "일복이 있어도 남 좋은 일만 하면 돈복으로 바뀌지 않습니다. 네 역할이 남는 자리와 기운만 빠지는 자리를 구분해야 합니다.",
-      points: ["직장형·사업형 판정", "맞는 일의 형태", "피해야 할 일의 판", "일이 풀리는 시기"],
-      buttonText: "일·사업운 전체 열기",
+      warning:
+        "일복이 있어도 남 좋은 일만 하면 돈복으로 바뀌지 않습니다. 네 역할이 남는 자리와 기운만 빠지는 자리를 구분해야 합니다.",
+      points: [
+        "직장형·사업형 판정",
+        "맞는 일의 형태",
+        "피해야 할 일의 판",
+        "일이 풀리는 시기",
+      ],
+      buttonText: "일·사업운 20페이지 사주극장 열기",
     },
     love: {
       title: "인연운이 있다는 말만으로는 부족합니다",
       body: "전체 리포트에서는 어떤 사람이 들어오는지, 누구를 만나면 마음만 늙는지, 올해 몇 월 전후로 인연이 움직이는지, 결혼까지 갈 수 있는 운인지까지 봅니다.",
-      warning: "좋아하는 마음만 보고 가면 같은 자리에서 또 다칠 수 있습니다. 맞는 사람과 피해야 할 사람을 사주 흐름으로 갈라봐야 합니다.",
-      points: ["들어오는 인연 시기", "맞는 사람 유형", "피해야 할 사람", "결혼까지 갈 수 있는 기준"],
-      buttonText: "사랑·결혼운 전체 열기",
+      warning:
+        "좋아하는 마음만 보고 가면 같은 자리에서 또 다칠 수 있습니다. 맞는 사람과 피해야 할 사람을 사주 흐름으로 갈라봐야 합니다.",
+      points: [
+        "들어오는 인연 시기",
+        "맞는 사람 유형",
+        "피해야 할 사람",
+        "결혼까지 갈 수 있는 기준",
+      ],
+      buttonText: "사랑·결혼운 20페이지 열기",
     },
     health: {
-      title: "건강운은 겁주는 풀이가 아니라, 몸이 먼저 보내는 신호를 보는 겁니다",
+      title:
+        "건강운은 겁주는 풀이가 아니라, 몸이 먼저 보내는 신호를 보는 겁니다",
       body: "전체 리포트에서는 사주상 어느 계통이 약하게 잡히는지, 몇 월 전후로 몸이 무너지기 쉬운지, 어떤 음식과 운동 흐름이 맞는지까지 봅니다.",
-      warning: "몸이 먼저 무거워지는데도 넘기면 운이 들어와도 버틸 힘이 약해집니다. 위장·소화·수면·피로·순환 흐름을 따로 봐야 합니다.",
-      points: ["약하게 잡히는 몸 계통", "몸이 무거워지는 시기", "맞는 음식 흐름", "맞는 운동 흐름"],
-      buttonText: "건강운 전체 열기",
+      warning:
+        "몸이 먼저 무거워지는데도 넘기면 운이 들어와도 버틸 힘이 약해집니다. 위장·소화·수면·피로·순환 흐름을 따로 봐야 합니다.",
+      points: [
+        "약하게 잡히는 몸 계통",
+        "몸이 무거워지는 시기",
+        "맞는 음식 흐름",
+        "맞는 운동 흐름",
+      ],
+      buttonText: "건강운 20페이지 열기",
     },
     compatibility: {
       title: "궁합 점수만 보면, 왜 끌리고 왜 터지는지 놓칩니다",
       body: "전체 리포트에서는 이 사람이 내 복인지 악운인지, 연애로 좋은지 결혼까지 갈 수 있는지, 사업파트너라면 같이 돈을 벌 수 있는지까지 따로 봅니다.",
-      warning: "좋은 사람과 오래 갈 사람은 다릅니다. 좋은 사람과 같이 돈 벌 수 있는 사람도 다릅니다. 궁합은 점수 뒤의 이유를 봐야 합니다.",
-      points: ["궁합 점수와 등급", "끌리는 이유", "부딪히는 지점", "결혼 또는 동업 가능성"],
-      buttonText: "궁합운 전체 열기",
+      warning:
+        "좋은 사람과 오래 갈 사람은 다릅니다. 좋은 사람과 같이 돈 벌 수 있는 사람도 다릅니다. 궁합은 점수 뒤의 이유를 봐야 합니다.",
+      points: [
+        "궁합 점수와 등급",
+        "끌리는 이유",
+        "부딪히는 지점",
+        "결혼 또는 동업 가능성",
+      ],
+      buttonText: "궁합운 20페이지 열기",
     },
     monthly: {
       title: "올해운세는 1월부터 12월까지 늘어놓는 풀이가 아닙니다",
       body: "전체 리포트에서는 올해 돈이 움직이는 달, 일이 강해지는 달, 사람관계가 흔들리는 달, 몸을 조심해야 할 달을 찍어서 봅니다.",
-      warning: "좋은 달을 놓치면 복이 지나가고, 나쁜 달을 모르고 들어가면 손해가 먼저 붙습니다. 올해는 움직일 달과 멈출 달이 다릅니다.",
-      points: ["돈복이 움직이는 달", "일·사업운이 강해지는 달", "사람관계가 흔들리는 달", "건강 조심 달"],
-      buttonText: "올해운세 전체 열기",
+      warning:
+        "좋은 달을 놓치면 복이 지나가고, 나쁜 달을 모르고 들어가면 손해가 먼저 붙습니다. 올해는 움직일 달과 멈출 달이 다릅니다.",
+      points: [
+        "돈복이 움직이는 달",
+        "일·사업운이 강해지는 달",
+        "사람관계가 흔들리는 달",
+        "건강 조심 달",
+      ],
+      buttonText: "올해운세 20페이지 열기",
     },
     lifeFlow: {
       title: "대운은 기다린다고 내 것이 되는 운이 아닙니다",
       body: "전체 리포트에서는 초년·청년·중년·말년의 흐름과 인생에서 가장 큰 대운이 언제 들어오는지, 무엇이 그 대운을 막는지까지 봅니다.",
-      warning: "대운이 와도 잡을 그릇이 없으면 지나갑니다. 돈·일·사람·건강 중 무엇이 대운을 열고 막는지 봐야 합니다.",
-      points: ["초년·청년·중년·말년", "가장 중요한 대운", "대운을 막는 악운", "잡아야 할 복"],
-      buttonText: "인생대운 전체 열기",
+      warning:
+        "대운이 와도 잡을 그릇이 없으면 지나갑니다. 돈·일·사람·건강 중 무엇이 대운을 열고 막는지 봐야 합니다.",
+      points: [
+        "초년·청년·중년·말년",
+        "가장 중요한 대운",
+        "대운을 막는 악운",
+        "잡아야 할 복",
+      ],
+      buttonText: "인생대운 20페이지 열기",
     },
     traditional: {
-      title: "평생종합사주는 한 가지 운이 아니라, 네 인생 전체판을 여는 리포트입니다",
+      title:
+        "평생종합사주는 한 가지 운이 아니라, 네 인생 전체판을 여는 리포트입니다",
       body: "돈이 안 모인 이유가 일 때문인지, 일이 막힌 이유가 사람 때문인지, 몸이 무거운 이유가 오래 버틴 운 때문인지까지 같이 봐야 합니다. 평생종합사주는 초년부터 말년까지 돈·일·사람·건강·자식·대운을 한 판으로 펼쳐봅니다.",
-      warning: "평생종합사주는 14,900원 대표 상품입니다. 초년부터 말년까지 돈·일·사람·건강·자식·대운이 어디서 붙고 어디서 막히는지 끝까지 열어봐야 합니다.",
-      points: ["초년·청년·중년·말년", "평생 재물·일·사랑·건강", "자식 흐름과 인복", "평생 조심할 악운"],
-      buttonText: "평생종합사주 전체 열기",
+      warning:
+        "평생종합사주는 14,900원 대표 상품입니다. 초년부터 말년까지 돈·일·사람·건강·자식·대운이 어디서 붙고 어디서 막히는지 끝까지 열어봐야 합니다.",
+      points: [
+        "초년·청년·중년·말년",
+        "평생 재물·일·사랑·건강",
+        "자식 흐름과 인복",
+        "평생 조심할 악운",
+      ],
+      buttonText: "평생사주 20페이지 전체판 열기",
     },
     premium: {
-      title: "이 고민은 위로가 아니라, 해도 되는지 멈춰야 하는지 답을 봐야 합니다",
+      title:
+        "이 고민은 위로가 아니라, 해도 되는지 멈춰야 하는지 답을 봐야 합니다",
       body: "내 고민 사주풀이는 종합사주가 아닙니다. 네가 적은 질문 하나를 놓고 지금 밀어붙여도 되는지, 기다려야 하는지, 정리해야 하는지, 사주상 어디서 막히고 어디서 풀리는지를 바로 봅니다.",
-      warning: "내 고민 사주풀이는 19,900원 심화 풀이입니다. 돈이면 돈, 일이라면 일, 사람이라면 사람까지 질문 하나를 평생운처럼 깊게 파고듭니다.",
-      points: ["질문에 대한 결론", "왜 반복되는 고민인지", "앞으로 1년 흐름", "도훈의 최종 답"],
-      buttonText: "내 고민 전체 풀이 열기",
+      warning:
+        "내 고민 사주풀이는 19,900원 심화 풀이입니다. 돈이면 돈, 일이라면 일, 사람이라면 사람까지 질문 하나를 평생운처럼 깊게 파고듭니다.",
+      points: [
+        "질문에 대한 결론",
+        "왜 반복되는 고민인지",
+        "앞으로 1년 흐름",
+        "도훈의 최종 답",
+      ],
+      buttonText: "내 고민 20페이지 심화판 열기",
     },
   };
 
@@ -799,11 +950,364 @@ function BrandLogo({ compact = false }: { compact?: boolean }) {
       src="/brand/soreum-logo.png"
       alt="소름사주 - 형이 귀신같이 봐준다"
       onError={() => setFailed(true)}
-      className={compact ? "h-12 w-auto object-contain" : "h-auto w-full object-contain"}
+      className={
+        compact ? "h-12 w-auto object-contain" : "h-auto w-full object-contain"
+      }
     />
   );
 }
 
+function normalizeComicChapters(value: unknown): ComicChapter[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const raw = item as Record<string, unknown>;
+
+      return {
+        sceneType: typeof raw.sceneType === "string" ? raw.sceneType : "",
+        speaker: typeof raw.speaker === "string" ? raw.speaker : "",
+        emotion: typeof raw.emotion === "string" ? raw.emotion : "",
+        title: typeof raw.title === "string" ? raw.title : "",
+        text: typeof raw.text === "string" ? raw.text : "",
+        character: typeof raw.character === "string" ? raw.character : "",
+        mood:
+          typeof raw.mood === "string"
+            ? raw.mood
+            : typeof raw.background === "string"
+              ? raw.background
+              : "",
+        background: typeof raw.background === "string" ? raw.background : "",
+        visualHint: typeof raw.visualHint === "string" ? raw.visualHint : "",
+      } satisfies ComicChapter;
+    })
+    .filter((item): item is ComicChapter =>
+      Boolean(item && (item.title || item.text)),
+    );
+}
+
+function getComicCharacterImage(scene: ComicChapter) {
+  const key =
+    `${scene.character || ""} ${scene.speaker || ""} ${scene.emotion || ""} ${scene.sceneType || ""}`.toLowerCase();
+
+  if (
+    key.includes("bad") ||
+    key.includes("ghost") ||
+    key.includes("악운") ||
+    key.includes("warningghost")
+  ) {
+    return {
+      src: "/characters/bad-luck-ghost.png",
+      fallback: "👻",
+      name: "악운",
+    };
+  }
+
+  if (
+    key.includes("fortune") ||
+    key.includes("spirit") ||
+    key.includes("blessing") ||
+    key.includes("복")
+  ) {
+    return {
+      src: "/characters/fortune-spirit.png",
+      fallback: "✨",
+      name: "복",
+    };
+  }
+
+  if (
+    key.includes("user") ||
+    key.includes("shadow") ||
+    key.includes("내담자")
+  ) {
+    return {
+      src: "/characters/user-shadow.png",
+      fallback: "👤",
+      name: "내담자",
+    };
+  }
+
+  if (key.includes("warning") || key.includes("경고")) {
+    return {
+      src: "/characters/dohoon-warning.png",
+      fallback: "⚠️",
+      name: "도훈",
+    };
+  }
+
+  if (key.includes("point") || key.includes("final") || key.includes("판정")) {
+    return {
+      src: "/characters/dohoon-pointing.png",
+      fallback: "👉",
+      name: "도훈",
+    };
+  }
+
+  if (key.includes("smile") || key.includes("good") || key.includes("gold")) {
+    return {
+      src: "/characters/dohoon-smile.png",
+      fallback: "🙂",
+      name: "도훈",
+    };
+  }
+
+  if (
+    key.includes("serious") ||
+    key.includes("mind") ||
+    key.includes("personality")
+  ) {
+    return {
+      src: "/characters/dohoon-serious.png",
+      fallback: "🔮",
+      name: "도훈",
+    };
+  }
+
+  return { src: "/characters/dohoon.png", fallback: "🔮", name: "도훈" };
+}
+
+function getComicPanelClass(scene: ComicChapter) {
+  const mood =
+    `${scene.mood || ""} ${scene.background || ""} ${scene.sceneType || ""}`.toLowerCase();
+
+  if (
+    mood.includes("red") ||
+    mood.includes("warning") ||
+    mood.includes("dark")
+  ) {
+    return "from-[#2a0508] via-[#140608] to-[#050505]";
+  }
+
+  if (
+    mood.includes("gold") ||
+    mood.includes("blessing") ||
+    mood.includes("fortune")
+  ) {
+    return "from-[#3b2507] via-[#1a0f04] to-[#050505]";
+  }
+
+  if (
+    mood.includes("mist") ||
+    mood.includes("shadow") ||
+    mood.includes("mind")
+  ) {
+    return "from-[#16172a] via-[#0b0b12] to-[#050505]";
+  }
+
+  return "from-[#231207] via-[#0d0907] to-[#050505]";
+}
+
+function FortuneComicPanel({
+  scene,
+  index,
+  total,
+}: {
+  scene: ComicChapter;
+  index: number;
+  total: number;
+}) {
+  const image = getComicCharacterImage(scene);
+  const panelClass = getComicPanelClass(scene);
+  const title = scene.title || "도훈의 판정";
+  const text = scene.text || "이 장면의 풀이가 비어 있습니다.";
+
+  return (
+    <article
+      className={cx(
+        "relative min-h-[520px] overflow-hidden rounded-[34px] border border-[#7a5b37] bg-gradient-to-br p-5 shadow-[0_26px_80px_rgba(0,0,0,0.48)]",
+        panelClass,
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,215,142,0.65)_1px,transparent_0)] [background-size:30px_30px]" />
+      <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-[#e0b36d]/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-[#a855f7]/14 blur-3xl" />
+
+      <div className="relative z-10 flex items-center justify-between gap-3">
+        <div className="rounded-full border border-[#7a5b37] bg-black/45 px-4 py-2 text-[10px] font-black tracking-[0.22em] text-[#e0b36d]">
+          도훈의 사주극장
+        </div>
+        <div className="rounded-full border border-[#7a5b37] bg-black/45 px-3 py-2 text-xs font-black text-white">
+          {index + 1} / {total}
+        </div>
+      </div>
+
+      <div className="relative z-10 mt-5 flex min-h-[285px] items-end justify-center">
+        <div className="relative h-[300px] w-full max-w-[360px] overflow-hidden rounded-[28px] border border-[#7a5b37] bg-black/18 shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
+          <SafeImage
+            src={image.src}
+            alt={image.name}
+            fallback={image.fallback}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/62 to-transparent" />
+        </div>
+      </div>
+
+      <div className="relative z-20 -mt-4 rounded-[28px] border border-[#d8a86f] bg-[rgba(255,248,238,0.96)] p-5 text-[#15100c] shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="rounded-full bg-[#b91c1c] px-3 py-1 text-[11px] font-black text-white">
+            장면 {index + 1}
+          </span>
+          {scene.sceneType ? (
+            <span className="rounded-full border border-[#d8a86f] bg-[#fff7ea] px-3 py-1 text-[11px] font-black text-[#7a4c16]">
+              {scene.sceneType}
+            </span>
+          ) : null}
+        </div>
+
+        <h3 className="break-keep text-[24px] font-black leading-tight tracking-[-0.055em] text-[#120d09] md:text-[28px]">
+          {title}
+        </h3>
+        <p className="mt-4 whitespace-pre-line break-keep text-[17px] font-black leading-8 tracking-[-0.035em] text-[#241710] md:text-[19px] md:leading-9">
+          {text}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function FortuneComicTheater({
+  chapters,
+  paid = false,
+}: {
+  chapters: ComicChapter[];
+  paid?: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [chapters]);
+
+  if (!chapters.length) return null;
+
+  const safeIndex = Math.min(index, chapters.length - 1);
+  const current = chapters[safeIndex];
+
+  return (
+    <section className="mt-5 rounded-[36px] border border-[#7a5b37] bg-[#0b0908] p-3 shadow-[0_30px_90px_rgba(0,0,0,0.38)] md:p-4">
+      <div className="mb-3 rounded-[28px] border border-[#7a5b37] bg-[radial-gradient(circle_at_88%_15%,rgba(216,168,111,0.16),transparent_36%),#11100f] p-5">
+        <div className="text-[10px] font-black tracking-[0.3em] text-[#d8a86f]">
+          SOREUM COMIC REPORT
+        </div>
+        <div className="mt-2 break-keep text-2xl font-black tracking-[-0.06em] text-white">
+          도훈의 20페이지 사주극장
+        </div>
+        <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
+          {paid
+            ? "결제 후 열린 20페이지 사주극장을 한 장씩 넘겨봅니다."
+            : "무료에서는 문 앞까지만 보여줍니다. 잠긴 장면 뒤에 20페이지 전체판이 이어집니다."}
+        </p>
+      </div>
+
+      <FortuneComicPanel
+        scene={current}
+        index={safeIndex}
+        total={chapters.length}
+      />
+
+      <div className="mt-3 rounded-[28px] border border-[#7a5b37] bg-[#11100f] p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setIndex((prev) => Math.max(0, prev - 1))}
+            disabled={safeIndex === 0}
+            className="rounded-full border border-[#7a5b37] bg-black/35 px-4 py-4 text-sm font-black text-white disabled:opacity-35"
+          >
+            〈 이전 장면
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setIndex((prev) => Math.min(chapters.length - 1, prev + 1))
+            }
+            disabled={safeIndex === chapters.length - 1}
+            className="rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-4 py-4 text-sm font-black text-black disabled:opacity-35 sm:col-start-3"
+          >
+            다음 장면 〉
+          </button>
+
+          <div className="order-3 col-span-2 flex items-center justify-center gap-1.5 sm:order-none sm:col-span-1 sm:col-start-2 sm:row-start-1">
+            {chapters.map((chapter, chapterIndex) => (
+              <button
+                key={`comic-dot-${chapter.title || chapterIndex}-${chapterIndex}`}
+                type="button"
+                aria-label={`${chapterIndex + 1}번 웹툰 장면으로 이동`}
+                onClick={() => setIndex(chapterIndex)}
+                className={cx(
+                  "h-2.5 rounded-full transition-all",
+                  safeIndex === chapterIndex
+                    ? "w-8 bg-[#d8a86f]"
+                    : "w-2.5 bg-[#7a5b37]",
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function getTwentyPageProductName(category: Category) {
+  if (category.id === "today") return "도훈의 오늘운 20페이지";
+  if (category.id === "traditional") return "평생사주 20페이지 전체판";
+  if (category.id === "premium") return "내 고민 20페이지 심화판";
+  return `${category.title} 20페이지 사주극장`;
+}
+
+function LockedTwentyPagePreview({ paidHook }: { paidHook: PaidHook }) {
+  const lockedScenes = paidHook.points.slice(0, 4);
+
+  return (
+    <div className="mt-5 rounded-[30px] border border-[#7a5b37] bg-[radial-gradient(circle_at_90%_10%,rgba(216,168,111,0.14),transparent_35%),#0f0c0a] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="rounded-full border border-[#7a5b37] bg-black/45 px-4 py-2 text-[11px] font-black tracking-[0.2em] text-[#d8a86f]">
+          LOCKED 20 PAGES
+        </div>
+        <div className="rounded-full border border-[#7a5b37] bg-black/45 px-3 py-2 text-xs font-black text-white">
+          8~20P 잠김
+        </div>
+      </div>
+
+      <div className="break-keep text-2xl font-black leading-tight tracking-[-0.055em] text-[#f5efe6]">
+        여기서부터 20페이지가 잠겨 있습니다
+      </div>
+      <p className="mt-3 break-keep text-sm leading-7 text-[#c8beb0]">
+        무료 장면은 문 앞까지만 보여줍니다. 결제 후에는 막힌 정체, 운이 풀리는
+        시기, 피해야 할 선택, 도훈의 마지막 판정까지 20페이지 사주극장으로
+        열립니다.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {lockedScenes.map((item, index) => (
+          <div
+            key={`locked-page-${item}-${index}`}
+            className="relative min-h-[120px] overflow-hidden rounded-[24px] border border-[#7a5b37] bg-[#19130f] p-4"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/10 to-[#d8a86f]/10" />
+            <div className="absolute right-4 top-4 text-3xl opacity-35">🔒</div>
+            <div className="relative z-10 text-[11px] font-black tracking-[0.18em] text-[#d8a86f]">
+              PAGE {index + 8}
+            </div>
+            <div className="relative z-10 mt-3 break-keep text-lg font-black leading-tight text-white blur-[1.5px]">
+              {item}
+            </div>
+            <div className="relative z-10 mt-3 h-2 w-3/4 rounded-full bg-[#7a5b37]/55" />
+            <div className="relative z-10 mt-2 h-2 w-1/2 rounded-full bg-[#7a5b37]/35" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TextReportAccordion(_props: { text: string; paid?: boolean }) {
+  // 웹툰형 결과만 노출하기 위해 텍스트 리포트 UI는 무료/유료 모두 렌더링하지 않습니다.
+  return null;
+}
 
 function DohoonStoryHero({ onStart }: { onStart: () => void }) {
   const storyLines = [
@@ -1043,7 +1547,7 @@ function isNumberedLine(line: string) {
 
 function isQuoteLine(line: string) {
   const first = line.charAt(0);
-  return first === "\"" || first === "“" || first === "'";
+  return first === '"' || first === "“" || first === "'";
 }
 
 function isRedPointLine(line: string) {
@@ -1085,7 +1589,7 @@ function ReportSection({
         <h3
           className={cx(
             "mt-2 break-keep text-[22px] font-black leading-tight tracking-[-0.045em] md:text-[26px]",
-            accent
+            accent,
           )}
         >
           {title}
@@ -1098,10 +1602,14 @@ function ReportSection({
           <p
             className={cx(
               "break-keep text-[18px] font-black leading-[1.75] tracking-[-0.035em] md:text-[20px]",
-              isRedPointLine(firstLine) ? "border-l-4 border-[#b91c1c] pl-4 text-[#ef4444]" : "text-white"
+              isRedPointLine(firstLine)
+                ? "border-l-4 border-[#b91c1c] pl-4 text-[#ef4444]"
+                : "text-white",
             )}
           >
-            {isRedPointLine(firstLine) ? cleanRedPointLine(firstLine) : firstLine}
+            {isRedPointLine(firstLine)
+              ? cleanRedPointLine(firstLine)
+              : firstLine}
           </p>
         </div>
       ) : null}
@@ -1120,7 +1628,7 @@ function ReportSection({
                   : undefined,
                 isRedPointLine(line)
                   ? "rounded-none border-l-4 border-[#b91c1c] bg-transparent py-1 pl-4 text-[19px] font-black leading-[2.0] text-[#ef4444] md:text-[21px]"
-                  : undefined
+                  : undefined,
               )}
             >
               {isRedPointLine(line) ? cleanRedPointLine(line) : line}
@@ -1138,7 +1646,13 @@ function ReportSection({
   );
 }
 
-function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) {
+function ResultReport({
+  text,
+  paid = false,
+}: {
+  text: string;
+  paid?: boolean;
+}) {
   const sections = splitReportSections(text);
   const [chapterIndex, setChapterIndex] = useState(0);
   const [showAllChapters, setShowAllChapters] = useState(!paid);
@@ -1153,7 +1667,9 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
   const safeChapterIndex = Math.min(chapterIndex, sections.length - 1);
   const currentSection = sections[safeChapterIndex];
   const hasManyChapters = sections.length > 1;
-  const progressPercent = Math.round(((safeChapterIndex + 1) / sections.length) * 100);
+  const progressPercent = Math.round(
+    ((safeChapterIndex + 1) / sections.length) * 100,
+  );
 
   const goPrevChapter = () => {
     setChapterIndex((prev) => Math.max(0, prev - 1));
@@ -1222,7 +1738,8 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
         </div>
 
         <p className="mt-4 break-keep text-sm leading-6 text-[#c8beb0]">
-          한 번에 길게 읽는 대신, 돈 낸 전체 리포트를 챕터별로 끊어서 봅니다. 필요하면 전체보기로 다시 펼칠 수 있습니다.
+          한 번에 길게 읽는 대신, 돈 낸 전체 리포트를 챕터별로 끊어서 봅니다.
+          필요하면 전체보기로 다시 펼칠 수 있습니다.
         </p>
 
         <div className="mt-5 h-2 overflow-hidden rounded-full bg-black/50">
@@ -1242,7 +1759,7 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
                 "shrink-0 rounded-full border px-4 py-2 text-xs font-black transition",
                 safeChapterIndex === index
                   ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                  : "border-[#7a5b37] bg-black/35 text-[#c8beb0]"
+                  : "border-[#7a5b37] bg-black/35 text-[#c8beb0]",
               )}
             >
               {String(index + 1).padStart(2, "0")}. {section.title.slice(0, 12)}
@@ -1283,7 +1800,9 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
           <button
             type="button"
             onClick={goNextChapter}
-            disabled={!hasManyChapters || safeChapterIndex === sections.length - 1}
+            disabled={
+              !hasManyChapters || safeChapterIndex === sections.length - 1
+            }
             className="rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-4 py-4 text-sm font-black text-black disabled:opacity-35"
           >
             다음 챕터 〉
@@ -1299,7 +1818,9 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
               onClick={() => setChapterIndex(index)}
               className={cx(
                 "h-2.5 rounded-full transition-all",
-                safeChapterIndex === index ? "w-8 bg-[#d8a86f]" : "w-2.5 bg-[#7a5b37]"
+                safeChapterIndex === index
+                  ? "w-8 bg-[#d8a86f]"
+                  : "w-2.5 bg-[#7a5b37]",
               )}
             />
           ))}
@@ -1310,7 +1831,11 @@ function ResultReport({ text, paid = false }: { text: string; paid?: boolean }) 
 }
 
 function FieldLabel({ children }: { children: ReactNode }) {
-  return <label className="mb-2 block text-sm font-black text-white">{children}</label>;
+  return (
+    <label className="mb-2 block text-sm font-black text-white">
+      {children}
+    </label>
+  );
 }
 
 function MaritalStatusSelector({
@@ -1338,7 +1863,7 @@ function MaritalStatusSelector({
               "rounded-2xl border px-3 py-3 text-sm font-black",
               user.maritalStatus === value
                 ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                : "border-[#7a5b37] bg-[#14110d] text-white"
+                : "border-[#7a5b37] bg-[#14110d] text-white",
             )}
           >
             {value}
@@ -1346,7 +1871,8 @@ function MaritalStatusSelector({
         ))}
       </div>
       <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">
-        사랑·결혼운에서 기혼자에게 새 인연 중심으로 나오는 것을 줄이고, 현재 상황에 맞춰 부부관계·연애중·재혼운을 다르게 봅니다.
+        사랑·결혼운에서 기혼자에게 새 인연 중심으로 나오는 것을 줄이고, 현재
+        상황에 맞춰 부부관계·연애중·재혼운을 다르게 봅니다.
       </p>
     </div>
   );
@@ -1378,7 +1904,7 @@ function BlockedLuckSelector({
       className={cx(
         compact
           ? "rounded-[26px] border border-[#7a5b37] bg-[#14110d] p-4"
-          : "mb-4 rounded-3xl border border-[#7a5b37] bg-[#14110d] p-4"
+          : "mb-4 rounded-3xl border border-[#7a5b37] bg-[#14110d] p-4",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -1387,7 +1913,8 @@ function BlockedLuckSelector({
             지금 내 운을 막는 자리
           </div>
           <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">
-            딱 하나만 골라줘. 도훈이가 그 부분을 중심으로 돈·일·사람·몸에서 어디가 막히는지 더 선명하게 봅니다.
+            딱 하나만 골라줘. 도훈이가 그 부분을 중심으로 돈·일·사람·몸에서
+            어디가 막히는지 더 선명하게 봅니다.
           </p>
         </div>
         <div className="shrink-0 rounded-full border border-[#7a5b37] bg-black/35 px-3 py-1 text-[11px] font-black text-[#e0b36d]">
@@ -1405,7 +1932,7 @@ function BlockedLuckSelector({
               "rounded-2xl border px-3 py-3 text-center text-sm font-black leading-5",
               selected === option
                 ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                : "border-[#7a5b37] bg-[#11100f] text-white"
+                : "border-[#7a5b37] bg-[#11100f] text-white",
             )}
           >
             {option}
@@ -1414,7 +1941,8 @@ function BlockedLuckSelector({
       </div>
 
       <p className="mt-3 break-keep text-xs leading-5 text-[#c8beb0]">
-        선택하지 않아도 사주풀이가 가능하지만, 하나를 고르면 결과에서 지금 제일 답답한 부분을 더 먼저 짚어줍니다.
+        선택하지 않아도 사주풀이가 가능하지만, 하나를 고르면 결과에서 지금 제일
+        답답한 부분을 더 먼저 짚어줍니다.
       </p>
     </div>
   );
@@ -1432,6 +1960,12 @@ export default function Page() {
   const [fullLoading, setFullLoading] = useState(false);
   const [aiPreview, setAiPreview] = useState("");
   const [aiFull, setAiFull] = useState("");
+  const [comicPreviewChapters, setComicPreviewChapters] = useState<
+    ComicChapter[]
+  >([]);
+  const [comicFullChapters, setComicFullChapters] = useState<ComicChapter[]>(
+    [],
+  );
   const [consultQuestion, setConsultQuestion] = useState("");
   const [consultAiResult, setConsultAiResult] = useState("");
   const [reviewPage, setReviewPage] = useState(1);
@@ -1449,7 +1983,7 @@ export default function Page() {
   const reviewPages = Math.ceil(reviews.length / reviewsPerPage);
   const visibleReviews = reviews.slice(
     (reviewPage - 1) * reviewsPerPage,
-    reviewPage * reviewsPerPage
+    reviewPage * reviewsPerPage,
   );
 
   const birthMeta = `${user.year || "----"}년 ${user.month || "--"}월 ${
@@ -1459,11 +1993,13 @@ export default function Page() {
   const paidHook = getPaidHook(categoryId);
 
   const baseFileName = useMemo(() => {
-    return makeSafeFileName(`${nameOf(user)}_${category.title}_소름사주_리포트`);
+    return makeSafeFileName(
+      `${nameOf(user)}_${category.title}_소름사주_리포트`,
+    );
   }, [user.name, category.title]);
 
   useEffect(() => {
-    console.log("SOREUM_PAGE_VERSION", "page-v65-paid-chapter-slider");
+    console.log("SOREUM_PAGE_VERSION", "page-v68-user-base-no-free-text-ui");
   }, []);
 
   useEffect(() => {
@@ -1472,7 +2008,7 @@ export default function Page() {
     setIsLocalTest(
       host === "localhost" ||
         host === "127.0.0.1" ||
-        host.startsWith("192.168.")
+        host.startsWith("192.168."),
     );
   }, []);
 
@@ -1486,7 +2022,10 @@ export default function Page() {
     script.src = "https://cdn.portone.io/v2/browser-sdk.js";
     script.async = false;
     script.onload = () => {
-      console.log("PORTONE SDK LOADED", Boolean(window.PortOne?.requestPayment));
+      console.log(
+        "PORTONE SDK LOADED",
+        Boolean(window.PortOne?.requestPayment),
+      );
     };
     script.onerror = () => {
       console.error("PORTONE SDK LOAD FAILED");
@@ -1511,12 +2050,18 @@ export default function Page() {
         preview?: string;
         full?: string;
         paid?: boolean;
+        comicPreviewChapters?: ComicChapter[];
+        comicFullChapters?: ComicChapter[];
       };
 
       if (parsed.categoryId) setCategoryId(parsed.categoryId);
       if (parsed.user) setUser(normalizeUserInfo(parsed.user));
       if (parsed.preview) setAiPreview(parsed.preview);
       if (parsed.full) setAiFull(parsed.full);
+      setComicPreviewChapters(
+        normalizeComicChapters(parsed.comicPreviewChapters),
+      );
+      setComicFullChapters(normalizeComicChapters(parsed.comicFullChapters));
       setPaid(Boolean(parsed.paid && parsed.full));
       setStep("result");
     } catch (error) {
@@ -1548,6 +2093,8 @@ export default function Page() {
     setPaid(false);
     setAiPreview("");
     setAiFull("");
+    setComicPreviewChapters([]);
+    setComicFullChapters([]);
     setConsultAiResult("");
     setMenuOpen(false);
     setStep("input");
@@ -1556,7 +2103,7 @@ export default function Page() {
   const savePendingPayment = (
     orderId: string,
     orderName: string,
-    amount: number
+    amount: number,
   ) => {
     window.localStorage.setItem(
       "fortune-pending-payment",
@@ -1564,10 +2111,11 @@ export default function Page() {
         categoryId,
         user,
         preview: aiPreview,
+        comicPreviewChapters,
         orderId,
         orderName,
         amount,
-      })
+      }),
     );
   };
 
@@ -1575,7 +2123,9 @@ export default function Page() {
     const saved = window.localStorage.getItem("fortune-pending-payment");
 
     if (!saved) {
-      alert("결제는 완료됐지만 저장된 운세 정보가 없습니다. 다시 무료 결과를 생성한 뒤 전체 리포트를 열어주세요.");
+      alert(
+        "결제는 완료됐지만 저장된 운세 정보가 없습니다. 다시 무료 결과를 생성한 뒤 전체 리포트를 열어주세요.",
+      );
       return;
     }
 
@@ -1584,6 +2134,7 @@ export default function Page() {
         categoryId: CategoryId;
         user: UserInfo;
         preview: string;
+        comicPreviewChapters?: ComicChapter[];
         orderId?: string;
         paymentId?: string;
         orderName: string;
@@ -1608,7 +2159,7 @@ export default function Page() {
         throw new Error(
           verifyData?.message ||
             verifyData?.error ||
-            "포트원 결제 검증에 실패했습니다."
+            "포트원 결제 검증에 실패했습니다.",
         );
       }
 
@@ -1616,6 +2167,10 @@ export default function Page() {
       const restoredUser = normalizeUserInfo(parsed.user);
       setUser(restoredUser);
       setAiPreview(parsed.preview || "");
+      setComicPreviewChapters(
+        normalizeComicChapters(parsed.comicPreviewChapters),
+      );
+      setComicFullChapters([]);
       setPaid(true);
       setStep("result");
 
@@ -1655,13 +2210,15 @@ export default function Page() {
       alert(
         `포트원 연동값이 없습니다.
 storeId: ${storeId ? "있음" : "없음"}
-channelKey: ${channelKey ? "있음" : "없음"}`
+channelKey: ${channelKey ? "있음" : "없음"}`,
       );
       return;
     }
 
     if (!window.PortOne?.requestPayment) {
-      alert("포트원 결제창 스크립트를 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
+      alert(
+        "포트원 결제창 스크립트를 불러오는 중입니다. 잠시 후 다시 눌러주세요.",
+      );
       return;
     }
 
@@ -1699,7 +2256,9 @@ channelKey: ${channelKey ? "있음" : "없음"}`
         return;
       }
 
-      await handlePortOnePaymentComplete(String(response.paymentId || paymentId));
+      await handlePortOnePaymentComplete(
+        String(response.paymentId || paymentId),
+      );
     } catch (error) {
       console.error(error);
       const message =
@@ -1714,6 +2273,8 @@ channelKey: ${channelKey ? "있음" : "없음"}`
     setAiLoading(true);
     setAiPreview("");
     setAiFull("");
+    setComicPreviewChapters([]);
+    setComicFullChapters([]);
 
     try {
       const response = await fetch("/api/fortune", {
@@ -1735,7 +2296,9 @@ channelKey: ${channelKey ? "있음" : "없음"}`
       try {
         data = JSON.parse(rawText);
       } catch {
-        throw new Error(`서버가 JSON이 아닌 응답을 보냈습니다.\n${rawText.slice(0, 1000)}`);
+        throw new Error(
+          `서버가 JSON이 아닌 응답을 보냈습니다.\n${rawText.slice(0, 1000)}`,
+        );
       }
 
       if (!response.ok) {
@@ -1745,15 +2308,26 @@ channelKey: ${channelKey ? "있음" : "없음"}`
       setAiPreview(
         data.preview ||
           data.result ||
-          "[API 응답 없음] 무료 운세 결과를 불러오지 못했습니다."
+          "[API 응답 없음] 무료 운세 결과를 불러오지 못했습니다.",
+      );
+      setComicPreviewChapters(
+        normalizeComicChapters(
+          data.comicChapters ||
+            data.previewComicChapters ||
+            data.comicPreviewChapters,
+        ),
       );
       setAiFull("");
+      setComicFullChapters([]);
     } catch (error) {
       console.error(error);
 
-      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      const message =
+        error instanceof Error ? error.message : "알 수 없는 오류";
       setAiPreview(`[무료 리포트 오류]\n\n${message}`);
       setAiFull("");
+      setComicPreviewChapters([]);
+      setComicFullChapters([]);
     } finally {
       setAiLoading(false);
     }
@@ -1761,13 +2335,14 @@ channelKey: ${channelKey ? "있음" : "없음"}`
 
   const generateFullResult = async (
     targetCategoryId: CategoryId = categoryId,
-    targetUser: UserInfo = user
+    targetUser: UserInfo = user,
   ) => {
     const targetCategory = getCategory(targetCategoryId);
 
     setPaid(true);
     setFullLoading(true);
     setAiFull("전체 리포트 요청을 보내는 중입니다...");
+    setComicFullChapters([]);
 
     try {
       const response = await fetch("/api/fortune", {
@@ -1796,8 +2371,8 @@ channelKey: ${channelKey ? "있음" : "없음"}`
         throw new Error(
           `서버가 JSON이 아닌 응답을 보냈습니다.\n\n상태코드: ${response.status}\n\n응답내용:\n${rawText.slice(
             0,
-            1200
-          )}`
+            1200,
+          )}`,
         );
       }
 
@@ -1805,7 +2380,7 @@ channelKey: ${channelKey ? "있음" : "없음"}`
         throw new Error(
           data?.error ||
             data?.message ||
-            `전체 리포트 생성 실패. 상태코드: ${response.status}`
+            `전체 리포트 생성 실패. 상태코드: ${response.status}`,
         );
       }
 
@@ -1816,17 +2391,25 @@ channelKey: ${channelKey ? "있음" : "없음"}`
           `API는 응답했지만 full/result 값이 비어 있습니다.\n\n응답내용:\n${JSON.stringify(
             data,
             null,
-            2
-          ).slice(0, 1500)}`
+            2,
+          ).slice(0, 1500)}`,
         );
       }
 
       setAiFull(fullText);
+      setComicFullChapters(
+        normalizeComicChapters(
+          data?.comicChapters ||
+            data?.fullComicChapters ||
+            data?.comicFullChapters,
+        ),
+      );
       setPaid(true);
     } catch (error) {
       console.error("FULL REPORT ERROR:", error);
 
-      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      const message =
+        error instanceof Error ? error.message : "알 수 없는 오류";
 
       setAiFull(`[전체 리포트 오류]
 
@@ -1890,10 +2473,14 @@ ${message}`);
         throw new Error(data.error || "AI 생성 실패");
       }
 
-      setConsultAiResult(data.full || data.result || "결과를 불러오지 못했습니다.");
+      setConsultAiResult(
+        data.full || data.result || "결과를 불러오지 못했습니다.",
+      );
     } catch (error) {
       console.error(error);
-      setConsultAiResult("AI 상담 결과를 불러오지 못했습니다. API 키와 서버 상태를 확인해주세요.");
+      setConsultAiResult(
+        "AI 상담 결과를 불러오지 못했습니다. API 키와 서버 상태를 확인해주세요.",
+      );
     } finally {
       setAiLoading(false);
     }
@@ -1932,8 +2519,10 @@ ${body || "아직 생성된 결과가 없습니다."}`;
         user,
         preview: aiPreview,
         full: aiFull,
+        comicPreviewChapters,
+        comicFullChapters,
         paid,
-      })
+      }),
     );
 
     return `${window.location.origin}${window.location.pathname}?rid=${resultId}`;
@@ -1990,6 +2579,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
   };
 
   const ResultActionButtons = () => {
+    if (!paid) return null;
     if (aiLoading || fullLoading || (!aiPreview && !aiFull)) return null;
 
     return (
@@ -2034,7 +2624,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
           개인정보 수집·이용 동의
         </span>
         <span className="mt-1 block text-xs leading-5 text-[#c8beb0]">
-          운세 분석과 상담 리포트 생성을 위해 이름/별명, 생년월일, 성별, 출생시간, 상담 질문을 수집·이용합니다.
+          운세 분석과 상담 리포트 생성을 위해 이름/별명, 생년월일, 성별,
+          출생시간, 상담 질문을 수집·이용합니다.
         </span>
       </span>
     </label>
@@ -2078,17 +2669,17 @@ ${body || "아직 생성된 결과가 없습니다."}`;
           color: #ffffff !important;
         }
 
-
-
         .intro-bg-v3 img {
           object-position: center top !important;
-          filter: brightness(1.18) contrast(1.12) saturate(1.12) drop-shadow(0 0 26px rgba(255, 213, 145, 0.12)) !important;
+          filter: brightness(1.18) contrast(1.12) saturate(1.12)
+            drop-shadow(0 0 26px rgba(255, 213, 145, 0.12)) !important;
           transform: scale(1.065);
         }
 
         .home-hero-image img {
           object-position: center top !important;
-          filter: brightness(1.2) contrast(1.1) saturate(1.1) drop-shadow(0 0 24px rgba(255, 213, 145, 0.13)) !important;
+          filter: brightness(1.2) contrast(1.1) saturate(1.1)
+            drop-shadow(0 0 24px rgba(255, 213, 145, 0.13)) !important;
           transform: scale(1.018);
         }
 
@@ -2098,7 +2689,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
         }
 
         .intro-mini-badge {
-          box-shadow: 0 12px 34px rgba(0,0,0,0.34);
+          box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
         }
 
         .intro-copy-wrap-v3 {
@@ -2158,7 +2749,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
           .intro-bg-v3 img {
             object-position: center top !important;
-            filter: brightness(1.15) contrast(1.12) saturate(1.12) drop-shadow(0 0 22px rgba(255, 213, 145, 0.12)) !important;
+            filter: brightness(1.15) contrast(1.12) saturate(1.12)
+              drop-shadow(0 0 22px rgba(255, 213, 145, 0.12)) !important;
             transform: scale(1.105);
           }
 
@@ -2208,13 +2800,17 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             justify-content: flex-start !important;
             padding: 18px !important;
             padding-top: 18px !important;
-            background: linear-gradient(180deg, rgba(5,5,5,0.98) 0%, rgba(9,7,5,0.98) 100%) !important;
+            background: linear-gradient(
+              180deg,
+              rgba(5, 5, 5, 0.98) 0%,
+              rgba(9, 7, 5, 0.98) 100%
+            ) !important;
           }
 
           .home-hero > div:nth-child(2) > div:last-child {
             min-height: 360px !important;
             height: 360px !important;
-            border-bottom: 1px solid rgba(216,168,111,0.55) !important;
+            border-bottom: 1px solid rgba(216, 168, 111, 0.55) !important;
           }
 
           .home-hero h1 {
@@ -2233,7 +2829,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
           .home-hero-image img {
             object-position: center top !important;
-            filter: brightness(1.18) contrast(1.1) saturate(1.1) drop-shadow(0 0 22px rgba(255, 213, 145, 0.13)) !important;
+            filter: brightness(1.18) contrast(1.1) saturate(1.1)
+              drop-shadow(0 0 22px rgba(255, 213, 145, 0.13)) !important;
             transform: scale(1.018);
           }
 
@@ -2364,25 +2961,25 @@ ${body || "아직 생성된 결과가 없습니다."}`;
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,#2b1908_0%,transparent_36%),radial-gradient(circle_at_bottom,#160d22_0%,transparent_38%)]" />
 
       {step !== "intro" && (
-      <header className="sticky top-0 z-40 bg-black/82 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1120px] items-center justify-between px-5 py-4">
-          <button
-            type="button"
-            onClick={() => setStep("home")}
-            className="flex items-center text-left"
-          >
-            <BrandLogo compact />
-          </button>
+        <header className="sticky top-0 z-40 bg-black/82 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1120px] items-center justify-between px-5 py-4">
+            <button
+              type="button"
+              onClick={() => setStep("home")}
+              className="flex items-center text-left"
+            >
+              <BrandLogo compact />
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            className="rounded-2xl border border-[#7a5b37] bg-[#14110d] px-4 py-2 text-xl text-white"
-          >
-            ☰
-          </button>
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="rounded-2xl border border-[#7a5b37] bg-[#14110d] px-4 py-2 text-xl text-white"
+            >
+              ☰
+            </button>
+          </div>
+        </header>
       )}
 
       {menuOpen && (
@@ -2459,7 +3056,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   <h1 className="break-keep text-[42px] font-black leading-[1.08] tracking-[-0.085em] text-white md:text-[62px]">
                     무료에서 막힌 자리 보고,
                     <br />
-                    <span className="text-[#e0b36d]">전체에서 복의 자리까지 연다</span>
+                    <span className="text-[#e0b36d]">
+                      전체에서 복의 자리까지 연다
+                    </span>
                   </h1>
 
                   <p className="mt-6 break-keep text-lg font-medium leading-8 text-[#e8ded2] md:text-xl">
@@ -2472,14 +3071,29 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
                   <div className="mt-7 grid gap-3 sm:grid-cols-3">
                     {[
-                      ["🎯", "무료 판정 먼저", "돈·일·사람·몸에서 먼저 막힌 자리"],
+                      [
+                        "🎯",
+                        "무료 판정 먼저",
+                        "돈·일·사람·몸에서 먼저 막힌 자리",
+                      ],
                       ["🔒", "완전 비밀 보장", "입력 정보는 저장하지 않아요"],
-                      ["👑", "유료 전체 리포트", "시기·복·악운·도훈의 판정까지"],
+                      [
+                        "👑",
+                        "유료 전체 리포트",
+                        "시기·복·악운·도훈의 판정까지",
+                      ],
                     ].map(([icon, title, desc]) => (
-                      <div key={title} className="rounded-[22px] border border-[#7a5b37] bg-black/35 p-4">
+                      <div
+                        key={title}
+                        className="rounded-[22px] border border-[#7a5b37] bg-black/35 p-4"
+                      >
                         <div className="text-2xl">{icon}</div>
-                        <div className="mt-2 font-black text-white">{title}</div>
-                        <div className="mt-1 break-keep text-xs leading-5 text-[#c8beb0]">{desc}</div>
+                        <div className="mt-2 font-black text-white">
+                          {title}
+                        </div>
+                        <div className="mt-1 break-keep text-xs leading-5 text-[#c8beb0]">
+                          {desc}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2498,7 +3112,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 </div>
 
                 <div className="home-hero-image relative min-h-[460px] overflow-hidden bg-black lg:min-h-[560px]">
-                  <SafeImage src="/characters/dohoon-hero.png" alt="운세형 도훈 메인 이미지" fallback="🧑‍💼" />
+                  <SafeImage
+                    src="/characters/dohoon-hero.png"
+                    alt="운세형 도훈 메인 이미지"
+                    fallback="🧑‍💼"
+                  />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,218,145,0.16),transparent_36%)]" />
                   <div className="absolute inset-y-0 left-0 hidden w-36 bg-gradient-to-r from-[rgba(5,5,5,0.38)] to-transparent lg:block" />
                   <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[rgba(0,0,0,0.54)] to-transparent" />
@@ -2506,14 +3124,14 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </div>
             </section>
 
-
             <section className="rounded-[26px] border border-[#7a5b37] bg-[radial-gradient(circle_at_88%_18%,rgba(216,168,111,0.12),transparent_32%),linear-gradient(135deg,#10100f,#080706)] p-4 shadow-[0_18px_55px_rgba(0,0,0,0.28)] md:rounded-[30px] md:p-6">
               <div className="mx-auto max-w-3xl text-center">
                 <div className="mx-auto mb-3 w-fit rounded-full border border-[#7a5b37] bg-black/40 px-4 py-1.5 text-[10px] font-black tracking-[0.18em] text-[#d8a86f] md:text-xs">
                   SOREUM DIFFERENCE
                 </div>
                 <h2 className="break-keep text-2xl font-black leading-tight tracking-[-0.055em] text-white md:text-3xl">
-                  네 사주 안에<br className="md:hidden" /> 네 운을 막는 무언가가 숨어 있다
+                  네 사주 안에
+                  <br className="md:hidden" /> 네 운을 막는 무언가가 숨어 있다
                 </h2>
 
                 <p className="mx-auto mt-4 max-w-xl break-keep text-base font-black leading-7 text-[#e0b36d] md:text-lg md:leading-8">
@@ -2553,8 +3171,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     도훈이 네 사주를 펼쳐놓고
                     <br />
                     사주에 보이는 대로
-                    <br />
-                    딱 까서 알려줄게.
+                    <br />딱 까서 알려줄게.
                   </p>
                 </div>
               </div>
@@ -2566,15 +3183,38 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </h2>
               <div className="grid gap-4 md:grid-cols-4">
                 {[
-                  ["🎯", "막힌 자리부터 판정", "좋은 말보다 지금 먼저 봐야 할 지점"],
-                  ["💰", "돈이 새는 구멍 확인", "돈복이 있어도 왜 안 모이는지 분석"],
-                  ["👥", "인연이 꼬이는 이유", "끌리는 사람과 피해야 할 사람 구분"],
-                  ["👑", "전체 리포트", "복·악운·대운까지 길게 풀어주는 유료 풀이"],
+                  [
+                    "🎯",
+                    "막힌 자리부터 판정",
+                    "좋은 말보다 지금 먼저 봐야 할 지점",
+                  ],
+                  [
+                    "💰",
+                    "돈이 새는 구멍 확인",
+                    "돈복이 있어도 왜 안 모이는지 분석",
+                  ],
+                  [
+                    "👥",
+                    "인연이 꼬이는 이유",
+                    "끌리는 사람과 피해야 할 사람 구분",
+                  ],
+                  [
+                    "👑",
+                    "전체 리포트",
+                    "복·악운·대운까지 길게 풀어주는 유료 풀이",
+                  ],
                 ].map(([icon, title, desc]) => (
-                  <div key={title} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5 text-center shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+                  <div
+                    key={title}
+                    className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5 text-center shadow-[0_18px_50px_rgba(0,0,0,0.28)]"
+                  >
                     <div className="text-4xl">{icon}</div>
-                    <div className="mt-3 text-lg font-black text-[#e0b36d]">{title}</div>
-                    <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">{desc}</p>
+                    <div className="mt-3 text-lg font-black text-[#e0b36d]">
+                      {title}
+                    </div>
+                    <p className="mt-2 break-keep text-sm leading-6 text-[#c8beb0]">
+                      {desc}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -2607,8 +3247,12 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     <div className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] border border-[#7a5b37] bg-[#1c1712] text-4xl">
                       {item.emoji}
                     </div>
-                    <div className="mt-4 text-lg font-black text-[#e0b36d]">{item.title}</div>
-                    <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">{item.hook || item.subtitle}</p>
+                    <div className="mt-4 text-lg font-black text-[#e0b36d]">
+                      {item.title}
+                    </div>
+                    <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">
+                      {item.hook || item.subtitle}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -2625,14 +3269,37 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <div className="mt-5 space-y-3">
                   <input
                     value={user.name}
-                    onChange={(event) => setUser({ ...user, name: event.target.value })}
+                    onChange={(event) =>
+                      setUser({ ...user, name: event.target.value })
+                    }
                     placeholder="이름"
                     className="w-full p-4"
                   />
                   <div className="grid grid-cols-3 gap-2">
-                    <input value={user.year} onChange={(event) => setUser({ ...user, year: event.target.value })} placeholder="년도" className="p-4 text-center" />
-                    <input value={user.month} onChange={(event) => setUser({ ...user, month: event.target.value })} placeholder="월" className="p-4 text-center" />
-                    <input value={user.day} onChange={(event) => setUser({ ...user, day: event.target.value })} placeholder="일" className="p-4 text-center" />
+                    <input
+                      value={user.year}
+                      onChange={(event) =>
+                        setUser({ ...user, year: event.target.value })
+                      }
+                      placeholder="년도"
+                      className="p-4 text-center"
+                    />
+                    <input
+                      value={user.month}
+                      onChange={(event) =>
+                        setUser({ ...user, month: event.target.value })
+                      }
+                      placeholder="월"
+                      className="p-4 text-center"
+                    />
+                    <input
+                      value={user.day}
+                      onChange={(event) =>
+                        setUser({ ...user, day: event.target.value })
+                      }
+                      placeholder="일"
+                      className="p-4 text-center"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {(["양력", "음력"] as const).map((value) => (
@@ -2643,14 +3310,15 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                           setUser({
                             ...user,
                             calendar: value,
-                            lunarLeapMonth: value === "음력" ? user.lunarLeapMonth : false,
+                            lunarLeapMonth:
+                              value === "음력" ? user.lunarLeapMonth : false,
                           })
                         }
                         className={cx(
                           "rounded-2xl border p-4 font-black",
                           user.calendar === value
                             ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                            : "border-[#7a5b37] bg-[#14110d] text-white"
+                            : "border-[#7a5b37] bg-[#14110d] text-white",
                         )}
                       >
                         {value}
@@ -2661,13 +3329,16 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     <button
                       type="button"
                       onClick={() =>
-                        setUser({ ...user, lunarLeapMonth: !user.lunarLeapMonth })
+                        setUser({
+                          ...user,
+                          lunarLeapMonth: !user.lunarLeapMonth,
+                        })
                       }
                       className={cx(
                         "rounded-2xl border p-4 text-left text-sm font-black",
                         user.lunarLeapMonth
                           ? "border-[#d8a86f] bg-[#241e18] text-[#e0b36d]"
-                          : "border-[#7a5b37] bg-[#14110d] text-white"
+                          : "border-[#7a5b37] bg-[#14110d] text-white",
                       )}
                     >
                       {user.lunarLeapMonth ? "✓ " : ""}윤달 생일입니다
@@ -2679,14 +3350,43 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
                   <div className="grid grid-cols-2 gap-2">
                     {(["남성", "여성"] as const).map((value) => (
-                      <button key={value} type="button" onClick={() => setUser({ ...user, gender: value })} className={cx("rounded-2xl border p-4 font-black", user.gender === value ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-[#14110d] text-white")}>{value}</button>
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setUser({ ...user, gender: value })}
+                        className={cx(
+                          "rounded-2xl border p-4 font-black",
+                          user.gender === value
+                            ? "border-[#d8a86f] bg-[#d8a86f] text-black"
+                            : "border-[#7a5b37] bg-[#14110d] text-white",
+                        )}
+                      >
+                        {value}
+                      </button>
                     ))}
                   </div>
 
-                  <MaritalStatusSelector user={user} onChange={setUser} compact />
+                  <MaritalStatusSelector
+                    user={user}
+                    onChange={setUser}
+                    compact
+                  />
 
-                  <select value={user.birthTime} onChange={(event) => setUser({ ...user, birthTime: event.target.value })} className="w-full p-4">
-                    {birthTimes.map((time) => <option key={time} value={time === "모름 / 선택 안 함" ? "" : time}>{time}</option>)}
+                  <select
+                    value={user.birthTime}
+                    onChange={(event) =>
+                      setUser({ ...user, birthTime: event.target.value })
+                    }
+                    className="w-full p-4"
+                  >
+                    {birthTimes.map((time) => (
+                      <option
+                        key={time}
+                        value={time === "모름 / 선택 안 함" ? "" : time}
+                      >
+                        {time}
+                      </option>
+                    ))}
                   </select>
 
                   <BlockedLuckSelector user={user} onChange={setUser} compact />
@@ -2705,19 +3405,31 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <h2 className="text-3xl font-black tracking-[-0.06em] text-white">
                   무료에서 멈추면
                   <br />
-                  <span className="text-[#e0b36d]">복이 붙는 자리와 악운이 붙는 자리를 놓칩니다</span>
+                  <span className="text-[#e0b36d]">
+                    복이 붙는 자리와 악운이 붙는 자리를 놓칩니다
+                  </span>
                 </h2>
                 <p className="mt-5 break-keep text-base leading-8 text-[#d8d0c6]">
-                  무료는 문만 열어줍니다. 전체 리포트에서는 돈이 언제 붙는지, 어떤 일에서 네 몫이 남는지, 어떤 사람은 피해야 하는지, 몸이 먼저 보내는 신호와 올해 조심할 달까지 이어서 봅니다.
+                  무료는 문만 열어줍니다. 전체 리포트에서는 돈이 언제 붙는지,
+                  어떤 일에서 네 몫이 남는지, 어떤 사람은 피해야 하는지, 몸이
+                  먼저 보내는 신호와 올해 조심할 달까지 이어서 봅니다.
                 </p>
                 <p className="mt-4 break-keep text-base font-black leading-8 text-white">
                   돈·일·사람·몸은 따로 노는 게 아닙니다.
-                  <br />
-                  한 군데가 막히면 다른 운도 같이 늦어집니다.
+                  <br />한 군데가 막히면 다른 운도 같이 늦어집니다.
                 </p>
                 <div className="mt-6 grid gap-3 sm:grid-cols-5">
-                  {["복이 붙는 자리", "돈이 새는 구멍", "피해야 할 인연", "몸이 보내는 신호", "올해 조심할 악운"].map((item) => (
-                    <div key={item} className="rounded-2xl border border-[#7a5b37] bg-black/35 p-4 text-center text-sm font-black text-[#e0b36d]">
+                  {[
+                    "복이 붙는 자리",
+                    "돈이 새는 구멍",
+                    "피해야 할 인연",
+                    "몸이 보내는 신호",
+                    "올해 조심할 악운",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-2xl border border-[#7a5b37] bg-black/35 p-4 text-center text-sm font-black text-[#e0b36d]"
+                    >
                       ✓
                       <br />
                       {item}
@@ -2740,7 +3452,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </h2>
               <div className="expert-scroll grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {characters.map((card) => (
-                  <CharacterCard key={card.id} card={card} onSelect={() => goInput(card.categoryId)} />
+                  <CharacterCard
+                    key={card.id}
+                    card={card}
+                    onSelect={() => goInput(card.categoryId)}
+                  />
                 ))}
               </div>
             </section>
@@ -2751,15 +3467,67 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               </h2>
               <div className="price-scroll grid gap-5 lg:grid-cols-3">
                 {[
-                  { title: "오늘운세 전체 리포트", desc: "오늘운세·재물운·사랑·결혼운·악운", price: 1900, points: ["오늘 하루 흐름", "오늘 돈이 새는 자리", "오늘 조심할 악운"], id: "today" as CategoryId },
-                  { title: "일반 사주 전체 리포트", desc: "재물운·일·사업운·사랑·결혼운 등", price: 6900, points: ["복이 붙는 자리", "악운이 붙는 자리", "피해야 할 선택"], id: "money" as CategoryId },
-                  { title: "심화 사주 리포트", desc: "평생종합사주 · 내 고민 사주풀이", price: 14900, points: ["평생 반복되는 막힘", "돈·일·관계·건강 전체", "잡아야 할 대운과 악운", "내 고민은 19,900원 심화"], id: "traditional" as CategoryId },
+                  {
+                    title: "오늘운세 전체 리포트",
+                    desc: "오늘운세·재물운·사랑·결혼운·악운",
+                    price: 1900,
+                    points: [
+                      "오늘 하루 흐름",
+                      "오늘 돈이 새는 자리",
+                      "오늘 조심할 악운",
+                    ],
+                    id: "today" as CategoryId,
+                  },
+                  {
+                    title: "일반 사주 전체 리포트",
+                    desc: "재물운·일·사업운·사랑·결혼운 등",
+                    price: 6900,
+                    points: [
+                      "복이 붙는 자리",
+                      "악운이 붙는 자리",
+                      "피해야 할 선택",
+                    ],
+                    id: "money" as CategoryId,
+                  },
+                  {
+                    title: "심화 사주 리포트",
+                    desc: "평생종합사주 · 내 고민 사주풀이",
+                    price: 14900,
+                    points: [
+                      "평생 반복되는 막힘",
+                      "돈·일·관계·건강 전체",
+                      "잡아야 할 대운과 악운",
+                      "내 고민은 19,900원 심화",
+                    ],
+                    id: "traditional" as CategoryId,
+                  },
                 ].map((plan, index) => (
-                  <button key={plan.title} type="button" onClick={() => goInput(plan.id)} className={cx("rounded-[30px] border p-6 text-left transition hover:-translate-y-1", index === 2 ? "border-[#f3cf7a] bg-[linear-gradient(135deg,#20150a,#3a280e)] shadow-[0_20px_60px_rgba(216,168,111,0.15)]" : "border-[#7a5b37] bg-[#10100f]")}>
-                    <div className="text-lg font-black text-[#e0b36d]">{plan.title}</div>
-                    <div className="mt-1 text-sm text-[#c8beb0]">{plan.desc}</div>
-                    <div className="mt-5 text-4xl font-black text-white">{plan.price.toLocaleString()}<span className="text-lg">원</span></div>
-                    <div className="mt-5 space-y-2 text-sm font-semibold text-[#e8ded2]">{plan.points.map((point) => <div key={point}>✓ {point}</div>)}</div>
+                  <button
+                    key={plan.title}
+                    type="button"
+                    onClick={() => goInput(plan.id)}
+                    className={cx(
+                      "rounded-[30px] border p-6 text-left transition hover:-translate-y-1",
+                      index === 2
+                        ? "border-[#f3cf7a] bg-[linear-gradient(135deg,#20150a,#3a280e)] shadow-[0_20px_60px_rgba(216,168,111,0.15)]"
+                        : "border-[#7a5b37] bg-[#10100f]",
+                    )}
+                  >
+                    <div className="text-lg font-black text-[#e0b36d]">
+                      {plan.title}
+                    </div>
+                    <div className="mt-1 text-sm text-[#c8beb0]">
+                      {plan.desc}
+                    </div>
+                    <div className="mt-5 text-4xl font-black text-white">
+                      {plan.price.toLocaleString()}
+                      <span className="text-lg">원</span>
+                    </div>
+                    <div className="mt-5 space-y-2 text-sm font-semibold text-[#e8ded2]">
+                      {plan.points.map((point) => (
+                        <div key={point}>✓ {point}</div>
+                      ))}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -2768,25 +3536,53 @@ ${body || "아직 생성된 결과가 없습니다."}`;
             <section className="review-section">
               <div className="mb-6 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-3xl font-black tracking-[-0.06em] text-white">소름사주 실제 후기</h2>
-                  <div className="mt-2 text-sm text-[#e0b36d]">★★★★★ 4.8 · 후기 42개</div>
+                  <h2 className="text-3xl font-black tracking-[-0.06em] text-white">
+                    소름사주 실제 후기
+                  </h2>
+                  <div className="mt-2 text-sm text-[#e0b36d]">
+                    ★★★★★ 4.8 · 후기 42개
+                  </div>
                 </div>
-                <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">{reviewPage}/14</div>
+                <div className="rounded-full border border-[#7a5b37] bg-black/35 px-3 py-2 text-xs font-black text-[#e0b36d]">
+                  {reviewPage}/14
+                </div>
               </div>
               <div className="review-scroll grid gap-4 md:grid-cols-3">
                 {visibleReviews.map((review) => (
-                  <div key={`${review.name}-${review.category}-${review.text}`} className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5">
+                  <div
+                    key={`${review.name}-${review.category}-${review.text}`}
+                    className="rounded-[28px] border border-[#7a5b37] bg-[#10100f] p-5"
+                  >
                     <div className="mb-2 flex items-center justify-between gap-2">
-                      <div className="text-sm font-black text-[#d8a86f]">{review.name} · {review.category}</div>
+                      <div className="text-sm font-black text-[#d8a86f]">
+                        {review.name} · {review.category}
+                      </div>
                       <div className="text-xs text-[#e0b36d]">★★★★★</div>
                     </div>
-                    <p className="m-0 break-keep text-sm leading-7 text-white">“{review.text}”</p>
+                    <p className="m-0 break-keep text-sm leading-7 text-white">
+                      “{review.text}”
+                    </p>
                   </div>
                 ))}
               </div>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
-                {Array.from({ length: reviewPages }, (_, index) => index + 1).map((page) => (
-                  <button key={page} type="button" onClick={() => setReviewPage(page)} className={cx("grid h-9 w-9 place-items-center rounded-full border text-sm font-black", reviewPage === page ? "border-[#d8a86f] bg-[#d8a86f] text-black" : "border-[#7a5b37] bg-black/35 text-[#c8beb0]")}>{page}</button>
+                {Array.from(
+                  { length: reviewPages },
+                  (_, index) => index + 1,
+                ).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setReviewPage(page)}
+                    className={cx(
+                      "grid h-9 w-9 place-items-center rounded-full border text-sm font-black",
+                      reviewPage === page
+                        ? "border-[#d8a86f] bg-[#d8a86f] text-black"
+                        : "border-[#7a5b37] bg-black/35 text-[#c8beb0]",
+                    )}
+                  >
+                    {page}
+                  </button>
                 ))}
               </div>
             </section>
@@ -2825,13 +3621,22 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     올해운세에서 보는 것
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm font-semibold text-white">
-                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">돈복이 움직이는 달</div>
-                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">일·사업운이 강해지는 달</div>
-                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">사람관계가 흔들리는 달</div>
-                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">건강을 조심해야 할 달</div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">
+                      돈복이 움직이는 달
+                    </div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">
+                      일·사업운이 강해지는 달
+                    </div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">
+                      사람관계가 흔들리는 달
+                    </div>
+                    <div className="rounded-2xl border border-[#7a5b37] bg-black/30 p-3">
+                      건강을 조심해야 할 달
+                    </div>
                   </div>
                   <p className="mt-3 text-xs leading-5 text-[#c8beb0]">
-                    올해 돈복이 움직이는 달, 일·사업운이 강해지는 달, 사람관계가 흔들리는 달, 건강을 조심해야 할 달을 사주 포인트로 봅니다.
+                    올해 돈복이 움직이는 달, 일·사업운이 강해지는 달, 사람관계가
+                    흔들리는 달, 건강을 조심해야 할 달을 사주 포인트로 봅니다.
                   </p>
                 </div>
               ) : null}
@@ -2857,7 +3662,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <FieldLabel>분석 메뉴</FieldLabel>
               <select
                 value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value as CategoryId)}
+                onChange={(event) =>
+                  setCategoryId(event.target.value as CategoryId)
+                }
                 className="mb-4 w-full p-4"
               >
                 {categories.map((item) => (
@@ -2870,7 +3677,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <FieldLabel>이름 또는 별명</FieldLabel>
               <input
                 value={user.name}
-                onChange={(event) => setUser({ ...user, name: event.target.value })}
+                onChange={(event) =>
+                  setUser({ ...user, name: event.target.value })
+                }
                 placeholder="예: 성국"
                 className="mb-4 w-full p-4"
               />
@@ -2882,26 +3691,33 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <span className="font-black text-[#d8a86f]">양력 생일</span>을
                 입력해주세요.
                 <br />
-                음력 생일만 알고 있다면 음력으로 선택하면 자동으로 양력 기준으로 변환해서 풀이합니다.
-                윤달 생일인 경우에만 윤달 체크를 선택해주세요.
+                음력 생일만 알고 있다면 음력으로 선택하면 자동으로 양력 기준으로
+                변환해서 풀이합니다. 윤달 생일인 경우에만 윤달 체크를
+                선택해주세요.
               </div>
 
               <div className="mb-4 grid grid-cols-3 gap-2">
                 <input
                   value={user.year}
-                  onChange={(event) => setUser({ ...user, year: event.target.value })}
+                  onChange={(event) =>
+                    setUser({ ...user, year: event.target.value })
+                  }
                   placeholder="년도"
                   className="p-4 text-center"
                 />
                 <input
                   value={user.month}
-                  onChange={(event) => setUser({ ...user, month: event.target.value })}
+                  onChange={(event) =>
+                    setUser({ ...user, month: event.target.value })
+                  }
                   placeholder="월"
                   className="p-4 text-center"
                 />
                 <input
                   value={user.day}
-                  onChange={(event) => setUser({ ...user, day: event.target.value })}
+                  onChange={(event) =>
+                    setUser({ ...user, day: event.target.value })
+                  }
                   placeholder="일"
                   className="p-4 text-center"
                 />
@@ -2916,14 +3732,15 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                       setUser({
                         ...user,
                         calendar: value,
-                        lunarLeapMonth: value === "음력" ? user.lunarLeapMonth : false,
+                        lunarLeapMonth:
+                          value === "음력" ? user.lunarLeapMonth : false,
                       })
                     }
                     className={cx(
                       "rounded-2xl border p-4 font-black",
                       user.calendar === value
                         ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                        : "border-[#7a5b37] bg-[#14110d] text-white"
+                        : "border-[#7a5b37] bg-[#14110d] text-white",
                     )}
                   >
                     {value}
@@ -2941,12 +3758,13 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     "mb-4 w-full rounded-2xl border p-4 text-left text-sm font-black",
                     user.lunarLeapMonth
                       ? "border-[#d8a86f] bg-[#241e18] text-[#e0b36d]"
-                      : "border-[#7a5b37] bg-[#14110d] text-white"
+                      : "border-[#7a5b37] bg-[#14110d] text-white",
                   )}
                 >
                   {user.lunarLeapMonth ? "✓ " : ""}윤달 생일입니다
                   <span className="mt-1 block text-xs font-semibold leading-5 text-[#c8beb0]">
-                    부모님이 “윤달 생일”이라고 알려준 경우에만 선택하세요. 대부분은 평달이라 선택하지 않아도 됩니다.
+                    부모님이 “윤달 생일”이라고 알려준 경우에만 선택하세요.
+                    대부분은 평달이라 선택하지 않아도 됩니다.
                   </span>
                 </button>
               )}
@@ -2960,7 +3778,10 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 className="mb-4 w-full p-4"
               >
                 {birthTimes.map((time) => (
-                  <option key={time} value={time === "모름 / 선택 안 함" ? "" : time}>
+                  <option
+                    key={time}
+                    value={time === "모름 / 선택 안 함" ? "" : time}
+                  >
                     {time}
                   </option>
                 ))}
@@ -2977,7 +3798,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                       "rounded-2xl border p-4 font-black",
                       user.gender === value
                         ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                        : "border-[#7a5b37] bg-[#14110d] text-white"
+                        : "border-[#7a5b37] bg-[#14110d] text-white",
                     )}
                   >
                     {value}
@@ -2989,31 +3810,35 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
               <BlockedLuckSelector user={user} onChange={setUser} />
 
-
               {categoryId === "compatibility" && (
                 <div className="mb-4 rounded-3xl border border-[#7a5b37] bg-[#14110d] p-4">
                   <div className="mb-3 font-black text-[#d8a86f]">
                     궁합 종류 선택
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {(["연인/배우자 궁합", "사업파트너 궁합"] as const).map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setUser({ ...user, compatibilityType: value })}
-                        className={cx(
-                          "rounded-2xl border p-4 font-black",
-                          user.compatibilityType === value
-                            ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                            : "border-[#7a5b37] bg-[#14110d] text-white"
-                        )}
-                      >
-                        {value}
-                      </button>
-                    ))}
+                    {(["연인/배우자 궁합", "사업파트너 궁합"] as const).map(
+                      (value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() =>
+                            setUser({ ...user, compatibilityType: value })
+                          }
+                          className={cx(
+                            "rounded-2xl border p-4 font-black",
+                            user.compatibilityType === value
+                              ? "border-[#d8a86f] bg-[#d8a86f] text-black"
+                              : "border-[#7a5b37] bg-[#14110d] text-white",
+                          )}
+                        >
+                          {value}
+                        </button>
+                      ),
+                    )}
                   </div>
                   <p className="mt-3 break-keep text-xs leading-5 text-[#c8beb0]">
-                    연인/배우자 궁합은 결혼까지 갈 수 있는 궁합인지 보고, 사업파트너 궁합은 같이 돈을 벌 수 있는 구조인지 봅니다.
+                    연인/배우자 궁합은 결혼까지 갈 수 있는 궁합인지 보고,
+                    사업파트너 궁합은 같이 돈을 벌 수 있는 구조인지 봅니다.
                   </p>
                 </div>
               )}
@@ -3035,11 +3860,12 @@ ${body || "아직 생성된 결과가 없습니다."}`;
 
                   <div className="mb-3 rounded-2xl border border-[#7a5b37] bg-[#1b1612] p-4 text-sm leading-6 text-[#e0d6c8]">
                     상대방 정보도 가능하면{" "}
-                    <span className="font-black text-[#d8a86f]">양력 생일</span>로
-                    입력해주세요.
+                    <span className="font-black text-[#d8a86f]">양력 생일</span>
+                    로 입력해주세요.
                     <br />
-                    음력만 알고 있다면 음력으로 선택하면 자동으로 양력 기준으로 변환해서 궁합을 봅니다.
-                    윤달 생일인 경우에만 윤달 체크를 선택해주세요.
+                    음력만 알고 있다면 음력으로 선택하면 자동으로 양력 기준으로
+                    변환해서 궁합을 봅니다. 윤달 생일인 경우에만 윤달 체크를
+                    선택해주세요.
                   </div>
 
                   <div className="mb-3 grid grid-cols-3 gap-2">
@@ -3079,14 +3905,16 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                             ...user,
                             partnerCalendar: value,
                             partnerLunarLeapMonth:
-                              value === "음력" ? user.partnerLunarLeapMonth : false,
+                              value === "음력"
+                                ? user.partnerLunarLeapMonth
+                                : false,
                           })
                         }
                         className={cx(
                           "rounded-2xl border p-4 font-black",
                           user.partnerCalendar === value
                             ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                            : "border-[#7a5b37] bg-[#14110d] text-white"
+                            : "border-[#7a5b37] bg-[#14110d] text-white",
                         )}
                       >
                         상대 {value}
@@ -3107,10 +3935,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                         "mb-3 w-full rounded-2xl border p-4 text-left text-sm font-black",
                         user.partnerLunarLeapMonth
                           ? "border-[#d8a86f] bg-[#241e18] text-[#e0b36d]"
-                          : "border-[#7a5b37] bg-[#14110d] text-white"
+                          : "border-[#7a5b37] bg-[#14110d] text-white",
                       )}
                     >
-                      {user.partnerLunarLeapMonth ? "✓ " : ""}상대가 윤달 생일입니다
+                      {user.partnerLunarLeapMonth ? "✓ " : ""}상대가 윤달
+                      생일입니다
                       <span className="mt-1 block text-xs font-semibold leading-5 text-[#c8beb0]">
                         상대 생일이 음력 윤달이라고 들은 경우에만 선택하세요.
                       </span>
@@ -3148,7 +3977,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                           "rounded-2xl border p-4 font-black",
                           user.partnerGender === value
                             ? "border-[#d8a86f] bg-[#d8a86f] text-black"
-                            : "border-[#7a5b37] bg-[#14110d] text-white"
+                            : "border-[#7a5b37] bg-[#14110d] text-white",
                         )}
                       >
                         {value}
@@ -3186,6 +4015,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   setAiLoading(true);
                   setAiPreview("");
                   setAiFull("");
+                  setComicPreviewChapters([]);
+                  setComicFullChapters([]);
                   setStep("result");
 
                   setTimeout(() => generateAIResult(), 100);
@@ -3196,8 +4027,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 {aiLoading
                   ? "운세형이 읽는 중..."
                   : privacyAgreed
-                  ? "무료 결과 먼저 보기"
-                  : "개인정보 동의 후 진행"}
+                    ? "무료 결과 먼저 보기"
+                    : "개인정보 동의 후 진행"}
               </button>
             </section>
           </div>
@@ -3233,25 +4064,20 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     도훈이 네 사주를 펼쳐보고 있습니다
                   </div>
                   <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-                    무료에서는 지금 네 운에서 먼저 봐야 할 막힌 자리와 핵심 흐름을 먼저 봅니다.
+                    무료에서는 지금 네 운에서 먼저 봐야 할 막힌 자리와 핵심
+                    흐름을 먼저 봅니다.
                   </p>
                 </div>
               ) : (
                 <>
-                  <ResultReport
-                    text={
-                      aiPreview ||
-                      "[API 응답 없음] 운세 결과를 불러오지 못했습니다."
-                    }
-                  />
-                  <ResultActionButtons />
+                  <FortuneComicTheater chapters={comicPreviewChapters} />
                 </>
               )}
 
               {!paid && !aiLoading && (
                 <div className="mt-6 rounded-[28px] border border-[#7a5b37] bg-[#1b1612] p-5">
                   <div className="mb-3 rounded-full border border-[#7a5b37] bg-black/35 px-4 py-2 text-[11px] font-black tracking-[0.18em] text-[#d8a86f]">
-                    전체 리포트에서 열리는 다음 판정
+                    20페이지 사주극장에서 열리는 다음 장면
                   </div>
 
                   <div className="mb-3 break-keep text-2xl font-black leading-tight text-[#d8a86f]">
@@ -3266,28 +4092,41 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     {paidHook.warning}
                   </p>
 
+                  <LockedTwentyPagePreview paidHook={paidHook} />
+
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/45 p-4">
                     <div className="mb-2 text-sm font-black text-[#f5efe6]">
-                      전체 리포트에서 이어지는 내용
+                      20페이지에서 이어지는 장면
                     </div>
 
                     <div className="mt-3 grid gap-2 text-sm font-semibold text-white sm:grid-cols-2">
                       {paidHook.points.map((item) => (
-                        <div key={item} className="rounded-xl border border-[#7a5b37] bg-[#14110d] px-3 py-2">✓ {item}</div>
+                        <div
+                          key={item}
+                          className="rounded-xl border border-[#7a5b37] bg-[#14110d] px-3 py-2"
+                        >
+                          ✓ {item}
+                        </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-[#7a5b37] bg-black/30 p-4 text-xs leading-6 text-[#c8beb0]">
-                    서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시 디지털 리포트가 생성됩니다.
+                    서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시
+                    디지털 리포트가 생성됩니다.
                     <br />
-                    교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이 시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될 수 있습니다.
+                    교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이
+                    시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될
+                    수 있습니다.
                   </div>
 
                   <button
                     type="button"
                     onClick={() =>
-                      requestPortOnePayment(`${category.title} 전체 리포트`, category.price)
+                      requestPortOnePayment(
+                        getTwentyPageProductName(category),
+                        category.price,
+                      )
                     }
                     className="mt-5 w-full rounded-full border border-[#d8a86f] bg-gradient-to-r from-[#d8a86f] to-[#b78343] px-5 py-4 text-base font-black text-white"
                   >
@@ -3314,11 +4153,11 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <section className="space-y-4">
                 <article className="rounded-[30px] border border-[#7a5b37] bg-[#111111] p-5">
                   <div className="mb-3 rounded-full border border-[#7a5b37] bg-[#241e18] px-4 py-2 text-center text-xs font-black text-[#e0b36d]">
-                    전체 리포트 오픈
+                    20페이지 사주극장 오픈
                   </div>
 
                   <h2 className="mb-3 text-xl font-black text-[#d8a86f]">
-                    도훈의 전체 맞춤 리포트
+                    도훈의 20페이지 사주극장
                   </h2>
 
                   {fullLoading && !aiFull ? (
@@ -3327,18 +4166,13 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                         도훈이 전체 리포트를 깊게 풀고 있습니다
                       </div>
                       <p className="mt-3 break-keep text-sm leading-6 text-[#c8beb0]">
-                        무료 판정에서 멈춘 흐름을 이어서, 시기·복·악운·현실 조언까지 깊게 풀고 있습니다.
+                        무료 판정에서 멈춘 흐름을 이어서, 시기·복·악운·현실
+                        조언까지 깊게 풀고 있습니다.
                       </p>
                     </div>
                   ) : (
                     <>
-                      <ResultReport
-                        text={
-                          aiFull ||
-                          "[API 응답 없음] 전체 리포트를 불러오지 못했습니다."
-                        }
-                        paid
-                      />
+                      <FortuneComicTheater chapters={comicFullChapters} paid />
                       <ResultActionButtons />
                     </>
                   )}
@@ -3370,10 +4204,13 @@ ${body || "아직 생성된 결과가 없습니다."}`;
               <h1 className="text-3xl font-black leading-tight text-white">
                 혼자 오래 붙잡은 문제,
                 <br />
-                <span className="text-[#d8a86f]">도훈이 막힌 자리부터 본다</span>
+                <span className="text-[#d8a86f]">
+                  도훈이 막힌 자리부터 본다
+                </span>
               </h1>
               <p className="mt-4 text-base leading-7 text-[#c8beb0]">
-                질문 뒤에 숨어 있는 반복 흐름을 보고, 해도 되는지 멈춰야 하는지 사주 근거로 풀어주는 상담형 리포트입니다.
+                질문 뒤에 숨어 있는 반복 흐름을 보고, 해도 되는지 멈춰야 하는지
+                사주 근거로 풀어주는 상담형 리포트입니다.
               </p>
             </section>
 
@@ -3387,7 +4224,7 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                     "w-full rounded-[28px] border p-5 text-left",
                     selectedPlan === plan.id
                       ? "border-[#d8a86f] bg-[#241e18]"
-                      : "border-[#7a5b37] bg-[#111111]"
+                      : "border-[#7a5b37] bg-[#111111]",
                   )}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -3427,7 +4264,9 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 type="button"
                 onClick={() => {
                   if (!privacyAgreed) {
-                    alert("개인정보 수집·이용에 동의해야 상담을 진행할 수 있습니다.");
+                    alert(
+                      "개인정보 수집·이용에 동의해야 상담을 진행할 수 있습니다.",
+                    );
                     return;
                   }
 
@@ -3454,7 +4293,10 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 <button
                   type="button"
                   onClick={() =>
-                    requestPortOnePayment(selectedPlanInfo.title, selectedPlanInfo.price)
+                    requestPortOnePayment(
+                      selectedPlanInfo.title,
+                      selectedPlanInfo.price,
+                    )
                   }
                   className="mt-3 w-full rounded-full border border-[#d8a86f] bg-white px-6 py-4 text-sm font-black text-black"
                 >
@@ -3472,7 +4314,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 소름사주 안내
               </div>
               <p className="mt-2 break-keep text-xs leading-5 text-[#c8beb0]">
-                소름사주는 입력한 생년월일, 출생시간, 성별, 상담 카테고리를 바탕으로 AI가 생성하는 사주·운세 디지털 리포트 서비스입니다.
+                소름사주는 입력한 생년월일, 출생시간, 성별, 상담 카테고리를
+                바탕으로 AI가 생성하는 사주·운세 디지털 리포트 서비스입니다.
               </p>
             </div>
 
@@ -3481,7 +4324,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                 제공하지 않는 서비스
               </div>
               <p className="mt-3 break-keep text-xs leading-6 text-[#d8d0c6]">
-                소름사주는 사주·운세 기반의 디지털 콘텐츠를 제공하며, 아래 서비스는 제공하지 않습니다.
+                소름사주는 사주·운세 기반의 디지털 콘텐츠를 제공하며, 아래
+                서비스는 제공하지 않습니다.
               </p>
               <ul className="mt-3 space-y-1 text-xs leading-6 text-[#d8d0c6]">
                 <li>- 의료 진단, 질병 예측, 치료 지시</li>
@@ -3499,10 +4343,13 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   이용약관
                 </summary>
                 <p className="mt-4 text-xs leading-6 text-[#d8d0c6]">
-                  본 서비스는 오락·참고용 콘텐츠이며 의학, 법률, 투자, 심리치료, 종교·무속 행위를 대체하지 않습니다. 중요한 결정은 현실 상황과 함께 판단해 주세요.
+                  본 서비스는 오락·참고용 콘텐츠이며 의학, 법률, 투자, 심리치료,
+                  종교·무속 행위를 대체하지 않습니다. 중요한 결정은 현실 상황과
+                  함께 판단해 주세요.
                 </p>
                 <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
-                  서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시 디지털 리포트가 생성됩니다.
+                  서비스 제공기간: 결제 완료 후 입력 정보를 바탕으로 즉시 디지털
+                  리포트가 생성됩니다.
                 </p>
               </details>
 
@@ -3511,7 +4358,8 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   개인정보처리방침
                 </summary>
                 <p className="mt-4 text-xs leading-6 text-[#d8d0c6]">
-                  리포트 생성을 위해 이름 또는 별명, 생년월일, 출생시간, 성별, 선택 카테고리, 상담 질문을 수집·이용합니다.
+                  리포트 생성을 위해 이름 또는 별명, 생년월일, 출생시간, 성별,
+                  선택 카테고리, 상담 질문을 수집·이용합니다.
                 </p>
                 <p className="mt-2 rounded-xl border border-[#7a5b37] bg-[#11100f] p-3 text-xs leading-6">
                   개인정보 보호책임자: 이성국
@@ -3527,19 +4375,26 @@ ${body || "아직 생성된 결과가 없습니다."}`;
                   환불 및 취소 규정
                 </summary>
                 <p className="mt-4 text-xs leading-6 text-[#d8d0c6]">
-                  유료 리포트는 결제 후 입력 정보를 바탕으로 생성되는 디지털 콘텐츠입니다.
+                  유료 리포트는 결제 후 입력 정보를 바탕으로 생성되는 디지털
+                  콘텐츠입니다.
                 </p>
                 <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
-                  교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이 시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될 수 있습니다.
+                  교환/환불 규정: 디지털 콘텐츠 특성상 리포트 생성이
+                  시작되었거나 결과 열람이 가능한 경우 단순 변심 환불은 제한될
+                  수 있습니다.
                 </p>
                 <p className="mt-3 text-xs leading-6 text-[#d8d0c6]">
-                  단, 결제 오류, 시스템 오류, 중복 결제 등 회사 귀책 사유가 확인되는 경우에는 고객문의 접수 후 확인 절차를 거쳐 환불이 가능합니다.
+                  단, 결제 오류, 시스템 오류, 중복 결제 등 회사 귀책 사유가
+                  확인되는 경우에는 고객문의 접수 후 확인 절차를 거쳐 환불이
+                  가능합니다.
                 </p>
               </details>
             </div>
 
             <div className="mt-5 border-t border-[#7a5b37] pt-4 text-[11px] leading-5 text-[#9d9388]">
-              <div className="mb-2 text-sm font-black text-[#e0b36d]">회사정보</div>
+              <div className="mb-2 text-sm font-black text-[#e0b36d]">
+                회사정보
+              </div>
               <p>상호명: 비앤케이 컴퍼니</p>
               <p>대표자: 이성국</p>
               <p>사업자등록번호: 519-03-02347</p>
