@@ -301,6 +301,18 @@ type CategoryPreviewProfile =
       webtoonScenes?: CareerFreeComicScene[];
     }
   | {
+      kind: "money";
+      version: string;
+      capacityGrade: string;
+      capacityRange: string;
+      utilization: number;
+      primaryStyle: string;
+      blocker: string;
+      firstWindow: string;
+      peakWindow: string;
+      webtoonScenes?: CareerFreeComicScene[];
+    }
+  | {
       kind: "career";
       version: string;
       split: { office: number; own: number };
@@ -2508,10 +2520,10 @@ function toRelationshipVisualProfile(
   };
 
   const energyMap: Record<ImageVisualTags["pose"], RelationshipVisualProfile["energy"]> = {
-    standing: "confident",
+    standing: "dominant",
     chair: "calm",
     stool: "mysterious",
-    desk: "mature",
+    desk: "calm",
     stairs: "active",
     wall: "dominant",
   };
@@ -2764,10 +2776,11 @@ function RelationshipVisualTeaser({
   data: RelationshipScoreVisual;
   user: UserInfo;
 }) {
+  if (!data) return null;
   const isCompatibility = data.kind === "compatibility";
   const firstProfile = toRelationshipVisualProfile(data.visualProfiles.user);
   const secondProfile = toRelationshipVisualProfile(
-    isCompatibility ? data.visualProfiles.partner : data.visualProfiles.idealPartner,
+    data.kind === "compatibility" ? data.visualProfiles.partner : data.visualProfiles.idealPartner,
   );
   const firstSeed = buildRelationshipModelSeed(
     user,
@@ -3258,7 +3271,9 @@ function getCategoryPreviewContinuityText(profile: CategoryPreviewProfile) {
   if (profile.kind === "year") return `${profile.year}년 ${profile.overallScore}점 · 최고운 ${profile.bestMonth}월 · 핵심 테마 ${profile.theme}`;
   if (profile.kind === "lifeFlow") return `큰 대운 ${profile.chanceCount}번 · 첫 상승 ${profile.firstRise} · 최대구간 ${profile.biggestWindow}`;
   if (profile.kind === "lifetime") return `가장 센 복 ${profile.strongestBlessing.label} ${profile.strongestBlessing.score}점 · 최대 전환기 ${profile.turningWindow}`;
-  return `도훈의 무료 판정 ${profile.verdict} · 지금 할 것 ${profile.doNow}`;
+  if (profile.kind === "money") return `돈그릇 ${profile.capacityGrade} · 돈이 움직이는 첫 시기 ${profile.firstWindow} · 가장 강한 시기 ${profile.peakWindow}`;
+  if (profile.kind === "worry") return `도훈의 무료 판정 ${profile.verdict} · 지금 할 것 ${profile.doNow}`;
+  return "";
 }
 
 
@@ -3278,7 +3293,7 @@ function CareerStoryWebtoon({
     gender: protagonistGender,
     mood: profile.split.own >= 60 ? "confident" : profile.split.office >= 60 ? "clean" : "mature",
     style: profile.split.own >= 60 ? "minimal" : "office",
-    energy: profile.split.own >= 60 ? "dominant" : profile.split.office >= 60 ? "calm" : "confident",
+    energy: profile.split.own >= 60 ? "dominant" : profile.split.office >= 60 ? "calm" : "dominant",
   };
 
   const protagonist = pickRelationshipModel(
@@ -5626,7 +5641,7 @@ function HealthLongformStory({
             </h3>
 
             <div className="mt-8 grid gap-4">
-              {story.signalSequence.map((item, index) => (
+              {story.signalSequence.map((item: any, index: number) => (
                 <div
                   key={`${item.key}-${index}`}
                   className="border border-white/10 bg-white/[0.035] p-5"
@@ -5683,7 +5698,7 @@ function HealthLongformStory({
             </p>
 
             <div className="age-line mt-8">
-              {story.ageFlow.map((point, index) => {
+              {story.ageFlow.map((point: any, index: number) => {
                 const left = (index / Math.max(1, story.ageFlow.length - 1)) * 100;
                 const top = 100 - point.score;
                 const next = story.ageFlow[index + 1];
@@ -6388,7 +6403,7 @@ function HealthStyleCategoryLongform({
     salt:`category-free-v203-${profile.kind}`,
   });
 
-  const resultItems:[string,unknown][] = (() => {
+  const resultItems = (() : [string, unknown][] => {
     switch(profile.kind){
       case "today": return [
         ["오늘 점수",`${profile.overallScore}점`],["가장 좋은 시간",profile.bestTime],
@@ -7016,9 +7031,7 @@ function CategoryPreviewWebtoon({
         user={user}
         categoryId={profile.kind === "worry" ? "premium" : profile.kind as CategoryId}
         categoryTitle={
-          profile.kind === "career"
-            ? "일·사업운"
-            : profile.kind === "compatibility"
+          profile.kind === "compatibility"
               ? "궁합운"
               : profile.kind === "worry"
                 ? "내 고민 상담"
@@ -7033,7 +7046,7 @@ function CategoryPreviewWebtoon({
     <>
       <SajuBasicProfileCardV214
         user={user}
-        profile={profile?.sajuFoundation || profile}
+        profile={("sajuFoundation" in profile && profile.sajuFoundation) || profile}
         categoryId={profile.kind === "worry" ? "premium" : profile.kind as CategoryId}
       />
       {categoryContent}
@@ -7356,6 +7369,8 @@ export default function Page() {
         comicPreviewChapters?: ComicChapter[];
         scoreVisual?: RelationshipScoreVisual;
         wealthProfile?: WealthProfile | null;
+        categoryPreviewProfile?: CategoryPreviewProfile | null;
+        freeComicScenes?: CareerFreeComicScene[];
         orderId?: string;
         paymentId?: string;
         orderName: string;

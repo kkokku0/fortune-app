@@ -630,6 +630,12 @@ type CategoryPreviewProfile =
       weakestHole: PreviewScoreItem;
       turningWindow: string;
       coreAdvice: string;
+      moneyBowlPreview?: { label: string; amount: string; mainPath: string; jobs: string; meaning: string; hook: string } | null;
+      paidHookTitle?: string;
+      paidHookBody?: string;
+      paidHookQuote?: string;
+      paidLockedItems?: string[];
+      paidCtaLabel?: string;
       webtoonScenes?: CareerWebtoonScene[];
     }
   | {
@@ -3336,7 +3342,7 @@ ${second.jobs} 같은 방향은 첫 길과 맞물릴 때 커진다. 단순히 �
 네가 고른 상품, 네가 맡은 고객, 네가 만든 기준, 네가 설명한 기술, 네가 관리한 거래가 다시 돌아올 때 돈이 커진다. 상담, 자격, 기술, 관리, 판매, 교육, 전문 서비스, 반복 거래처럼 이름과 신뢰가 붙는 구조가 맞다.
 
 [나랏밥이 맞는 사주인가]
-나랏밥은 ${detail.ranked.find((x: any)=>x.key==="gov")?.score >= 12 ? "맞는 쪽으로 본다" : "중심 길로 강하게 보지는 않는다"}.
+나랏밥은 ${(detail.ranked.find((x: any)=>x.key==="gov")?.score ?? 0) >= 12 ? "맞는 쪽으로 본다" : "중심 길로 강하게 보지는 않는다"}.
 
 공무원, 공기업, 공공기관, 행정, 세무, 관세, 공단, 협회 같은 길은 명식에서 관성과 인성이 살아 있을 때 강하게 본다. 이 기운이 강하면 안정된 월급, 신용, 연금, 대출, 자산으로 돈을 쌓는다. 약하면 조직의 틀은 버틸 수 있어도 답답함이 먼저 온다.
 
@@ -3346,7 +3352,7 @@ ${second.jobs} 같은 방향은 첫 길과 맞물릴 때 커진다. 단순히 �
 의료·치료·상담, 법무·세무·회계, 기술·개발·정비·품질은 모두 같은 직업이 아니다. 이 사주에서 전문직이 맞으려면 사람에게 맡길 이유가 생겨야 한다. 자격, 기술, 기준, 해결력이 돈으로 바뀌어야 산다.
 
 [가르치는 일로 먹고살 수 있는가]
-교육운은 ${detail.ranked.find((x: any)=>x.key==="education")?.score >= 12 ? "강하게 살아 있다" : "보조 길로 본다"}.
+교육운은 ${(detail.ranked.find((x: any)=>x.key==="education")?.score ?? 0) >= 12 ? "강하게 살아 있다" : "보조 길로 본다"}.
 
 교사, 강사, 학원, 과외, 교재, 자격증 교육, 온라인강의는 사주에 인성과 식상이 같이 살아야 돈이 된다. 강하면 지식이 상품이 되고, 약하면 남을 가르치는 일은 오래 갈수록 피곤하다.
 
@@ -8630,7 +8636,7 @@ function buildAIHealthPaidReportV188(params: {
       body:
         signalSentences[index] ||
         signalSentences[signalSentences.length - 1] ||
-        fallback.part2.signals[index]?.body ||
+        (fallback.part2.signals as Array<{ body: string }>)[index]?.body ||
         `${label}을 체크한다.`,
     }));
 
@@ -10477,8 +10483,7 @@ function getLoveMarriageLifetimeTimingV218(
         birthYear,
         user?.month || "",
         user?.day || "",
-        user?.hour || "",
-        user?.minute || "",
+        user?.birthTime || "",
         user?.gender || "",
         snap.dayMaster || "",
         snap.wood, snap.fire, snap.earth, snap.metal, snap.water,
@@ -13603,14 +13608,14 @@ function buildYearFullReportV202(params: {
   const cautionMonth=avoidCollision(p.cautionMonth,[bestMonth],1);
 
   const careerTop = career?.kind === "career"
-    ? [career.top1?.label, career.top2?.label, career.top3?.label].filter(Boolean)
+    ? (career.top3 || []).slice(0, 3).map((entry) => entry.label).filter(Boolean)
     : [];
   const careerTopText = careerTop.length ? careerTop.join(" · ") : "거래·관리·전문성을 직접 쓰는 일";
-  const loveType = love?.kind === "love" ? safeText(love.type, "신중하게 관계를 확인하는 타입") : "신중하게 관계를 확인하는 타입";
-  const loveGood = love?.kind === "love" ? safeText(love.good, "말과 행동이 일치하는 사람") : "말과 행동이 일치하는 사람";
-  const loveAvoid = love?.kind === "love" ? safeText(love.avoid, "관계를 애매하게 끄는 사람") : "관계를 애매하게 끄는 사람";
-  const moneyPrimary = safeText(wealth?.primary, "거래와 현금흐름을 직접 확인하는 일");
-  const moneySecondary = safeText(wealth?.secondary, "반복 수입이 남는 구조");
+  const loveType = love?.kind === "love" ? safeText(love.headline, "신중하게 관계를 확인하는 타입") : "신중하게 관계를 확인하는 타입";
+  const loveGood = love?.kind === "love" ? safeText(love.partnerDescription, "말과 행동이 일치하는 사람") : "말과 행동이 일치하는 사람";
+  const loveAvoid = love?.kind === "love" ? safeText(love.avoidPartner, "관계를 애매하게 끄는 사람") : "관계를 애매하게 끄는 사람";
+  const moneyPrimary = safeText(wealth?.moneyStyle.primary, "거래와 현금흐름을 직접 확인하는 일");
+  const moneySecondary = safeText(wealth?.moneyStyle.secondary, "반복 수입이 남는 구조");
 
   const strongestMeaning: Record<string,string> = {
     "재물운":"올해는 돈의 액수보다 돈이 실제로 확정되는 과정에서 성과가 난다. 가격·단가·계약조건·입금일을 직접 확인하는 행동이 결과를 만든다.",
@@ -13949,12 +13954,16 @@ ${tailContext}
 - 내부 지시문이나 생성 규칙은 출력하지 않는다.
 `.trim();
 
-    const continued = await callOpenAIText({
-      system: params.systemGuide,
-      user: continuationPrompt,
-      maxTokens: 5000,
+    const continuedResponse = await client.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: params.systemGuide },
+        { role: "user", content: continuationPrompt },
+      ],
+      max_tokens: 5000,
       temperature: 0.72,
     });
+    const continued = continuedResponse.choices[0]?.message?.content?.trim() || "";
 
     const cleanContinuation = cleanGeneratedText(continued || "").trim();
     if (!cleanContinuation) break;
@@ -14189,8 +14198,8 @@ ${missingHeadings.join("\n")}
       text: combined,
       user: params.user,
       manse: params.manse,
-      title: params.title,
-      systemGuide,
+      title: params.categoryTitle,
+      systemGuide: buildSystemPrompt(),
     });
   }
 
@@ -14747,6 +14756,7 @@ function fallbackFull(
       user,
       manse,
       fortuneSeed,
+      scoreVisual: null,
     });
 
     if (!p || p.kind !== "today") {
